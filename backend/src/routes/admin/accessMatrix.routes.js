@@ -9,7 +9,7 @@ import { auditLog } from '../../middleware/audit.js';
 const router = Router();
 router.use(protect);
 
-router.get('/', requirePermission('Permissions', 'manage'), getAccessMatrix);
-router.put('/', requirePermission('Permissions', 'manage'), auditLog('Update', 'Access Matrix'), updateAccessMatrix);
+router.get('/', requirePermission('Roles', 'update'), getAccessMatrix);
+router.put('/', requirePermission('Roles', 'update'), auditLog('Update', 'Access Matrix'), updateAccessMatrix);
 
 export default router;

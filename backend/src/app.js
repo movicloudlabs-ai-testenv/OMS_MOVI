@@ -19,6 +19,7 @@ import adminMatrixRoutes from './routes/admin/accessMatrix.routes.js';
 import adminAuditRoutes from './routes/admin/auditLogs.routes.js';
 import adminReportsRoutes from './routes/admin/reports.routes.js';
 import adminSettingsRoutes from './routes/admin/settings.routes.js';
+import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 
 // Part 2 Route Imports
@@ -172,6 +173,7 @@ app.use('/api/admin/access-matrix', adminMatrixRoutes);
 app.use('/api/admin/audit-logs', adminAuditRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/settings', adminSettingsRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
 
 // HR Module

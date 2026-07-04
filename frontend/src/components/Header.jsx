@@ -132,7 +132,7 @@ export default function Header({ sidebarCollapsed }) {
       
       {/* Left side: Logo & Title (Enterprise Style) */}
       <div className="flex items-center gap-4">
-        <img src="/assets/logo.png" alt="OWMS Logo" className="h-6 w-auto brightness-0 invert" />
+        <img src="/assets/company_logo/movi%20logo.png" alt="OWMS Logo" className="h-7 w-auto" />
         <span className="font-semibold tracking-wide text-[14px]">Office Workspace Management System</span>
       </div>
 

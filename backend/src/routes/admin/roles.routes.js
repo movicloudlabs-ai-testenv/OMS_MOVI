@@ -16,6 +16,6 @@ router.get('/:id', requirePermission('Roles', 'read'), getRoleById);
 router.put('/:id', requirePermission('Roles', 'update'), auditLog('Update', 'Roles'), updateRole);
 router.delete('/:id', requirePermission('Roles', 'delete'), auditLog('Delete', 'Roles'), deleteRole);
 router.get('/:id/users', requirePermission('Roles', 'read'), getRoleUsers);
-router.post('/:id/permissions', requirePermission('Permissions', 'manage'), auditLog('Update', 'Roles'), updateRolePermissions);
+router.post('/:id/permissions', requirePermission('Roles', 'update'), auditLog('Update', 'Roles'), updateRolePermissions);
 
 export default router;

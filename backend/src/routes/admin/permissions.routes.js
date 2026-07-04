@@ -6,7 +6,7 @@ import { requirePermission } from '../../middleware/rbac.js';
 const router = Router();
 router.use(protect);
 
-router.get('/',    requirePermission('Permissions', 'read'), getPermissions);
-router.get('/:id', requirePermission('Permissions', 'read'), getPermissionById);
+router.get('/',    requirePermission('Roles', 'read'), getPermissions);
+router.get('/:id', requirePermission('Roles', 'read'), getPermissionById);
 
 export default router;

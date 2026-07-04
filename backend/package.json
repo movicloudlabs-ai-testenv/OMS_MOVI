@@ -12,6 +12,7 @@
     "dev": "nodemon server.js",
     "seed": "node src/config/seed.js",
     "seed:users": "node src/config/seedUsers.js",
+    "add:intern": "node src/config/addIntern.js",
     "demo:reset": "node src/config/resetForDemo.js"
   },
   "engines": {

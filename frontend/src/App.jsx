@@ -80,6 +80,7 @@ import AdminAuditLogs from './pages/admin/AuditLogs';
 import AdminReports from './pages/admin/Reports';
 import AdminCreateReport from './pages/admin/CreateReport';
 import AdminSettings from './pages/admin/Settings';
+import AdminProfile from './pages/admin/Profile';
 
 // Profile
 import Profile from './pages/Profile';
@@ -158,7 +159,8 @@ export default function App() {
       {/* Admin — strictly admin-only (security-sensitive) */}
       <Route path="/admin/dashboard"    element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/access-matrix" element={<ProtectedRoute allowedRoles={['admin']}><AdminAccessMatrix /></ProtectedRoute>} />
-      <Route path="/admin/settings"     element={<ProtectedRoute allowedRoles={['admin']} permission={{ resource: 'Settings', action: 'manage' }}><AdminSettings /></ProtectedRoute>} />
+      <Route path="/admin/settings"     element={<ProtectedRoute allowedRoles={['admin']} permission={{ resource: 'Settings', action: 'update' }}><AdminSettings /></ProtectedRoute>} />
+      <Route path="/admin/profile"      element={<ProtectedRoute allowedRoles={['admin']}><AdminProfile /></ProtectedRoute>} />
 
       {/* Admin — Users: admin always, others if granted Users permission */}
       <Route path="/admin/users"        element={<ProtectedRoute allowedRoles={['admin']} permission={{ resource: 'Users', action: 'read' }}><AdminUsers /></ProtectedRoute>} />

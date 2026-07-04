@@ -12,7 +12,7 @@ const CROSS_ROLE_LINKS = [
   { resource: 'Audit Logs', action: 'read',   to: '/admin/audit',       icon: 'history',   label: 'Audit Logs'  },
   { resource: 'Reports',    action: 'read',   to: '/admin/reports',     icon: 'analytics', label: 'Reports'     },
   { resource: 'Interns',    action: 'read',   to: '/hr/interns',        icon: 'school',    label: 'Interns'     },
-  { resource: 'Settings',   action: 'manage', to: '/admin/settings',    icon: 'settings',  label: 'Settings'    },
+  { resource: 'Settings',   action: 'update', to: '/admin/settings',    icon: 'settings',  label: 'Settings'    },
 ];
 
 const NAV_CONFIG = {
@@ -63,7 +63,7 @@ const NAV_CONFIG = {
     { to: '/admin/users', icon: 'group', label: 'Users', permission: { resource: 'Users', action: 'read' } },
     { to: '/admin/departments', icon: 'domain', label: 'Departments', permission: { resource: 'Departments', action: 'read' } },
     { to: '/admin/roles', icon: 'badge', label: 'Roles', permission: { resource: 'Roles', action: 'read' } },
-    { to: '/admin/access-matrix', icon: Grid2X2, label: 'Access Matrix', isLucide: true, permission: { resource: 'Roles', action: 'manage' } },
+    { to: '/admin/access-matrix', icon: Grid2X2, label: 'Access Matrix', isLucide: true, permission: { resource: 'Roles', action: 'update' } },
     { to: '/admin/audit', icon: 'history', label: 'Audit Logs', permission: { resource: 'Audit Logs', action: 'read' } },
     { to: '/admin/reports', icon: 'analytics', label: 'Reports', permission: { resource: 'Reports', action: 'read' } },
     { to: '/admin/settings', icon: 'settings', label: 'Settings', permission: { resource: 'Settings', action: 'read' } },

@@ -67,30 +67,37 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('owms:unauthorized', handle401);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Re-fetch the current user (role + permissions) from the server.
+  // Used on-demand (e.g. right after an Access Matrix save) and by the
+  // background refresh, so permission changes reflect without a re-login.
+  const refreshUser = useCallback(async () => {
+    if (!localStorage.getItem('owms_token')) return null;
+    try {
+      const res = await api.get('/auth/me');
+      const freshUser = res.data.data;
+      setUser(freshUser);
+      localStorage.setItem('owms_user', JSON.stringify(freshUser));
+      return freshUser;
+    } catch {
+      // Token invalid — the 401 listener handles logout
+      return null;
+    }
+  }, []);
+
   // Silently refresh permissions every 5 min + on window focus
   // so Access Matrix changes reflect without requiring logout
   useEffect(() => {
     if (!user?._id) return;
-    const refreshPermissions = async () => {
-      try {
-        const res = await api.get('/auth/me');
-        const freshUser = res.data.data;
-        setUser(freshUser);
-        localStorage.setItem('owms_user', JSON.stringify(freshUser));
-      } catch {
-        // Token invalid — 401 listener handles logout
-      }
-    };
-    const interval = setInterval(refreshPermissions, 5 * 60 * 1000);
-    window.addEventListener('focus', refreshPermissions);
+    const interval = setInterval(refreshUser, 5 * 60 * 1000);
+    window.addEventListener('focus', refreshUser);
     return () => {
       clearInterval(interval);
-      window.removeEventListener('focus', refreshPermissions);
+      window.removeEventListener('focus', refreshUser);
     };
-  }, [user?._id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?._id, refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading, hasPermission }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading, hasPermission, refreshUser, setUser }}>
       {children}
     </AuthContext.Provider>
   );

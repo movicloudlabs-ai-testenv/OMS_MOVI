@@ -102,6 +102,11 @@ export const adminAPI = {
   // Audit Logs
   getAuditLogs: (params) => api.get('/admin/audit-logs', { params }),
 
+  // Dashboard
+  getDashboardStats: () => api.get('/admin/dashboard/stats'),
+  createAnnouncement: (data) => api.post('/admin/dashboard/announcements', data),
+  deleteAnnouncement: (id) => api.delete(`/admin/dashboard/announcements/${id}`),
+
   // Reports
   getReports: (params) => api.get('/admin/reports', { params }),
   triggerRun: (id) => api.post(`/admin/reports/${id}/run`),
