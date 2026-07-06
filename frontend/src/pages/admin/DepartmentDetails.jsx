@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import { adminAPI } from '../../utils/api';
 
@@ -50,25 +50,25 @@ export default function AdminDepartmentDetails() {
 
   if (loading) {
     return (
-      <PageWrapper>
+      <AdminLayout bare>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="w-8 h-8 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
         </div>
-      </PageWrapper>
+      </AdminLayout>
     );
   }
 
   if (!dept) return null;
 
   return (
-    <PageWrapper>
+    <AdminLayout bare>
       <div className="font-sans text-[#0F172A] max-w-6xl mx-auto space-y-6 pb-10">
         
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E2E8F0] pb-6">
           <div>
             <div className="flex items-center gap-2 text-[13px] text-[#64748B] mb-2">
-              <button onClick={() => navigate('/admin/departments')} className="hover:text-[#2563EB] transition-colors">Departments</button>
+              <button onClick={() => navigate('/admin/departments')} className="hover:text-[#EA580C] transition-colors">Departments</button>
               <span className="material-symbols-outlined text-[14px]">chevron_right</span>
               <span className="text-[#0F172A] font-medium">{dept.name}</span>
             </div>
@@ -83,7 +83,7 @@ export default function AdminDepartmentDetails() {
                     {(dept.status || 'Active').toUpperCase()}
                   </span>
                 </h1>
-                <p className="text-[14px] text-[#64748B] mt-0.5">Head: <span className="text-[#2563EB] hover:underline cursor-pointer">{dept.head?.name || 'Unassigned'}</span></p>
+                <p className="text-[14px] text-[#64748B] mt-0.5">Head: <span className="text-[#EA580C] hover:underline cursor-pointer">{dept.head?.name || 'Unassigned'}</span></p>
               </div>
             </div>
           </div>
@@ -98,7 +98,7 @@ export default function AdminDepartmentDetails() {
             </button>
             <button
               onClick={() => navigate(`/admin/departments/${id}/edit`)}
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-1.5 rounded text-[13px] font-medium transition-colors flex items-center gap-2"
+              className="bg-[#EA580C] hover:bg-[#C2410C] text-white px-4 py-1.5 rounded text-[13px] font-medium transition-colors flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-[16px]">edit</span>
               Edit
@@ -159,7 +159,7 @@ export default function AdminDepartmentDetails() {
             <h2 className="text-[15px] font-semibold text-[#0F172A]">Users in Department</h2>
             <div className="relative w-64">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
-              <input type="text" placeholder="Search users..." className="w-full border border-[#E2E8F0] rounded py-1 pl-9 pr-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input type="text" placeholder="Search users..." className="w-full border border-[#E2E8F0] rounded py-1 pl-9 pr-3 text-[13px] focus:outline-none focus:border-[#EA580C]" />
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -194,7 +194,7 @@ export default function AdminDepartmentDetails() {
                     <td className="px-5 py-3 text-[13px] text-[#64748B]">{u.email}</td>
                     <td className="px-5 py-3 text-[13px] text-[#64748B]">{new Date(u.createdAt).toLocaleDateString()}</td>
                     <td className="px-5 py-3 text-right">
-                      <button onClick={() => navigate(`/admin/users/${u._id}`)} className="text-[#64748B] hover:text-[#2563EB]" title="View user">
+                      <button onClick={() => navigate(`/admin/users/${u._id}`)} className="text-[#64748B] hover:text-[#EA580C]" title="View user">
                         <span className="material-symbols-outlined text-[18px]">visibility</span>
                       </button>
                     </td>
@@ -205,7 +205,7 @@ export default function AdminDepartmentDetails() {
           </div>
           <div className="px-5 py-3 border-t border-[#E2E8F0] bg-white flex justify-between items-center text-[13px] text-[#64748B]">
             Showing {users.length} users
-            <button onClick={() => navigate('/admin/users')} className="text-[#2563EB] font-medium hover:underline">View All Users</button>
+            <button onClick={() => navigate('/admin/users')} className="text-[#EA580C] font-medium hover:underline">View All Users</button>
           </div>
         </div>
 
@@ -218,6 +218,6 @@ export default function AdminDepartmentDetails() {
         entityLabel="department"
         onConfirm={handleArchive}
       />
-    </PageWrapper>
+    </AdminLayout>
   );
 }

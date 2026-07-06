@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { adminAPI } from '../../utils/api';
 
 export default function AdminEditDepartment() {
@@ -89,26 +89,26 @@ export default function AdminEditDepartment() {
 
   if (fetching) {
     return (
-      <PageWrapper>
+      <AdminLayout bare>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="w-8 h-8 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
         </div>
-      </PageWrapper>
+      </AdminLayout>
     );
   }
 
   return (
-    <PageWrapper>
+    <AdminLayout bare>
       <div className="font-sans text-[#0F172A] max-w-[1000px] mx-auto flex flex-col h-full gap-8 pb-24">
 
         {/* Page Header */}
         <div className="flex flex-col gap-2 border-b border-[#E2E8F0] pb-6">
           <div className="flex items-center gap-2 text-[13px] text-[#64748B] font-medium pt-2">
-            <button onClick={() => navigate('/admin/departments')} className="hover:text-[#2563EB] transition-colors flex items-center gap-1">
+            <button onClick={() => navigate('/admin/departments')} className="hover:text-[#EA580C] transition-colors flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">domain</span> Departments
             </button>
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            <button onClick={() => navigate(`/admin/departments/${id}`)} className="hover:text-[#2563EB] transition-colors">
+            <button onClick={() => navigate(`/admin/departments/${id}`)} className="hover:text-[#EA580C] transition-colors">
               {formData.name || 'Department'}
             </button>
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
@@ -127,7 +127,7 @@ export default function AdminEditDepartment() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-2">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">badge</span>
+                <span className="material-symbols-outlined text-[#EA580C]">badge</span>
                 Department Identity
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -138,25 +138,25 @@ export default function AdminEditDepartment() {
               <div className="sm:col-span-2">
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Department Name <span className="text-[#DC2626]">*</span></label>
                 <input name="name" value={formData.name} onChange={handleChange} type="text"
-                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors"
+                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                   placeholder="e.g. Research & Development" />
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Department Code <span className="text-[#DC2626]">*</span></label>
                 <input name="code" value={formData.code} onChange={handleChange} type="text"
-                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors uppercase"
+                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors uppercase"
                   placeholder="e.g. RND" />
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Cost Center ID</label>
                 <input name="costCenterId" value={formData.costCenterId} onChange={handleChange} type="text"
-                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors"
+                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                   placeholder="e.g. CC-4092" />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Description</label>
                 <textarea name="description" value={formData.description} onChange={handleChange} rows="3"
-                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors resize-none"
+                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none"
                   placeholder="Briefly describe the primary function of this department..." />
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function AdminEditDepartment() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-10">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">account_tree</span>
+                <span className="material-symbols-outlined text-[#EA580C]">account_tree</span>
                 Leadership & Structure
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -178,7 +178,7 @@ export default function AdminEditDepartment() {
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Department Head</label>
                 <div className="relative">
                   <select name="head" value={formData.head} onChange={handleChange}
-                    className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors appearance-none cursor-pointer">
+                    className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors appearance-none cursor-pointer">
                     <option value="">No Head Assigned</option>
                     {users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
                   </select>
@@ -189,7 +189,7 @@ export default function AdminEditDepartment() {
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Parent Department</label>
                 <div className="relative">
                   <select name="parentDepartment" value={formData.parentDepartment} onChange={handleChange}
-                    className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors appearance-none cursor-pointer">
+                    className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors appearance-none cursor-pointer">
                     <option value="">None (Top-Level Department)</option>
                     {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
                   </select>
@@ -203,7 +203,7 @@ export default function AdminEditDepartment() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-10">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">settings</span>
+                <span className="material-symbols-outlined text-[#EA580C]">settings</span>
                 Operational Settings
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -216,7 +216,7 @@ export default function AdminEditDepartment() {
                   <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Primary Location</label>
                   <div className="relative">
                     <select name="location" value={formData.location} onChange={handleChange}
-                      className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors appearance-none cursor-pointer">
+                      className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors appearance-none cursor-pointer">
                       <option value="hq">Headquarters</option>
                       <option value="london">London Office</option>
                       <option value="remote">Fully Remote</option>
@@ -228,7 +228,7 @@ export default function AdminEditDepartment() {
                   <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Status</label>
                   <div className="relative">
                     <select name="status" value={formData.status} onChange={handleChange}
-                      className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors appearance-none cursor-pointer">
+                      className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors appearance-none cursor-pointer">
                       <option value="active">Active</option>
                       <option value="inactive">Inactive</option>
                     </select>
@@ -243,22 +243,22 @@ export default function AdminEditDepartment() {
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <div className="relative flex items-center justify-center mt-0.5">
                       <input name="allowCrossDept" checked={formData.allowCrossDept} onChange={handleChange} type="checkbox"
-                        className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#2563EB] checked:border-[#2563EB] transition-colors cursor-pointer" />
+                        className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#EA580C] checked:border-[#EA580C] transition-colors cursor-pointer" />
                       <span className="material-symbols-outlined absolute text-white text-[12px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
                     </div>
                     <div>
-                      <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Allow Cross-Department Visibility</span>
+                      <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#EA580C] transition-colors">Allow Cross-Department Visibility</span>
                       <span className="block text-[12px] text-[#64748B]">Members can see user directories from other active departments.</span>
                     </div>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group">
                     <div className="relative flex items-center justify-center mt-0.5">
                       <input name="autoAssignPerms" checked={formData.autoAssignPerms} onChange={handleChange} type="checkbox"
-                        className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#2563EB] checked:border-[#2563EB] transition-colors cursor-pointer" />
+                        className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#EA580C] checked:border-[#EA580C] transition-colors cursor-pointer" />
                       <span className="material-symbols-outlined absolute text-white text-[12px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
                     </div>
                     <div>
-                      <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Auto-Assign Default Permissions</span>
+                      <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#EA580C] transition-colors">Auto-Assign Default Permissions</span>
                       <span className="block text-[12px] text-[#64748B]">New users added inherit this department's base access rules automatically.</span>
                     </div>
                   </label>
@@ -287,7 +287,7 @@ export default function AdminEditDepartment() {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="bg-[#EA580C] hover:bg-[#C2410C] text-white px-6 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -300,6 +300,6 @@ export default function AdminEditDepartment() {
         </div>
 
       </div>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

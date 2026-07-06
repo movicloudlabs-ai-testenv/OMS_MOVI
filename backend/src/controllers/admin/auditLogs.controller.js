@@ -114,7 +114,7 @@ export const exportAuditLogs = async (req, res, next) => {
       'Timestamp (UTC)', 'Date', 'Time',
       'User Name', 'User Email', 'Employee ID', 'Role',
       'Action', 'Module', 'Result',
-      'IP Address', 'Device', 'Details',
+      'IP Address', 'Location', 'Browser', 'OS', 'Device', 'Details',
     ];
 
     const escape = (val) => `"${String(val ?? '').replace(/"/g, '""')}"`;
@@ -141,6 +141,9 @@ export const exportAuditLogs = async (req, res, next) => {
         escape(log.module || ''),
         escape(log.result || ''),
         escape(log.ipAddress || ''),
+        escape(log.location || ''),
+        escape(log.browser || ''),
+        escape(log.os || ''),
         escape(log.device || ''),
         escape(log.details || ''),
       ].join(',');

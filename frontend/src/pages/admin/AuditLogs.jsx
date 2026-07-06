@@ -6,7 +6,7 @@ import {
   ChevronLeft, Bot, SearchX, Flag, User, Grid2X2, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
@@ -85,7 +85,7 @@ const FilterBar = ({ searchQuery, setSearchQuery, filters, setFilters, activeCou
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by user, action, module, IP address, or details..."
-          className="w-full bg-white border border-[#E2E8F0] rounded-lg pl-11 pr-4 py-2.5 text-sm text-[#0F172A] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors"
+          className="w-full bg-white border border-[#E2E8F0] rounded-lg pl-11 pr-4 py-2.5 text-sm text-[#0F172A] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
         />
       </div>
 
@@ -96,7 +96,7 @@ const FilterBar = ({ searchQuery, setSearchQuery, filters, setFilters, activeCou
             type="date"
             value={filters.dateFrom}
             onChange={e => setFilters(f => ({ ...f, dateFrom: e.target.value }))}
-            className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#2563EB] cursor-pointer"
+            className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#EA580C] cursor-pointer"
           />
         </div>
         <div className="flex items-center gap-2">
@@ -105,13 +105,13 @@ const FilterBar = ({ searchQuery, setSearchQuery, filters, setFilters, activeCou
             type="date"
             value={filters.dateTo}
             onChange={e => setFilters(f => ({ ...f, dateTo: e.target.value }))}
-            className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#2563EB] cursor-pointer"
+            className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#EA580C] cursor-pointer"
           />
         </div>
 
         <select
           value={filters.module} onChange={e => setFilters(f => ({ ...f, module: e.target.value }))}
-          className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#2563EB] cursor-pointer"
+          className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#EA580C] cursor-pointer"
         >
           <option value="">All Modules</option>
           {['Users', 'Departments', 'Roles', 'Reports', 'Audit Logs', 'Projects', 'Tasks', 'Auth', 'Security', 'System'].map(m => (
@@ -121,7 +121,7 @@ const FilterBar = ({ searchQuery, setSearchQuery, filters, setFilters, activeCou
 
         <select
           value={filters.action} onChange={e => setFilters(f => ({ ...f, action: e.target.value }))}
-          className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#2563EB] cursor-pointer"
+          className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#EA580C] cursor-pointer"
         >
           <option value="">All Actions</option>
           {['Create', 'Read', 'Update', 'Delete', 'Login', 'Logout', 'Export', 'Permission Change', 'Password Reset'].map(a => (
@@ -131,7 +131,7 @@ const FilterBar = ({ searchQuery, setSearchQuery, filters, setFilters, activeCou
 
         <select
           value={filters.result} onChange={e => setFilters(f => ({ ...f, result: e.target.value }))}
-          className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#2563EB] cursor-pointer"
+          className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#EA580C] cursor-pointer"
         >
           <option value="">All Results</option>
           <option value="SUCCESS">Success</option>
@@ -144,12 +144,12 @@ const FilterBar = ({ searchQuery, setSearchQuery, filters, setFilters, activeCou
           value={filters.ipAddress}
           onChange={e => setFilters(f => ({ ...f, ipAddress: e.target.value }))}
           placeholder="Filter by IP..."
-          className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#2563EB] max-w-[130px]"
+          className="bg-white border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#EA580C] max-w-[130px]"
         />
 
         {activeCount > 0 && (
           <div className="flex items-center gap-3 ml-auto">
-            <span className="bg-[#EFF6FF] text-[#2563EB] text-xs font-semibold px-2.5 py-1 rounded-full">
+            <span className="bg-orange-50 text-[#EA580C] text-xs font-semibold px-2.5 py-1 rounded-full">
               {activeCount} active
             </span>
             <button
@@ -220,13 +220,32 @@ const ExpandedLogPanel = ({ log, navigate }) => {
 
           <div>
             <h4 className="text-xs font-semibold text-[#64748B] uppercase tracking-wider mb-2">Context</h4>
-            {log.device && <p className="text-sm text-[#0F172A] mb-1">{log.device}</p>}
+            <div className="space-y-1 mb-2">
+              {(log.location || log.ipAddress) && (
+                <p className="text-xs text-[#64748B]">
+                  Location:{' '}
+                  <span className="text-[#0F172A] ml-1">
+                    {log.countryFlag ? `${log.countryFlag} ` : ''}{log.location || '—'}
+                  </span>
+                  {log.ipAddress && <span className="font-mono text-[#64748B] ml-1">({log.ipAddress})</span>}
+                </p>
+              )}
+              {log.browser && (
+                <p className="text-xs text-[#64748B]">Browser: <span className="text-[#0F172A] ml-1">{log.browser}</span></p>
+              )}
+              {log.os && (
+                <p className="text-xs text-[#64748B]">OS: <span className="text-[#0F172A] ml-1">{log.os}</span></p>
+              )}
+              {log.device && (
+                <p className="text-xs text-[#64748B]">Device: <span className="text-[#0F172A] ml-1">{log.device}</span></p>
+              )}
+            </div>
             {log.userAgent && (
               <p className="text-[11px] font-mono text-[#64748B] bg-[#E2E8F0]/50 p-2 rounded truncate max-w-full" title={log.userAgent}>
                 {log.userAgent}
               </p>
             )}
-            {!log.device && !log.userAgent && <p className="text-sm text-[#94A3B8]">No context data</p>}
+            {!log.device && !log.userAgent && !log.location && <p className="text-sm text-[#94A3B8]">No context data</p>}
           </div>
 
           <div>
@@ -235,7 +254,7 @@ const ExpandedLogPanel = ({ log, navigate }) => {
               {!isSystem && log.user?._id && (
                 <button
                   onClick={(e) => { e.stopPropagation(); navigate(`/admin/users/${log.user._id}`); }}
-                  className="text-sm font-medium text-[#2563EB] hover:underline flex items-center gap-1.5"
+                  className="text-sm font-medium text-[#EA580C] hover:underline flex items-center gap-1.5"
                 >
                   <User size={14} /> View User Profile
                 </button>
@@ -243,7 +262,7 @@ const ExpandedLogPanel = ({ log, navigate }) => {
               {log.action === 'Permission Change' && (
                 <button
                   onClick={(e) => { e.stopPropagation(); navigate('/admin/access-matrix'); }}
-                  className="text-sm font-medium text-[#2563EB] hover:underline flex items-center gap-1.5"
+                  className="text-sm font-medium text-[#EA580C] hover:underline flex items-center gap-1.5"
                 >
                   <Grid2X2 size={14} /> View in Access Matrix
                 </button>
@@ -317,7 +336,15 @@ const LogRow = ({ log, isExpanded, onToggle, navigate }) => {
           {isSystemIp ? (
             <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-[#F1F5F9] text-[#64748B]">System</span>
           ) : (
-            <span className="font-mono text-sm text-[#64748B]">{log.ipAddress}</span>
+            <div>
+              <span className="font-mono text-sm text-[#0F172A]">{log.ipAddress}</span>
+              {log.location && (
+                <div className="text-xs text-[#64748B] mt-0.5 flex items-center gap-1">
+                  {log.countryFlag && <span>{log.countryFlag}</span>}
+                  {log.location}
+                </div>
+              )}
+            </div>
           )}
         </td>
 
@@ -328,9 +355,18 @@ const LogRow = ({ log, isExpanded, onToggle, navigate }) => {
         </td>
 
         <td className="px-4 py-4 whitespace-nowrap">
-          <div className="text-sm text-[#64748B] truncate max-w-[120px]" title={log.device}>
-            {log.device || '—'}
-          </div>
+          {log.browser || log.os ? (
+            <div className="max-w-[160px]" title={`${log.browser || ''}${log.os ? ` · ${log.os}` : ''}`}>
+              <div className="text-sm text-[#0F172A] truncate">{log.browser || '—'}</div>
+              <div className="text-xs text-[#64748B] truncate mt-0.5">
+                {log.os}{log.os && log.device ? ' · ' : ''}{log.device}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm text-[#64748B] truncate max-w-[120px]" title={log.device}>
+              {log.device || '—'}
+            </div>
+          )}
         </td>
 
         <td className="px-4 py-4">
@@ -399,7 +435,7 @@ const Pagination = ({ current, total, rowsPerPage, setRowsPerPage, onPageChange 
               key={p}
               onClick={() => onPageChange(p)}
               className={`w-8 h-8 flex items-center justify-center rounded text-sm font-medium transition-colors ${
-                current === p ? 'bg-[#2563EB] text-white' : 'text-[#64748B] hover:bg-[#F1F5F9]'
+                current === p ? 'bg-[#EA580C] text-white' : 'text-[#64748B] hover:bg-[#F1F5F9]'
               }`}
             >
               {p}
@@ -417,7 +453,7 @@ const Pagination = ({ current, total, rowsPerPage, setRowsPerPage, onPageChange 
           <select
             value={rowsPerPage}
             onChange={e => { setRowsPerPage(Number(e.target.value)); onPageChange(1); }}
-            className="border border-[#E2E8F0] rounded py-1 px-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#2563EB] cursor-pointer"
+            className="border border-[#E2E8F0] rounded py-1 px-2 text-sm text-[#0F172A] focus:outline-none focus:border-[#EA580C] cursor-pointer"
           >
             <option value={10}>10</option>
             <option value={25}>25</option>
@@ -568,57 +604,41 @@ export default function AdminAuditLogs() {
       .catch(() => toast.error('Export failed'));
   };
 
-  if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view audit logs." /></PageWrapper>;
+  if (!canRead) return <AdminLayout title="Audit Logs"><AccessDenied message="You don't have permission to view audit logs." /></AdminLayout>;
 
   return (
-    <PageWrapper>
-      <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-6 pb-12">
-
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[#0F172A] flex items-center gap-3">
-              Audit Logs
-            </h1>
-            <div className="flex items-center gap-2 mt-1 text-sm text-[#64748B]">
-              <p>Track system changes, security events, and administrative actions.</p>
-              {liveView && (
-                <span className="flex items-center gap-1.5 text-[#16A34A] font-medium bg-[#DCFCE7] px-2 py-0.5 rounded text-xs ml-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#16A34A] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#16A34A]"></span>
-                  </span>
-                  LIVE
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            {canExport && (
-              <button
-                onClick={handleExport}
-                className="border border-[#E2E8F0] text-[#0F172A] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2"
-              >
-                <Download size={16} /> Export Logs
-              </button>
-            )}
+    <AdminLayout
+      title="Audit Logs"
+      subtitle="Track system changes, security events, and administrative actions."
+      actions={(
+        <>
+          {canExport && (
             <button
-              onClick={() => fetchLogs()}
-              className="border border-[#E2E8F0] text-[#0F172A] px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2"
-              title="Refresh"
+              onClick={handleExport}
+              className="border border-[#E2E8F0] bg-white text-[#0F172A] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2"
             >
-              <RefreshCw size={16} />
+              <Download size={16} /> Export Logs
             </button>
-            <button
-              onClick={() => setLiveView(!liveView)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border ${
-                liveView ? 'bg-[#16A34A] border-[#16A34A] text-white hover:bg-green-700' : 'bg-white border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC]'
-              }`}
-            >
-              <Radio size={16} className={liveView ? "animate-pulse" : ""} /> Live View
-            </button>
-          </div>
-        </div>
+          )}
+          <button
+            onClick={() => fetchLogs()}
+            className="border border-[#E2E8F0] bg-white text-[#0F172A] px-3 py-2 rounded-lg text-sm font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2"
+            title="Refresh"
+          >
+            <RefreshCw size={16} />
+          </button>
+          <button
+            onClick={() => setLiveView(!liveView)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border ${
+              liveView ? 'bg-[#16A34A] border-[#16A34A] text-white hover:bg-green-700' : 'bg-white border-[#E2E8F0] text-[#0F172A] hover:bg-[#F8FAFC]'
+            }`}
+          >
+            <Radio size={16} className={liveView ? "animate-pulse" : ""} /> Live View
+          </button>
+        </>
+      )}
+    >
+      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-4 pb-2">
 
         {/* Filter Bar */}
         <FilterBar
@@ -642,8 +662,12 @@ export default function AdminAuditLogs() {
           </div>
         )}
 
-        {/* Table Container */}
-        <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col">
+        {/* Table Container — zoom 1.2 enlarges the log table (rows, text) to
+            match the Access Matrix, without affecting the sidebar or header. */}
+        <div
+          style={{ zoom: 1.2 }}
+          className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden flex-1 flex flex-col"
+        >
           <div className="overflow-x-auto w-full custom-scrollbar flex-1">
             <table className="w-full text-left border-collapse whitespace-nowrap min-w-[1000px]">
               <thead>
@@ -653,9 +677,9 @@ export default function AdminAuditLogs() {
                   <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider">User</th>
                   <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider">Action</th>
                   <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider">Module</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider">IP Address</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider">IP / Location</th>
                   <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider">Result</th>
-                  <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider">Device</th>
+                  <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider">Device / Browser</th>
                   <th className="px-4 py-3 text-xs font-semibold text-[#64748B] uppercase tracking-wider w-[250px]">Details</th>
                 </tr>
               </thead>
@@ -681,7 +705,7 @@ export default function AdminAuditLogs() {
                         {activeCount > 0 && (
                           <button
                             onClick={handleClearFilters}
-                            className="text-sm font-medium text-[#2563EB] hover:underline"
+                            className="text-sm font-medium text-[#EA580C] hover:underline"
                           >
                             Clear all filters
                           </button>
@@ -702,6 +726,6 @@ export default function AdminAuditLogs() {
         </div>
 
       </div>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

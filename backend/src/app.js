@@ -61,10 +61,23 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// ─── Trust Proxy ──────────────────────────────────────────────────────────────
+// Behind a reverse proxy / load balancer (Nginx, Render, Vercel, Cloudflare),
+// req.ip and X-Forwarded-For resolve to the real client IP instead of the proxy.
+app.set('trust proxy', 1);
+
 // ─── Security Headers ────────────────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
+
+// ─── UA Client Hints ──────────────────────────────────────────────────────────
+// Ask Chromium browsers to send high-entropy hints so audit logs can tell
+// Windows 11 from Windows 10 (both share "Windows NT 10.0" in the UA string).
+app.use((req, res, next) => {
+  res.setHeader('Accept-CH', 'Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version');
+  next();
+});
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const defaultFrontendOrigins = [
@@ -102,7 +115,7 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Id'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Id', 'Sec-CH-UA-Platform', 'Sec-CH-UA-Platform-Version'],
 }));
 
 // ─── Body Parsing ─────────────────────────────────────────────────────────────

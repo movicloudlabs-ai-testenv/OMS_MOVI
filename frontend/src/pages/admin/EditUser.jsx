@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -106,7 +106,7 @@ export default function AdminEditUser() {
     }
   };
 
-  const inputCls  = 'w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors';
+  const inputCls  = 'w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors';
   const selectCls = `${inputCls} bg-white appearance-none cursor-pointer`;
 
   const canReadRoles = hasPermission('Roles', 'read');
@@ -114,26 +114,26 @@ export default function AdminEditUser() {
 
   if (fetching) {
     return (
-      <PageWrapper>
+      <AdminLayout bare>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="w-8 h-8 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
         </div>
-      </PageWrapper>
+      </AdminLayout>
     );
   }
 
   return (
-    <PageWrapper>
+    <AdminLayout bare>
       <form onSubmit={handleSubmit} className="font-sans text-[#0F172A] max-w-[1000px] mx-auto flex flex-col h-full gap-8 pb-24">
 
         {/* Page Header */}
         <div className="flex flex-col gap-2 border-b border-[#E2E8F0] pb-6">
           <div className="flex items-center gap-2 text-[13px] text-[#64748B] font-medium pt-2">
-            <button type="button" onClick={() => navigate('/admin/users')} className="hover:text-[#2563EB] transition-colors flex items-center gap-1">
+            <button type="button" onClick={() => navigate('/admin/users')} className="hover:text-[#EA580C] transition-colors flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">group</span> Users
             </button>
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            <button type="button" onClick={() => navigate(`/admin/users/${id}`)} className="hover:text-[#2563EB] transition-colors">
+            <button type="button" onClick={() => navigate(`/admin/users/${id}`)} className="hover:text-[#EA580C] transition-colors">
               {formData.name || 'User'}
             </button>
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
@@ -158,7 +158,7 @@ export default function AdminEditUser() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-2">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">badge</span>
+                <span className="material-symbols-outlined text-[#EA580C]">badge</span>
                 Identity &amp; Contact
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -185,7 +185,7 @@ export default function AdminEditUser() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-10">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">account_tree</span>
+                <span className="material-symbols-outlined text-[#EA580C]">account_tree</span>
                 Corporate Structure
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -237,7 +237,7 @@ export default function AdminEditUser() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-10">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">security</span>
+                <span className="material-symbols-outlined text-[#EA580C]">security</span>
                 Access &amp; Security
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -255,7 +255,7 @@ export default function AdminEditUser() {
                   <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
                 </div>
                 <p className="text-[12px] text-[#64748B] mt-2">
-                  To change granular permissions, use the <button type="button" onClick={() => navigate('/admin/access-matrix')} className="text-[#2563EB] hover:underline">Access Matrix</button>.
+                  To change granular permissions, use the <button type="button" onClick={() => navigate('/admin/access-matrix')} className="text-[#EA580C] hover:underline">Access Matrix</button>.
                 </p>
               </div>
             </div>
@@ -283,7 +283,7 @@ export default function AdminEditUser() {
             <button
               type="submit"
               disabled={submitting}
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-60 text-white px-6 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm flex items-center gap-2"
+              className="bg-[#EA580C] hover:bg-[#C2410C] disabled:opacity-60 text-white px-6 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm flex items-center gap-2"
             >
               {submitting ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -296,6 +296,6 @@ export default function AdminEditUser() {
         </div>
 
       </form>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

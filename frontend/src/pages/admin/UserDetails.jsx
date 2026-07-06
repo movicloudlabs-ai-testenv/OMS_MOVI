@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Copy, Check, ExternalLink, Mail, Phone, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { adminAPI, hrAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -109,7 +109,7 @@ const PersonChip = ({ person, label }) => {
   const init  = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   return (
     <div className="flex items-center gap-2.5">
-      <div className="w-8 h-8 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center text-[11px] font-bold shrink-0">
+      <div className="w-8 h-8 rounded-full bg-[#FFF7ED] text-[#EA580C] flex items-center justify-center text-[11px] font-bold shrink-0">
         {init}
       </div>
       <div className="min-w-0">
@@ -211,24 +211,24 @@ export default function AdminUserDetails() {
 
   // ── Loading / Error states ──────────────────────────────────────────────────
   if (loading) return (
-    <PageWrapper>
+    <AdminLayout bare>
       <div className="flex items-center justify-center min-h-[400px] flex-col gap-3">
-        <div className="w-8 h-8 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
         <p className="text-[13px] text-[#64748B]">Loading profile…</p>
       </div>
-    </PageWrapper>
+    </AdminLayout>
   );
 
   if (error || !user) return (
-    <PageWrapper>
+    <AdminLayout bare>
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <span className="material-symbols-outlined text-[48px] text-[#DC2626]">error</span>
         <p className="text-[15px] text-[#0F172A] font-medium">{error || 'User not found'}</p>
-        <button onClick={() => navigate('/admin/users')} className="text-[#2563EB] font-medium hover:underline text-[13px]">
+        <button onClick={() => navigate('/admin/users')} className="text-[#EA580C] font-medium hover:underline text-[13px]">
           ← Back to Users
         </button>
       </div>
-    </PageWrapper>
+    </AdminLayout>
   );
 
   // ── Derived values ──────────────────────────────────────────────────────────
@@ -263,12 +263,12 @@ export default function AdminUserDetails() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <PageWrapper>
+    <AdminLayout bare>
       <div className="font-sans text-[#0F172A] w-full space-y-5 pb-16">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-1.5 text-[12px] text-[#64748B]">
-          <button onClick={() => navigate('/admin/users')} className="hover:text-[#2563EB] transition-colors flex items-center gap-1">
+          <button onClick={() => navigate('/admin/users')} className="hover:text-[#EA580C] transition-colors flex items-center gap-1">
             <span className="material-symbols-outlined text-[15px]">group</span>
             Users
           </button>
@@ -284,7 +284,7 @@ export default function AdminUserDetails() {
             roleSlug === 'admin'       ? 'bg-orange-500' :
             roleSlug === 'hr-manager'  ? 'bg-violet-500' :
             roleSlug === 'pmo-lead'    ? 'bg-cyan-500' :
-            roleSlug === 'intern'      ? 'bg-emerald-500' : 'bg-[#2563EB]'
+            roleSlug === 'intern'      ? 'bg-emerald-500' : 'bg-[#EA580C]'
           }`} />
 
           <div className="px-6 py-6">
@@ -309,7 +309,7 @@ export default function AdminUserDetails() {
                   </p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2.5 text-[12px] text-[#64748B]">
                     {user.email && (
-                      <a href={`mailto:${user.email}`} className="flex items-center gap-1 hover:text-[#2563EB] transition-colors">
+                      <a href={`mailto:${user.email}`} className="flex items-center gap-1 hover:text-[#EA580C] transition-colors">
                         <Mail size={12} /> {user.email}
                       </a>
                     )}
@@ -319,7 +319,7 @@ export default function AdminUserDetails() {
                       </span>
                     )}
                     {user.linkedIn && (
-                      <a href={user.linkedIn} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[#2563EB] hover:underline">
+                      <a href={user.linkedIn} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[#EA580C] hover:underline">
                         <ExternalLink size={12} /> LinkedIn
                       </a>
                     )}
@@ -364,8 +364,8 @@ export default function AdminUserDetails() {
                   label: tenureLabel,
                   value: tenure || '—',
                   icon: 'schedule',
-                  color: 'text-[#2563EB]',
-                  bg: 'bg-[#EFF6FF]',
+                  color: 'text-[#EA580C]',
+                  bg: 'bg-[#FFF7ED]',
                 },
                 {
                   label: 'Employment type',
@@ -451,7 +451,7 @@ export default function AdminUserDetails() {
                       : null}
                   </InfoRow>
                   <InfoRow label="Email Address">
-                    <a href={`mailto:${user.email}`} className="text-[#2563EB] hover:underline flex items-center gap-1">
+                    <a href={`mailto:${user.email}`} className="text-[#EA580C] hover:underline flex items-center gap-1">
                       {user.email} <ExternalLink size={11} />
                     </a>
                   </InfoRow>
@@ -465,7 +465,7 @@ export default function AdminUserDetails() {
                   </InfoRow>
                   <InfoRow label="LinkedIn">
                     {user.linkedIn
-                      ? <a href={user.linkedIn} target="_blank" rel="noreferrer" className="text-[#2563EB] hover:underline flex items-center gap-1">View Profile <ExternalLink size={11} /></a>
+                      ? <a href={user.linkedIn} target="_blank" rel="noreferrer" className="text-[#EA580C] hover:underline flex items-center gap-1">View Profile <ExternalLink size={11} /></a>
                       : <span className="text-[#94A3B8] text-[12px]">Set via employee settings</span>}
                   </InfoRow>
                   {isIntern && (
@@ -490,7 +490,7 @@ export default function AdminUserDetails() {
                 <SectionCard title="Skills & Expertise" icon="psychology">
                   <div className="flex flex-wrap gap-2">
                     {user.skills.map((skill, i) => (
-                      <span key={i} className="bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] text-[12px] font-medium px-3 py-1 rounded-full">
+                      <span key={i} className="bg-[#FFF7ED] text-[#EA580C] border border-[#BFDBFE] text-[12px] font-medium px-3 py-1 rounded-full">
                         {skill}
                       </span>
                     ))}
@@ -554,10 +554,10 @@ export default function AdminUserDetails() {
                   <button
                     onClick={handleResetPassword}
                     disabled={resetting}
-                    className="w-full flex items-center justify-center gap-2 text-[13px] font-medium text-[#2563EB] border border-[#2563EB]/30 hover:border-[#2563EB] hover:bg-[#EFF6FF] py-2 rounded-lg transition-colors disabled:opacity-60"
+                    className="w-full flex items-center justify-center gap-2 text-[13px] font-medium text-[#EA580C] border border-[#EA580C]/30 hover:border-[#EA580C] hover:bg-[#FFF7ED] py-2 rounded-lg transition-colors disabled:opacity-60"
                   >
                     {resetting
-                      ? <div className="w-3.5 h-3.5 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+                      ? <div className="w-3.5 h-3.5 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
                       : <span className="material-symbols-outlined text-[16px]">lock_reset</span>
                     }
                     Reset Password
@@ -601,18 +601,18 @@ export default function AdminUserDetails() {
                     {projects.map((proj) => {
                       const statusColor =
                         proj.status === 'Active'    ? 'bg-[#DCFCE7] text-[#16A34A]' :
-                        proj.status === 'Completed' ? 'bg-[#EFF6FF] text-[#2563EB]' :
+                        proj.status === 'Completed' ? 'bg-[#FFF7ED] text-[#EA580C]' :
                         proj.status === 'On Hold'   ? 'bg-[#FEF3C7] text-[#D97706]' :
                         proj.status === 'Cancelled' ? 'bg-[#FEE2E2] text-[#DC2626]' :
                                                       'bg-[#F1F5F9] text-[#64748B]';
                       const roleColor =
                         proj.userRole === 'Manager'     ? 'bg-[#EDE9FE] text-[#7C3AED]' :
                         proj.userRole === 'Intern'      ? 'bg-[#D1FAE5] text-[#059669]' :
-                                                          'bg-[#EFF6FF] text-[#2563EB]';
+                                                          'bg-[#FFF7ED] text-[#EA580C]';
                       return (
                         <div key={proj._id} className="flex items-start gap-3.5 p-3.5 rounded-xl border border-[#E2E8F0] hover:border-[#CBD5E1] hover:bg-[#F8FAFC] transition-colors">
-                          <div className="w-9 h-9 rounded-lg bg-[#EFF6FF] flex items-center justify-center shrink-0 mt-0.5">
-                            <span className="material-symbols-outlined text-[#2563EB] text-[18px]">rocket_launch</span>
+                          <div className="w-9 h-9 rounded-lg bg-[#FFF7ED] flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="material-symbols-outlined text-[#EA580C] text-[18px]">rocket_launch</span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 flex-wrap">
@@ -710,7 +710,7 @@ export default function AdminUserDetails() {
                     {user.internshipEnd ? fmtDate(user.internshipEnd) : <span className="text-[#16A34A] font-semibold">Ongoing</span>}
                   </InfoRow>
                   <InfoRow label="Duration">
-                    <span className="text-[#2563EB] font-bold">{tenure || '—'}</span>
+                    <span className="text-[#EA580C] font-bold">{tenure || '—'}</span>
                   </InfoRow>
                   {user.college && (
                     <InfoRow label="College">{user.college}</InfoRow>
@@ -788,7 +788,7 @@ export default function AdminUserDetails() {
               <SectionCard title="Leave Balance" icon="event_available">
                 {leaves === null ? (
                   <div className="flex justify-center py-4">
-                    <div className="w-5 h-5 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : leaves.length === 0 ? (
                   <p className="text-[13px] text-[#94A3B8] text-center py-4">
@@ -860,7 +860,7 @@ export default function AdminUserDetails() {
               <SectionCard title="Employment Timeline" icon="timeline">
                 <div className="space-y-3">
                   {[
-                    { label: 'Account Created', date: user.createdAt, dot: 'bg-[#2563EB]' },
+                    { label: 'Account Created', date: user.createdAt, dot: 'bg-[#EA580C]' },
                     { label: isIntern ? 'Internship Start' : 'Join Date', date: user.internshipStart || user.joinDate, dot: 'bg-[#16A34A]' },
                     { label: 'Last Login', date: user.lastLogin, dot: 'bg-[#D97706]' },
                     ...(user.internshipEnd ? [{ label: 'Internship End', date: user.internshipEnd, dot: 'bg-[#94A3B8]' }] : []),
@@ -897,7 +897,7 @@ export default function AdminUserDetails() {
               </div>
               <button
                 onClick={() => navigate('/admin/audit')}
-                className="text-[12px] font-medium text-[#2563EB] hover:underline flex items-center gap-1"
+                className="text-[12px] font-medium text-[#EA580C] hover:underline flex items-center gap-1"
               >
                 Full Audit Log <span className="material-symbols-outlined text-[14px]">chevron_right</span>
               </button>
@@ -962,6 +962,6 @@ export default function AdminUserDetails() {
         )}
 
       </div>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

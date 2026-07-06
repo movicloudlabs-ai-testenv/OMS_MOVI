@@ -18,6 +18,11 @@ const AuditLogSchema = new Schema({
   ipAddress: String,
   userAgent: String,
   device: String,
+  browser: String,       // e.g. "Chrome 120"
+  os: String,            // e.g. "Windows 11"
+  location: String,      // e.g. "Kochi, India" or "Local"
+  country: String,       // ISO country code, e.g. "IN"
+  countryFlag: String,   // flag emoji, e.g. "🇮🇳"
   result: {
     type: String,
     enum: ['SUCCESS', 'FAILED', 'WARNING'],

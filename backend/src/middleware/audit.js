@@ -1,4 +1,5 @@
 import AuditLog from '../models/AuditLog.js';
+import { getClientInfo } from '../utils/clientInfo.js';
 
 /**
  * Auto Audit Logging Middleware
@@ -7,22 +8,6 @@ import AuditLog from '../models/AuditLog.js';
  *
  * Usage: router.post('/', protect, auditLog('Create', 'Users'), createUser)
  */
-
-// Parse user-agent into a simple device string
-const parseDevice = (userAgent) => {
-  if (!userAgent) return 'Unknown';
-  if (userAgent.includes('Mobile')) return 'Mobile';
-  if (userAgent.includes('Tablet')) return 'Tablet';
-  return 'Desktop';
-};
-
-// Normalize IP — strips IPv6-mapped IPv4 prefix (::ffff:) and loopback aliases
-const normalizeIp = (ip) => {
-  if (!ip) return null;
-  if (ip === '::1' || ip === '::ffff:127.0.0.1') return '127.0.0.1';
-  if (ip.startsWith('::ffff:')) return ip.slice(7);
-  return ip;
-};
 
 // Generate human-readable audit details
 const generateAuditDetails = (action, module, reqBody, resData) => {
@@ -52,6 +37,7 @@ export const auditLog = (action, module) => {
       // Only log successful operations (status < 400)
       if (res.statusCode < 400 && body?.success !== false) {
         try {
+          const client = getClientInfo(req);
           await AuditLog.create({
             user: req.user?._id,
             userName: req.user?.name || 'System',
@@ -59,9 +45,7 @@ export const auditLog = (action, module) => {
             module,
             resourceId: req.params?.id || body?.data?._id,
             details: generateAuditDetails(action, module, req.body, body?.data),
-            ipAddress: normalizeIp(req.ip),
-            userAgent: req.headers['user-agent'],
-            device: parseDevice(req.headers['user-agent']),
+            ...client,
             result: 'SUCCESS',
             sessionId: req.headers['x-session-id'],
           });

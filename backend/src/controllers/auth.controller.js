@@ -6,6 +6,7 @@ import AuditLog from '../models/AuditLog.js';
 import { generateTokenPair } from '../utils/generateToken.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { sendPasswordResetEmail } from '../utils/sendEmail.js';
+import { getClientInfo } from '../utils/clientInfo.js';
 
 /**
  * POST /api/auth/login
@@ -77,8 +78,7 @@ export const login = async (req, res, next) => {
         module: 'Auth',
         result: 'FAILED',
         details: `Failed login attempt (${user.loginAttempts}/${maxAttempts})`,
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
+        ...getClientInfo(req),
       }).catch(() => {});
 
       return sendError(res, 'Invalid credentials', 401);
@@ -107,8 +107,7 @@ export const login = async (req, res, next) => {
       module: 'Auth',
       result: 'SUCCESS',
       details: `User ${user.name} logged in`,
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
+      ...getClientInfo(req),
     }).catch(() => {});
 
     // 11. Build safe user response (no password, no refreshToken)

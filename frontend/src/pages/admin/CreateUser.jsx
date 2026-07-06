@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import AccessDenied from '../../components/shared/AccessDenied';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -26,8 +26,8 @@ const SelectWrapper = ({ children }) => (
 const SectionHeader = ({ number, icon, title, desc }) => (
   <div className="lg:col-span-1">
     <div className="flex items-center gap-2 mb-3">
-      <span className="w-6 h-6 rounded-full bg-[#2563EB] text-white text-[11px] font-bold flex items-center justify-center shrink-0">{number}</span>
-      <span className="material-symbols-outlined text-[#2563EB] text-[20px]">{icon}</span>
+      <span className="w-6 h-6 rounded-full bg-[#EA580C] text-white text-[11px] font-bold flex items-center justify-center shrink-0">{number}</span>
+      <span className="material-symbols-outlined text-[#EA580C] text-[20px]">{icon}</span>
       <h2 className="text-[15px] font-bold text-[#0F172A]">{title}</h2>
     </div>
     <p className="text-[13px] text-[#64748B] leading-relaxed pl-8">{desc}</p>
@@ -146,21 +146,21 @@ export default function AdminCreateUser() {
     }
   };
 
-  const inputCls = 'w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[13px] text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/10 transition-colors bg-white';
+  const inputCls = 'w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[13px] text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/10 transition-colors bg-white';
   const selectCls = `${inputCls} appearance-none cursor-pointer`;
 
   const selectedRole = roles.find(r => r._id === formData.role);
 
-  if (!canCreate) return <PageWrapper><AccessDenied message="You don't have permission to create users." /></PageWrapper>;
+  if (!canCreate) return <AdminLayout bare><AccessDenied message="You don't have permission to create users." /></AdminLayout>;
 
   return (
-    <PageWrapper>
+    <AdminLayout bare>
       <form onSubmit={handleSubmit} className="font-sans text-[#0F172A] max-w-[1040px] mx-auto flex flex-col gap-8 pb-24">
 
         {/* Header */}
         <div className="border-b border-[#E2E8F0] pb-5">
           <div className="flex items-center gap-1.5 text-[12px] text-[#64748B] mb-3">
-            <button type="button" onClick={() => navigate('/admin/users')} className="hover:text-[#2563EB] transition-colors flex items-center gap-1">
+            <button type="button" onClick={() => navigate('/admin/users')} className="hover:text-[#EA580C] transition-colors flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px]">group</span> Users
             </button>
             <span className="material-symbols-outlined text-[15px]">chevron_right</span>
@@ -176,7 +176,7 @@ export default function AdminCreateUser() {
               {['Identity', 'Structure', 'Access'].map((s, i) => (
                 <div key={s} className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5">
-                    <div className="w-5 h-5 rounded-full bg-[#EFF6FF] border border-[#2563EB] text-[#2563EB] text-[10px] font-bold flex items-center justify-center">{i + 1}</div>
+                    <div className="w-5 h-5 rounded-full bg-[#FFF7ED] border border-[#EA580C] text-[#EA580C] text-[10px] font-bold flex items-center justify-center">{i + 1}</div>
                     <span className="text-[11px] font-semibold text-[#64748B]">{s}</span>
                   </div>
                   {i < 2 && <span className="text-[#CBD5E1] text-[14px]">›</span>}
@@ -255,12 +255,12 @@ export default function AdminCreateUser() {
                         onClick={() => setFormData(p => ({ ...p, employmentType: value }))}
                         className={`flex flex-col items-center gap-1.5 px-3 py-3.5 rounded-xl border-2 text-center transition-all ${
                           active
-                            ? 'border-[#2563EB] bg-[#EFF6FF] shadow-sm'
+                            ? 'border-[#EA580C] bg-[#FFF7ED] shadow-sm'
                             : 'border-[#E2E8F0] hover:border-[#CBD5E1] hover:bg-[#F8FAFC]'
                         }`}
                       >
-                        <span className={`material-symbols-outlined text-[22px] ${active ? 'text-[#2563EB]' : 'text-[#94A3B8]'}`}>{icon}</span>
-                        <span className={`text-[12px] font-semibold ${active ? 'text-[#2563EB]' : 'text-[#475569]'}`}>{label}</span>
+                        <span className={`material-symbols-outlined text-[22px] ${active ? 'text-[#EA580C]' : 'text-[#94A3B8]'}`}>{icon}</span>
+                        <span className={`text-[12px] font-semibold ${active ? 'text-[#EA580C]' : 'text-[#475569]'}`}>{label}</span>
                         <span className="text-[10px] text-[#94A3B8] leading-snug">{desc}</span>
                       </button>
                     );
@@ -347,10 +347,10 @@ export default function AdminCreateUser() {
                   </SelectWrapper>
                 </Field>
                 {selectedRole && (
-                  <div className="mt-3 flex items-start gap-2.5 bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg px-3.5 py-3">
-                    <span className="material-symbols-outlined text-[#2563EB] text-[18px] shrink-0 mt-0.5">shield</span>
+                  <div className="mt-3 flex items-start gap-2.5 bg-[#FFF7ED] border border-[#BFDBFE] rounded-lg px-3.5 py-3">
+                    <span className="material-symbols-outlined text-[#EA580C] text-[18px] shrink-0 mt-0.5">shield</span>
                     <div>
-                      <p className="text-[12px] font-semibold text-[#1D4ED8]">{selectedRole.name}</p>
+                      <p className="text-[12px] font-semibold text-[#C2410C]">{selectedRole.name}</p>
                       {selectedRole.description && (
                         <p className="text-[12px] text-[#3B82F6] mt-0.5">{selectedRole.description}</p>
                       )}
@@ -377,14 +377,14 @@ export default function AdminCreateUser() {
                           type="checkbox"
                           checked={formData[field]}
                           onChange={set(field)}
-                          className="peer appearance-none w-4 h-4 rounded border-2 border-[#CBD5E1] checked:bg-[#2563EB] checked:border-[#2563EB] transition-colors cursor-pointer"
+                          className="peer appearance-none w-4 h-4 rounded border-2 border-[#CBD5E1] checked:bg-[#EA580C] checked:border-[#EA580C] transition-colors cursor-pointer"
                         />
                         <span className="material-symbols-outlined absolute text-white text-[11px] opacity-0 peer-checked:opacity-100 pointer-events-none leading-none">check</span>
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-1.5">
                           <span className="material-symbols-outlined text-[15px] text-[#94A3B8]">{icon}</span>
-                          <span className="text-[13px] font-semibold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">{label}</span>
+                          <span className="text-[13px] font-semibold text-[#0F172A] group-hover:text-[#EA580C] transition-colors">{label}</span>
                         </div>
                         <p className="text-[12px] text-[#64748B] mt-0.5 leading-snug">{desc}</p>
                       </div>
@@ -418,7 +418,7 @@ export default function AdminCreateUser() {
               type="submit"
               disabled={submitting || !canCreate}
               title={!canCreate ? 'You do not have permission to create users. Contact your administrator.' : ''}
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] disabled:opacity-60 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-[13px] font-semibold transition-colors shadow-sm flex items-center gap-2"
+              className="bg-[#EA580C] hover:bg-[#C2410C] disabled:opacity-60 disabled:cursor-not-allowed text-white px-6 py-2.5 rounded-lg text-[13px] font-semibold transition-colors shadow-sm flex items-center gap-2"
             >
               {submitting ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -431,6 +431,6 @@ export default function AdminCreateUser() {
         </div>
 
       </form>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

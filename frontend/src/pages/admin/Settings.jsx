@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import {
   SlidersHorizontal, Shield, Bell, Palette, Server, Users,
-  Save, CheckCircle2, AlertTriangle, ChevronLeft,
+  Save, CheckCircle2, AlertTriangle,
   Eye, EyeOff, Upload, Mail, Lock, RefreshCw,
   AlertCircle, X,
 } from 'lucide-react';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
+import AdminLayout from '../../components/admin/AdminLayout';
 
 // ─── Primitive: Toggle ────────────────────────────────────────────────────────
 const Toggle = ({ checked, onChange, disabled }) => (
@@ -19,7 +19,7 @@ const Toggle = ({ checked, onChange, disabled }) => (
     disabled={disabled}
     className={`relative inline-flex shrink-0 rounded-full transition-colors duration-150 focus:outline-none
       ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
-    style={{ width: 36, height: 20, background: checked ? '#2563EB' : '#CBD5E1' }}
+    style={{ width: 36, height: 20, background: checked ? '#EA580C' : '#CBD5E1' }}
   >
     <span
       className="inline-block rounded-full bg-white shadow-sm transition-transform duration-150"
@@ -34,7 +34,7 @@ const Input = ({ error, className = '', ...props }) => (
     className={`border rounded-md px-2.5 py-1.5 text-[13px] text-[#0F172A] bg-white
       focus:outline-none focus:ring-1 transition-colors
       ${error ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
-               : 'border-[#D1D5DB] focus:border-[#2563EB] focus:ring-blue-100'}
+               : 'border-[#D1D5DB] focus:border-[#EA580C] focus:ring-orange-100'}
       disabled:bg-[#F8FAFC] disabled:text-[#94A3B8] disabled:cursor-not-allowed
       ${className}`}
     {...props}
@@ -47,7 +47,7 @@ const Sel = ({ error, children, className = '', ...props }) => (
     className={`border rounded-md px-2.5 py-1.5 text-[13px] text-[#0F172A] bg-white
       focus:outline-none focus:ring-1 transition-colors
       ${error ? 'border-red-400 focus:border-red-500 focus:ring-red-200'
-               : 'border-[#D1D5DB] focus:border-[#2563EB] focus:ring-blue-100'}
+               : 'border-[#D1D5DB] focus:border-[#EA580C] focus:ring-orange-100'}
       disabled:bg-[#F8FAFC] disabled:text-[#94A3B8] disabled:cursor-not-allowed
       ${className}`}
     {...props}
@@ -98,7 +98,7 @@ const Seg = ({ options, value, onChange, disabled }) => (
         onClick={() => !disabled && onChange(o.value)}
         className={`px-3 py-1.5 text-[12px] font-medium transition-colors border-r border-[#D1D5DB] last:border-0
           ${value === o.value
-            ? 'bg-[#2563EB] text-white'
+            ? 'bg-[#EA580C] text-white'
             : 'bg-white text-[#6B7280] hover:bg-[#F3F4F6]'}
           ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
       >
@@ -225,7 +225,7 @@ function GeneralTab({ s, upd, err, canEdit }) {
           <Sel value={s.dateFormat||'DD/MM/YYYY'} onChange={e=>upd('dateFormat',e.target.value)} disabled={!canEdit}>
             {['DD/MM/YYYY','MM/DD/YYYY','YYYY-MM-DD','DD MMM YYYY'].map(f=><option key={f} value={f}>{f}</option>)}
           </Sel>
-          <span className="text-[11px] text-[#2563EB] font-medium">e.g. {previewDate(s.dateFormat||'DD/MM/YYYY')}</span>
+          <span className="text-[11px] text-[#EA580C] font-medium">e.g. {previewDate(s.dateFormat||'DD/MM/YYYY')}</span>
         </div>
       </Row>
       <Row label="Time Format">
@@ -262,9 +262,9 @@ function SecurityTab({ s, upd, err, canEdit }) {
             value={s.minPasswordLength||8}
             onChange={e=>upd('minPasswordLength',parseInt(e.target.value))}
             disabled={!canEdit}
-            className="w-36 accent-[#2563EB] disabled:opacity-40"
+            className="w-36 accent-[#EA580C] disabled:opacity-40"
           />
-          <span className="text-[13px] font-semibold text-[#2563EB] w-16">{s.minPasswordLength||8} chars</span>
+          <span className="text-[13px] font-semibold text-[#EA580C] w-16">{s.minPasswordLength||8} chars</span>
         </div>
       </Row>
       <Row label="Requirements">
@@ -345,7 +345,7 @@ function SecurityTab({ s, upd, err, canEdit }) {
               <button key={o.v} type="button" disabled={!canEdit}
                 onClick={()=>canEdit&&upd('twoFactorPolicy',o.v)}
                 className={`flex-1 flex flex-col items-center gap-1 py-3 px-2 rounded-lg border text-center transition
-                  ${active?'border-[#2563EB] bg-[#EFF6FF] text-[#2563EB]':'border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'}
+                  ${active?'border-[#EA580C] bg-[#FFF7ED] text-[#EA580C]':'border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]'}
                   ${!canEdit?'opacity-40 cursor-not-allowed':'cursor-pointer'}`}
               >
                 {o.icon}
@@ -514,9 +514,9 @@ function BrandingTab({ s, upd, canEdit }) {
         )}
         <div onClick={()=>canEdit&&!uploading&&fileRef.current?.click()}
           className={`border-2 border-dashed border-[#D1D5DB] rounded-lg p-5 text-center transition
-            ${canEdit&&!uploading?'cursor-pointer hover:border-[#2563EB] hover:bg-[#F0F9FF]':'opacity-50 cursor-not-allowed'}`}>
+            ${canEdit&&!uploading?'cursor-pointer hover:border-[#EA580C] hover:bg-[#FFF7ED]':'opacity-50 cursor-not-allowed'}`}>
           {uploading
-            ? <div className="flex flex-col items-center gap-1"><RefreshCw size={18} className="text-[#2563EB] animate-spin"/><p className="text-[11px] text-[#6B7280]">Uploading…</p></div>
+            ? <div className="flex flex-col items-center gap-1"><RefreshCw size={18} className="text-[#EA580C] animate-spin"/><p className="text-[11px] text-[#6B7280]">Uploading…</p></div>
             : <><Upload size={18} className="text-[#9CA3AF] mx-auto mb-1"/><p className="text-[12px] text-[#6B7280]">Click to upload — SVG, PNG, JPG · Max 2 MB</p></>
           }
         </div>
@@ -593,7 +593,7 @@ function SystemTab({ s, upd, err, canEdit, isSuperAdmin, onDanger, updatedAt }) 
                 disabled={!canEdit}
                 placeholder="System is under maintenance. Please check back soon."
                 className="w-full border border-[#D1D5DB] rounded-md px-2.5 py-1.5 text-[12px] text-[#374151] resize-none bg-white
-                  focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-blue-100
+                  focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-orange-100
                   disabled:bg-[#F3F4F6] disabled:cursor-not-allowed"/>
             </motion.div>
           )}
@@ -669,9 +669,9 @@ function HRTab({ s, upd, err, canEdit }) {
             value={s?.onboardingHRCap ?? 10}
             onChange={e => upd('onboardingHRCap', parseInt(e.target.value))}
             disabled={!canEdit}
-            className="w-40 accent-[#2563EB] disabled:opacity-40"
+            className="w-40 accent-[#EA580C] disabled:opacity-40"
           />
-          <span className="text-[13px] font-semibold text-[#2563EB] w-24">
+          <span className="text-[13px] font-semibold text-[#EA580C] w-24">
             {s?.onboardingHRCap ?? 10} employees
           </span>
         </div>
@@ -684,8 +684,8 @@ function HRTab({ s, upd, err, canEdit }) {
         helper="Priority order when auto-assigning an HR"
       >
         <ol className="text-[12px] text-[#374151] space-y-1 list-none">
-          <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[10px] font-bold flex items-center justify-center shrink-0">1</span> Same department HR under cap</li>
-          <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[#EFF6FF] text-[#2563EB] text-[10px] font-bold flex items-center justify-center shrink-0">2</span> Any HR under cap (least-loaded first)</li>
+          <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[#FFF7ED] text-[#EA580C] text-[10px] font-bold flex items-center justify-center shrink-0">1</span> Same department HR under cap</li>
+          <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-[#FFF7ED] text-[#EA580C] text-[10px] font-bold flex items-center justify-center shrink-0">2</span> Any HR under cap (least-loaded first)</li>
           <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-amber-50 text-amber-600 text-[10px] font-bold flex items-center justify-center shrink-0">3</span> Least-loaded HR (soft cap — Admin warned)</li>
         </ol>
       </Row>
@@ -706,7 +706,6 @@ const TABS = [
 ];
 
 export default function Settings() {
-  const navigate = useNavigate();
   const { hasPermission, user } = useAuth();
   const canRead      = hasPermission('Settings', 'read');
   const canEdit      = hasPermission('Settings', 'update');
@@ -818,49 +817,40 @@ export default function Settings() {
   const tabErr   = (k) => Object.keys(valErrs).some(e => e.startsWith(k+'.'));
 
   // ── Guards ────────────────────────────────────────────────────────────────
-  if (!canRead) return <AccessDenied />;
+  if (!canRead) return <AdminLayout title="Settings"><AccessDenied /></AdminLayout>;
   if (loading || !settings) return (
-    <div className="p-6">
-      <div className="flex items-center gap-2 text-[13px] text-[#6B7280] mb-5">
-        <button onClick={() => navigate(-1)} className="flex items-center gap-1 hover:text-[#111827] transition"><ChevronLeft size={14}/>Back</button>
-        <span className="text-[#D1D5DB]">/</span><span className="text-[#111827] font-medium">Settings</span>
-      </div>
+    <AdminLayout title="Settings" subtitle="System-wide configuration for your OWMS installation">
       <Skeleton/>
-    </div>
+    </AdminLayout>
   );
 
   return (
-    <div className="p-6 pb-20">
-      {/* Breadcrumb / back */}
-      <div className="flex items-center gap-2 text-[13px] text-[#6B7280] mb-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-1 hover:text-[#111827] transition font-medium"
-        >
-          <ChevronLeft size={14}/>Back
-        </button>
-        <span className="text-[#D1D5DB]">/</span>
-        <span className="text-[#9CA3AF]">Admin</span>
-        <span className="text-[#D1D5DB]">/</span>
-        <span className="text-[#111827] font-medium">Settings</span>
-      </div>
-
-      {/* Page title row */}
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h1 className="text-[17px] font-bold text-[#111827]">Settings</h1>
-          <p className="text-[12px] text-[#9CA3AF] mt-0.5">System-wide configuration for your OWMS installation</p>
+    <AdminLayout
+      title="Settings"
+      subtitle="System-wide configuration for your OWMS installation"
+      actions={(
+        <div className="flex items-center gap-2">
+          {dirty && (
+            <span className="flex items-center gap-1.5 text-[12px] text-amber-600 font-medium bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"/>
+              Unsaved changes
+            </span>
+          )}
+          <button onClick={handleCancel} disabled={!dirty}
+            className="px-3 py-2 text-[13px] border border-[#D1D5DB] text-[#6B7280] rounded-md hover:bg-[#F9FAFB] transition disabled:opacity-40 disabled:cursor-not-allowed">
+            Discard
+          </button>
+          <button onClick={handleSave} disabled={!dirty||saving||!canEdit}
+            className={`flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium text-white rounded-md transition
+              ${dirty&&!saving&&canEdit ? 'bg-[#EA580C] hover:bg-[#C2410C]' : 'bg-[#94A3B8] cursor-not-allowed'}`}>
+            {saving ? <><RefreshCw size={12} className="animate-spin"/>Saving…</> : <><Save size={12}/>Save Changes</>}
+          </button>
         </div>
-        {dirty && (
-          <span className="flex items-center gap-1.5 text-[12px] text-amber-600 font-medium bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"/>
-            Unsaved changes
-          </span>
-        )}
-      </div>
-
-      {/* Main panel */}
-      <div className="bg-white rounded-lg border border-[#E5E7EB] flex overflow-hidden" style={{ minHeight: 560 }}>
+      )}
+    >
+      {/* Main panel — zoom 1.1 enlarges the settings content ~110% without
+          affecting the sidebar or page header. */}
+      <div className="bg-white rounded-lg border border-[#E5E7EB] flex overflow-hidden" style={{ minHeight: 560, zoom: 1.1 }}>
         {/* Left nav */}
         <div className="w-44 shrink-0 bg-[#F9FAFB] border-r border-[#E5E7EB] p-2.5">
           <p className="text-[10px] font-semibold text-[#9CA3AF] tracking-widest px-2 py-1.5 mb-1">CONFIGURATION</p>
@@ -874,7 +864,7 @@ export default function Settings() {
                   ${active ? 'bg-white border border-[#E5E7EB] text-[#111827] font-medium shadow-sm'
                            : 'text-[#6B7280] hover:bg-white hover:text-[#111827]'}`}
               >
-                <Icon size={14} className={active ? 'text-[#2563EB]' : 'text-[#9CA3AF]'}/>
+                <Icon size={14} className={active ? 'text-[#EA580C]' : 'text-[#9CA3AF]'}/>
                 <span className="flex-1">{label}</span>
                 {hasErr  && <span className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"/>}
                 {!hasErr && hasDiff && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"/>}
@@ -898,35 +888,22 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-[#E5E7EB] px-6 py-3 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 min-w-0 text-[13px]">
-          {saved    && <span className="flex items-center gap-1.5 text-green-600 font-medium"><CheckCircle2 size={14}/>Saved successfully</span>}
-          {!saved && !dirty && <span className="text-[#9CA3AF]">All settings saved</span>}
-        </div>
+      {/* Status bar */}
+      <div className="mt-3 flex items-center gap-3 text-[13px]">
+        {saved    && <span className="flex items-center gap-1.5 text-green-600 font-medium"><CheckCircle2 size={14}/>Saved successfully</span>}
+        {!saved && !dirty && <span className="text-[#9CA3AF]">All settings saved</span>}
         {saveErr && (
-          <div className="flex items-center gap-1.5 text-[12px] text-red-500 max-w-xs truncate">
+          <div className="flex items-center gap-1.5 text-[12px] text-red-500 max-w-xs truncate ml-auto">
             <AlertCircle size={13} className="shrink-0"/>
             <span className="truncate">{saveErr}</span>
             <button onClick={()=>setSaveErr('')}><X size={12}/></button>
           </div>
         )}
-        <div className="flex items-center gap-2 shrink-0">
-          <button onClick={handleCancel} disabled={!dirty}
-            className="px-3 py-1.5 text-[13px] border border-[#D1D5DB] text-[#6B7280] rounded-md hover:bg-[#F9FAFB] transition disabled:opacity-40 disabled:cursor-not-allowed">
-            Discard
-          </button>
-          <button onClick={handleSave} disabled={!dirty||saving||!canEdit}
-            className={`flex items-center gap-1.5 px-4 py-1.5 text-[13px] font-medium text-white rounded-md transition
-              ${dirty&&!saving&&canEdit ? 'bg-[#2563EB] hover:bg-[#1D4ED8]' : 'bg-[#94A3B8] cursor-not-allowed'}`}>
-            {saving ? <><RefreshCw size={12} className="animate-spin"/>Saving…</> : <><Save size={12}/>Save Changes</>}
-          </button>
-        </div>
       </div>
 
       {danger && (
         <DangerModal action={danger} onCancel={()=>setDanger(null)} onConfirm={handleDangerConfirm} loading={dangerBusy}/>
       )}
-    </div>
+    </AdminLayout>
   );
 }

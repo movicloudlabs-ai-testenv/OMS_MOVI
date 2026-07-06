@@ -8,7 +8,7 @@ import {
   Search, X, CalendarDays, Zap, HardDrive,
   Eye, Archive, Copy, Trash2, Building2, ShieldX,
 } from 'lucide-react';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
@@ -288,7 +288,7 @@ function ReportCard({
 
   return (
     <div
-      className={`bg-white rounded-xl border border-[#E2E8F0] border-l-4 ${healthBorder} p-5 hover:shadow-md hover:border-[#2563EB] transition-all duration-200 cursor-pointer flex flex-col gap-0`}
+      className={`bg-white rounded-xl border border-[#E2E8F0] border-l-4 ${healthBorder} p-5 hover:shadow-md hover:border-[#EA580C] transition-all duration-200 cursor-pointer flex flex-col gap-0`}
       onClick={() => onViewDetail(report)}
     >
       {/* ── Header ── */}
@@ -300,7 +300,7 @@ function ReportCard({
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[14px] font-semibold text-[#0F172A] truncate">{report.name}</span>
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${report.type === 'custom' ? 'bg-[#EFF6FF] text-[#2563EB]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0 ${report.type === 'custom' ? 'bg-orange-50 text-[#EA580C]' : 'bg-[#F1F5F9] text-[#64748B]'}`}>
                 {report.type === 'custom' ? 'CUSTOM' : 'SYSTEM'}
               </span>
             </div>
@@ -417,7 +417,7 @@ function ReportCard({
           <div className="relative">
             <button
               onClick={() => onExportToggle(report._id)}
-              className="bg-[#EFF6FF] text-[#2563EB] px-3 py-1.5 rounded-lg text-[12px] font-medium flex items-center gap-1.5 hover:bg-[#DBEAFE] transition-colors"
+              className="bg-orange-50 text-[#EA580C] px-3 py-1.5 rounded-lg text-[12px] font-medium flex items-center gap-1.5 hover:bg-[#DBEAFE] transition-colors"
             >
               <Download size={12} /> Export
             </button>
@@ -507,7 +507,7 @@ function DetailDrawer({ report, onClose, onRunNow, onExport, runState, canExport
                 <p className="text-[11px] font-semibold text-[#64748B] uppercase mb-1.5">Data Sources</p>
                 <div className="flex flex-wrap gap-1.5">
                   {(report.dataSource || []).map(src => (
-                    <span key={src} className="bg-[#EFF6FF] text-[#2563EB] text-[11px] font-medium px-2 py-0.5 rounded">
+                    <span key={src} className="bg-orange-50 text-[#EA580C] text-[11px] font-medium px-2 py-0.5 rounded">
                       {src}
                     </span>
                   ))}
@@ -607,7 +607,7 @@ function DetailDrawer({ report, onClose, onRunNow, onExport, runState, canExport
           ) : (
             <button
               onClick={() => onRunNow(report)}
-              className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white py-2.5 rounded-lg text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors"
+              className="w-full bg-[#EA580C] hover:bg-[#C2410C] text-white py-2.5 rounded-lg text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors"
             >
               <Play size={14} className="fill-white" /> Run Now
             </button>
@@ -802,26 +802,23 @@ export default function AdminReports() {
 
   // ── Permission gate ──
   if (!canRead) {
-    return <PageWrapper><AccessDenied message="You don't have permission to view reports." /></PageWrapper>;
+    return <AdminLayout title="Reports"><AccessDenied message="You don't have permission to view reports." /></AdminLayout>;
   }
 
   return (
-    <PageWrapper>
-      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 pb-12 max-w-[1400px] mx-auto">
-
-        {/* ── Page Header ── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-6">
-          <div>
-            <h1 className="text-[22px] font-semibold tracking-tight text-[#0F172A]">Reports</h1>
-            <p className="text-[13px] text-[#64748B] mt-0.5">Monitor, run, and export administrative reports from live system data.</p>
-          </div>
-          <button
-            onClick={fetchReports}
-            className="border border-[#E2E8F0] text-[#0F172A] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2 self-start sm:self-auto"
-          >
-            <RefreshCw size={14} /> Refresh
-          </button>
-        </div>
+    <AdminLayout
+      title="Reports"
+      subtitle="Monitor, run, and export administrative reports from live system data."
+      actions={(
+        <button
+          onClick={fetchReports}
+          className="border border-[#E2E8F0] bg-white text-[#0F172A] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2"
+        >
+          <RefreshCw size={14} /> Refresh
+        </button>
+      )}
+    >
+      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 pb-2 max-w-[1400px] mx-auto">
 
         {/* ── Stats Bar ── */}
         <div className="bg-white border border-[#E2E8F0] rounded-xl px-6 py-3 flex items-center gap-0 overflow-x-auto shadow-sm">
@@ -841,7 +838,7 @@ export default function AdminReports() {
             <>
               {/* Total */}
               <div className="flex items-center gap-2.5 px-4 shrink-0">
-                <BarChart2 size={18} className="text-[#2563EB]" />
+                <BarChart2 size={18} className="text-orange-600" />
                 <div>
                   <div className="text-xl font-bold text-[#0F172A]">{stats.total}</div>
                   <div className="text-[11px] text-[#64748B]">Total Reports</div>
@@ -912,7 +909,7 @@ export default function AdminReports() {
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Search reports by name, category, or data source..."
-              className="w-full bg-white border border-[#E2E8F0] rounded-lg pl-11 pr-10 py-2.5 text-[13px] text-[#0F172A] focus:outline-none focus:border-[#2563EB] transition-colors"
+              className="w-full bg-white border border-[#E2E8F0] rounded-lg pl-11 pr-10 py-2.5 text-[13px] text-[#0F172A] focus:outline-none focus:border-[#EA580C] transition-colors"
             />
             {searchQuery && (
               <button
@@ -933,7 +930,7 @@ export default function AdminReports() {
                   onClick={() => setActiveCategory(cat)}
                   className={`px-3 py-1.5 rounded-full text-[12px] font-medium whitespace-nowrap transition-colors ${
                     activeCategory === cat
-                      ? 'bg-[#2563EB] text-white'
+                      ? 'bg-[#EA580C] text-white'
                       : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#F1F5F9]'
                   }`}
                 >
@@ -962,7 +959,7 @@ export default function AdminReports() {
               {canCreate && (
                 <button
                   onClick={() => navigate('/admin/reports/new')}
-                  className="bg-[#2563EB] text-white px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-[#1D4ED8] transition-colors flex items-center gap-1.5"
+                  className="bg-[#EA580C] text-white px-3 py-1.5 rounded-lg text-[12px] font-medium hover:bg-[#EA580C] transition-colors flex items-center gap-1.5"
                 >
                   <Plus size={13} /> Create Custom Report
                 </button>
@@ -1009,7 +1006,7 @@ export default function AdminReports() {
                 {canCreate && (
                   <button
                     onClick={() => navigate('/admin/reports/new')}
-                    className="bg-[#2563EB] text-white px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-[#1D4ED8] transition-colors flex items-center gap-2"
+                    className="bg-[#EA580C] text-white px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-[#EA580C] transition-colors flex items-center gap-2"
                   >
                     <Plus size={14} /> Create Custom Report
                   </button>
@@ -1022,7 +1019,7 @@ export default function AdminReports() {
                 <p className="text-[13px] text-[#64748B] mb-4">Try adjusting your search or category filter.</p>
                 <button
                   onClick={() => { setSearchQuery(''); setActiveCategory('All'); setActiveStatusFilter(null); }}
-                  className="text-[#2563EB] text-[13px] hover:underline"
+                  className="text-[#EA580C] text-[13px] hover:underline"
                 >
                   Clear filters
                 </button>
@@ -1046,6 +1043,6 @@ export default function AdminReports() {
           />
         )}
       </AnimatePresence>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

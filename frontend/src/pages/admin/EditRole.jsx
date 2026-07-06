@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { adminAPI } from '../../utils/api';
 
 export default function AdminEditRole() {
@@ -80,26 +80,26 @@ export default function AdminEditRole() {
 
   if (fetching) {
     return (
-      <PageWrapper>
+      <AdminLayout bare>
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="w-8 h-8 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
         </div>
-      </PageWrapper>
+      </AdminLayout>
     );
   }
 
   return (
-    <PageWrapper>
+    <AdminLayout bare>
       <div className="font-sans text-[#0F172A] max-w-[1000px] mx-auto flex flex-col h-full gap-8 pb-24">
 
         {/* Page Header */}
         <div className="flex flex-col gap-2 border-b border-[#E2E8F0] pb-6">
           <div className="flex items-center gap-2 text-[13px] text-[#64748B] font-medium pt-2">
-            <button onClick={() => navigate('/admin/roles')} className="hover:text-[#2563EB] transition-colors flex items-center gap-1">
+            <button onClick={() => navigate('/admin/roles')} className="hover:text-[#EA580C] transition-colors flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">badge</span> Roles
             </button>
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-            <button onClick={() => navigate(`/admin/roles/${id}`)} className="hover:text-[#2563EB] transition-colors">
+            <button onClick={() => navigate(`/admin/roles/${id}`)} className="hover:text-[#EA580C] transition-colors">
               {formData.name || 'Role'}
             </button>
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
@@ -117,7 +117,7 @@ export default function AdminEditRole() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-2">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">fingerprint</span>
+                <span className="material-symbols-outlined text-[#EA580C]">fingerprint</span>
                 Role Identity
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -129,7 +129,7 @@ export default function AdminEditRole() {
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Role Title <span className="text-[#DC2626]">*</span></label>
                 <input
                   name="name" value={formData.name} onChange={handleChange} type="text"
-                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors"
+                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors"
                   placeholder="e.g. Audit Manager"
                 />
               </div>
@@ -137,7 +137,7 @@ export default function AdminEditRole() {
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Description <span className="text-[#DC2626]">*</span></label>
                 <textarea
                   name="description" value={formData.description} onChange={handleChange} rows="3"
-                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors resize-none"
+                  className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none"
                   placeholder="Describe what users with this role do in the system..."
                 />
               </div>
@@ -148,13 +148,13 @@ export default function AdminEditRole() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-10">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">key</span>
+                <span className="material-symbols-outlined text-[#EA580C]">key</span>
                 Permissions
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
                 Select the permissions this role should have. Grouped by module.
               </p>
-              <div className="mt-4 bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg p-3 text-[12px] text-[#1E40AF]">
+              <div className="mt-4 bg-[#FFF7ED] border border-[#BFDBFE] rounded-lg p-3 text-[12px] text-[#1E40AF]">
                 <span className="font-semibold">{selectedPerms.length}</span> permission{selectedPerms.length !== 1 ? 's' : ''} selected
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function AdminEditRole() {
                     <div className="px-5 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC] flex items-center justify-between">
                       <h3 className="text-[13px] font-semibold text-[#0F172A]">{module}</h3>
                       <div className="flex items-center gap-3">
-                        <button type="button" onClick={() => setSelectedPerms(prev => [...new Set([...prev, ...perms.map(p => p._id)])])} className="text-[11px] text-[#2563EB] hover:underline">Select all</button>
+                        <button type="button" onClick={() => setSelectedPerms(prev => [...new Set([...prev, ...perms.map(p => p._id)])])} className="text-[11px] text-[#EA580C] hover:underline">Select all</button>
                         <span className="text-[#E2E8F0]">·</span>
                         <button type="button" onClick={() => setSelectedPerms(prev => prev.filter(pid => !perms.find(p => p._id === pid)))} className="text-[11px] text-[#64748B] hover:underline">Clear</button>
                       </div>
@@ -182,7 +182,7 @@ export default function AdminEditRole() {
                               type="checkbox"
                               checked={selectedPerms.includes(perm._id)}
                               onChange={() => togglePerm(perm._id)}
-                              className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#2563EB] checked:border-[#2563EB] transition-colors cursor-pointer"
+                              className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#EA580C] checked:border-[#EA580C] transition-colors cursor-pointer"
                             />
                             <span className="material-symbols-outlined absolute text-white text-[12px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
                           </div>
@@ -220,7 +220,7 @@ export default function AdminEditRole() {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
+              className="bg-[#EA580C] hover:bg-[#C2410C] text-white px-6 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
             >
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -233,6 +233,6 @@ export default function AdminEditRole() {
         </div>
 
       </div>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

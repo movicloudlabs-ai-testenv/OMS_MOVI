@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { adminAPI } from '../../utils/api';
 
 export default function AdminCreateRole() {
@@ -64,13 +64,13 @@ export default function AdminCreateRole() {
   };
 
   return (
-    <PageWrapper>
+    <AdminLayout bare>
       <div className="font-sans text-[#0F172A] max-w-[1000px] mx-auto flex flex-col h-full gap-8 pb-24">
         
         {/* Page Header */}
         <div className="flex flex-col gap-2 border-b border-[#E2E8F0] pb-6">
           <div className="flex items-center gap-2 text-[13px] text-[#64748B] font-medium pt-2">
-            <button onClick={() => navigate('/admin/roles')} className="hover:text-[#2563EB] transition-colors flex items-center gap-1">
+            <button onClick={() => navigate('/admin/roles')} className="hover:text-[#EA580C] transition-colors flex items-center gap-1">
               <span className="material-symbols-outlined text-[16px]">badge</span> Roles
             </button>
             <span className="material-symbols-outlined text-[16px]">chevron_right</span>
@@ -89,7 +89,7 @@ export default function AdminCreateRole() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-2">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">fingerprint</span>
+                <span className="material-symbols-outlined text-[#EA580C]">fingerprint</span>
                 Role Identity
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -99,11 +99,11 @@ export default function AdminCreateRole() {
             <div className="lg:col-span-2 bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-6 grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="sm:col-span-2">
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Role Title <span className="text-[#DC2626]">*</span></label>
-                <input name="name" value={formData.name} onChange={handleChange} type="text" className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors" placeholder="e.g. Audit Manager" />
+                <input name="name" value={formData.name} onChange={handleChange} type="text" className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors" placeholder="e.g. Audit Manager" />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Description <span className="text-[#DC2626]">*</span></label>
-                <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors resize-none" placeholder="Briefly describe what users with this role do in the system..."></textarea>
+                <textarea name="description" value={formData.description} onChange={handleChange} rows="3" className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors resize-none" placeholder="Briefly describe what users with this role do in the system..."></textarea>
               </div>
             </div>
           </div>
@@ -112,7 +112,7 @@ export default function AdminCreateRole() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-10">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">key</span>
+                <span className="material-symbols-outlined text-[#EA580C]">key</span>
                 Base Permissions
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -123,7 +123,7 @@ export default function AdminCreateRole() {
               <div>
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Clone Existing Profile</label>
                 <div className="relative">
-                  <select name="cloneRoleId" value={formData.cloneRoleId} onChange={handleChange} className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors appearance-none cursor-pointer">
+                  <select name="cloneRoleId" value={formData.cloneRoleId} onChange={handleChange} className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-[#EA580C] transition-colors appearance-none cursor-pointer">
                     <option value="">Start with Empty Profile</option>
                     {roles.map(r => <option key={r._id} value={r._id}>Clone {r.name} Profile</option>)}
                   </select>
@@ -135,19 +135,19 @@ export default function AdminCreateRole() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
                   <label className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-lg cursor-pointer hover:bg-[#F8FAFC] transition-colors">
                     <span className="text-[13px] font-medium text-[#0F172A]">Employee Directory</span>
-                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]" />
+                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C]" />
                   </label>
                   <label className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-lg cursor-pointer hover:bg-[#F8FAFC] transition-colors">
                     <span className="text-[13px] font-medium text-[#0F172A]">Task Management</span>
-                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]" />
+                    <input type="checkbox" defaultChecked className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C]" />
                   </label>
                   <label className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-lg cursor-pointer hover:bg-[#F8FAFC] transition-colors">
                     <span className="text-[13px] font-medium text-[#0F172A]">Financial Reports</span>
-                    <input type="checkbox" className="w-4 h-4 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]" />
+                    <input type="checkbox" className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C]" />
                   </label>
                   <label className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-lg cursor-pointer hover:bg-[#F8FAFC] transition-colors">
                     <span className="text-[13px] font-medium text-[#0F172A]">System Settings</span>
-                    <input type="checkbox" className="w-4 h-4 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]" />
+                    <input type="checkbox" className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C]" />
                   </label>
                 </div>
               </div>
@@ -158,7 +158,7 @@ export default function AdminCreateRole() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-10">
             <div className="lg:col-span-1">
               <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#2563EB]">gpp_maybe</span>
+                <span className="material-symbols-outlined text-[#EA580C]">gpp_maybe</span>
                 Access Boundaries
               </h2>
               <p className="text-[13px] text-[#64748B] mt-2 leading-relaxed">
@@ -170,31 +170,31 @@ export default function AdminCreateRole() {
               <div className="space-y-4">
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div className="relative flex items-center justify-center mt-0.5">
-                    <input type="checkbox" className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#2563EB] checked:border-[#2563EB] transition-colors cursor-pointer" />
+                    <input type="checkbox" className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#EA580C] checked:border-[#EA580C] transition-colors cursor-pointer" />
                     <span className="material-symbols-outlined absolute text-white text-[12px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
                   </div>
                   <div>
-                    <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Allow Data Exporting</span>
+                    <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#EA580C] transition-colors">Allow Data Exporting</span>
                     <span className="block text-[12px] text-[#64748B]">Permits users in this role to download CSV or PDF reports.</span>
                   </div>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div className="relative flex items-center justify-center mt-0.5">
-                    <input type="checkbox" defaultChecked className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#2563EB] checked:border-[#2563EB] transition-colors cursor-pointer" />
+                    <input type="checkbox" defaultChecked className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#EA580C] checked:border-[#EA580C] transition-colors cursor-pointer" />
                     <span className="material-symbols-outlined absolute text-white text-[12px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
                   </div>
                   <div>
-                    <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Enforce Strict MFA</span>
+                    <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#EA580C] transition-colors">Enforce Strict MFA</span>
                     <span className="block text-[12px] text-[#64748B]">Multi-factor authentication will be mandatory upon login.</span>
                   </div>
                 </label>
                 <label className="flex items-start gap-3 cursor-pointer group">
                   <div className="relative flex items-center justify-center mt-0.5">
-                    <input type="checkbox" className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#2563EB] checked:border-[#2563EB] transition-colors cursor-pointer" />
+                    <input type="checkbox" className="peer appearance-none w-4 h-4 rounded border border-[#CBD5E1] checked:bg-[#EA580C] checked:border-[#EA580C] transition-colors cursor-pointer" />
                     <span className="material-symbols-outlined absolute text-white text-[12px] opacity-0 peer-checked:opacity-100 pointer-events-none">check</span>
                   </div>
                   <div>
-                    <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#2563EB] transition-colors">Cross-Department Visibility</span>
+                    <span className="block text-[13px] font-medium text-[#0F172A] group-hover:text-[#EA580C] transition-colors">Cross-Department Visibility</span>
                     <span className="block text-[12px] text-[#64748B]">Allows seeing user details outside of their assigned department.</span>
                   </div>
                 </label>
@@ -217,7 +217,7 @@ export default function AdminCreateRole() {
             <button className="border border-[#E2E8F0] bg-white text-[#0F172A] px-5 py-2.5 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors shadow-sm">
               Save as Draft
             </button>
-            <button onClick={handleSubmit} disabled={loading} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-6 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60">
+            <button onClick={handleSubmit} disabled={loading} className="bg-[#EA580C] hover:bg-[#C2410C] text-white px-6 py-2.5 rounded-lg text-[13px] font-medium transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60">
               {loading ? (
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
@@ -229,6 +229,6 @@ export default function AdminCreateRole() {
         </div>
 
       </div>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

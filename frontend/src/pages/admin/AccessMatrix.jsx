@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, Save, AlertCircle, CheckCircle, ChevronRight, Lock, X, Check, Minus, ShieldAlert } from 'lucide-react';
-import PageWrapper from '../../components/PageWrapper';
+import { Download, Save, AlertCircle, CheckCircle, Lock, X, Check, Minus, ShieldAlert } from 'lucide-react';
+import AdminLayout from '../../components/admin/AdminLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
@@ -217,7 +217,7 @@ export default function AdminAccessMatrix() {
   // ── Loading Skeleton ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <PageWrapper>
+      <AdminLayout title="Access Matrix">
         <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-6 pb-20">
           <div>
             <div className="h-6 bg-[#E2E8F0] rounded w-48 mb-2 animate-pulse" />
@@ -225,7 +225,7 @@ export default function AdminAccessMatrix() {
           </div>
           <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-8 flex items-center justify-center h-64">
             <div className="flex flex-col items-center gap-3 text-[#64748B]">
-              <svg className="animate-spin h-8 w-8 text-[#2563EB]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <svg className="animate-spin h-8 w-8 text-orange-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
               </svg>
@@ -233,63 +233,55 @@ export default function AdminAccessMatrix() {
             </div>
           </div>
         </div>
-      </PageWrapper>
+      </AdminLayout>
     );
   }
 
   // ── Load Error ────────────────────────────────────────────────────────────
   if (loadError) {
     return (
-      <PageWrapper>
+      <AdminLayout title="Access Matrix">
         <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-6 pb-20">
-          <h1 className="text-2xl font-semibold tracking-tight">Access Matrix</h1>
           <div className="bg-[#FEF2F2] border border-[#DC2626] rounded-lg p-4 text-sm text-[#DC2626] font-medium flex items-center gap-3">
             <AlertCircle size={18} />
             <span>{loadError}</span>
             <button onClick={fetchMatrix} className="ml-auto text-xs underline">Retry</button>
           </div>
         </div>
-      </PageWrapper>
+      </AdminLayout>
     );
   }
 
-  if (!canManageMatrix) return <PageWrapper><AccessDenied message="You don't have permission to manage the Access Matrix." /></PageWrapper>;
+  if (!canManageMatrix) return <AdminLayout title="Access Matrix"><AccessDenied message="You don't have permission to manage the Access Matrix." /></AdminLayout>;
 
   return (
-    <PageWrapper>
-      <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-5 pb-20 relative">
-
-        {/* Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-1.5 text-sm text-[#64748B] mb-1.5">
-              <span>Admin</span><ChevronRight size={14} /><span>Access Control</span>
-              <ChevronRight size={14} /><span className="text-[#0F172A] font-medium">Access Matrix</span>
-            </div>
-            <h1 className="text-2xl font-semibold tracking-tight text-[#0F172A]">Access Matrix</h1>
-            <p className="text-sm text-[#64748B] mt-1">Toggle permissions per role. Click a <b>column</b> or a <b>module header</b> to apply to all roles at once.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <button className="border border-[#E2E8F0] text-[#0F172A] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2">
-              <Download size={16} /> Export
-            </button>
-            <button
-              onClick={requestSave}
-              disabled={!isDirty || saving || !canManageMatrix}
-              className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 text-white ${
-                isDirty && !saving && canManageMatrix ? 'bg-[#2563EB] hover:bg-blue-700' : 'bg-[#94A3B8] cursor-not-allowed'
-              }`}
-            >
-              <Save size={16} /> Review &amp; Save
-              {isDirty && !saving && (
-                <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-3 w-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
+    <AdminLayout
+      title="Access Matrix"
+      subtitle="Toggle permissions per role. Click a column or a module header to apply to all roles at once."
+      actions={(
+        <>
+          <button className="border border-[#E2E8F0] bg-white text-[#0F172A] px-4 py-2 rounded-lg text-sm font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2">
+            <Download size={16} /> Export
+          </button>
+          <button
+            onClick={requestSave}
+            disabled={!isDirty || saving || !canManageMatrix}
+            className={`relative px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 text-white ${
+              isDirty && !saving && canManageMatrix ? 'bg-[#EA580C] hover:bg-[#C2410C]' : 'bg-[#94A3B8] cursor-not-allowed'
+            }`}
+          >
+            <Save size={16} /> Review &amp; Save
+            {isDirty && !saving && (
+              <span className="absolute top-0 right-0 -mt-1 -mr-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
+              </span>
+            )}
+          </button>
+        </>
+      )}
+    >
+      <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-5 pb-4 relative">
 
         {/* Risk legend */}
         <div className="flex items-center gap-4 text-[11px] text-[#64748B] -mt-1">
@@ -305,8 +297,12 @@ export default function AdminAccessMatrix() {
           </span>
         </div>
 
-        {/* Matrix Table */}
-        <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm flex-1 flex flex-col relative overflow-hidden">
+        {/* Matrix Table — zoom 1.2 enlarges the matrix content (cells, text,
+            checkboxes) without affecting the sidebar or page header. */}
+        <div
+          style={{ zoom: 1.2 }}
+          className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm flex-1 flex flex-col relative overflow-hidden"
+        >
           <div className="overflow-x-auto w-full custom-scrollbar flex-1">
             <table className="w-full text-left border-collapse whitespace-nowrap" onMouseLeave={() => { setHoverRole(null); setHoverPerm(null); }}>
               <thead>
@@ -417,10 +413,10 @@ export default function AdminAccessMatrix() {
                                   <div
                                     onClick={() => canManageMatrix && handleToggle(role._id, perm._id)}
                                     className={`flex items-center justify-center w-[22px] h-[22px] rounded border transition-all ${canManageMatrix ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'}
-                                      ${checked ? 'bg-[#2563EB] border-[#2563EB]' : 'bg-white border-[#CBD5E1] hover:border-[#94A3B8]'}
+                                      ${checked ? 'bg-[#EA580C] border-[#EA580C]' : 'bg-white border-[#CBD5E1] hover:border-[#94A3B8]'}
                                       ${changedCell ? 'ring-2 ring-amber-400 ring-offset-1' : ''}`}
                                   >
-                                    {checked && <CheckCircle size={14} className="text-white" />}
+                                    {checked && <Check size={15} strokeWidth={3} className="text-white" />}
                                   </div>
                                 </div>
                               )}
@@ -462,7 +458,7 @@ export default function AdminAccessMatrix() {
                 <button onClick={handleDiscard} className="flex-1 sm:flex-none px-4 py-2 rounded-lg text-sm font-medium border border-[#64748B] text-white hover:bg-[#334155] transition-colors">
                   Discard
                 </button>
-                <button onClick={requestSave} className="flex-1 sm:flex-none bg-[#2563EB] hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+                <button onClick={requestSave} className="flex-1 sm:flex-none bg-[#EA580C] hover:bg-[#C2410C] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
                   Review &amp; Save
                 </button>
               </div>
@@ -502,7 +498,7 @@ export default function AdminAccessMatrix() {
                 </div>
                 <div className="flex gap-3 px-6 py-4 border-t border-[#F1F5F9]">
                   <button onClick={() => setShowDiff(false)} disabled={saving} className="flex-1 border border-[#E2E8F0] text-[#0F172A] rounded-lg py-2.5 text-sm font-medium hover:bg-[#F8FAFC] disabled:opacity-50">Cancel</button>
-                  <button onClick={doSave} disabled={saving || diff.length === 0} className="flex-1 bg-[#2563EB] hover:bg-blue-700 text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
+                  <button onClick={doSave} disabled={saving || diff.length === 0} className="flex-1 bg-[#EA580C] hover:bg-[#C2410C] text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-50 flex items-center justify-center gap-2">
                     {saving ? 'Saving…' : `Confirm & Save`}
                   </button>
                 </div>
@@ -525,6 +521,6 @@ export default function AdminAccessMatrix() {
         </AnimatePresence>
 
       </div>
-    </PageWrapper>
+    </AdminLayout>
   );
 }

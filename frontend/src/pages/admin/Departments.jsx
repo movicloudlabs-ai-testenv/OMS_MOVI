@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import PageWrapper from '../../components/PageWrapper';
+import AdminLayout from '../../components/admin/AdminLayout';
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import AccessDenied from '../../components/shared/AccessDenied';
 import { adminAPI } from '../../utils/api';
@@ -58,28 +58,23 @@ export default function AdminDepartments() {
     await fetchDepartments();
   };
 
-  if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view departments." /></PageWrapper>;
+  if (!canRead) return <AdminLayout title="Departments"><AccessDenied message="You don't have permission to view departments." /></AdminLayout>;
 
   return (
-    <PageWrapper>
-      <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-6">
-        
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-[24px] font-semibold tracking-tight text-[#0F172A]">Departments</h1>
-            <p className="text-[14px] text-[#64748B] mt-1">Manage organizational structure and departmental configurations.</p>
-          </div>
-          {canCreate && (
-            <button
-              onClick={() => navigate('/admin/departments/new')}
-              className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded text-[13px] font-medium transition-colors flex items-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              Create Department
-            </button>
-          )}
-        </div>
+    <AdminLayout
+      title="Departments"
+      subtitle="Manage organizational structure and departmental configurations."
+      actions={canCreate && (
+        <button
+          onClick={() => navigate('/admin/departments/new')}
+          className="bg-[#EA580C] hover:bg-[#C2410C] text-white px-4 py-2 rounded text-[13px] font-medium transition-colors flex items-center gap-2"
+        >
+          <span className="material-symbols-outlined text-[18px]">add</span>
+          Create Department
+        </button>
+      )}
+    >
+      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-4">
 
         {/* Toolbar */}
         <div className="bg-white border border-[#E2E8F0] rounded-md p-3 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -87,7 +82,7 @@ export default function AdminDepartments() {
             <div className="relative w-full sm:w-64">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
               <input
-                className="w-full border border-[#E2E8F0] rounded py-1.5 pl-9 pr-3 text-[13px] focus:outline-none focus:border-[#2563EB] transition-colors"
+                className="w-full border border-[#E2E8F0] rounded py-1.5 pl-9 pr-3 text-[13px] focus:outline-none focus:border-[#EA580C] transition-colors"
                 placeholder="Search departments..."
                 type="text"
               />
@@ -119,7 +114,7 @@ export default function AdminDepartments() {
               <thead>
                 <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
                   <th className="px-4 py-3 w-10 text-center">
-                    <input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === departments.length && departments.length > 0} className="w-4 h-4 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]" />
+                    <input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === departments.length && departments.length > 0} className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C] accent-[#EA580C]" />
                   </th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Department Name</th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Head</th>
@@ -134,7 +129,7 @@ export default function AdminDepartments() {
                   <tr>
                     <td colSpan="7" className="px-4 py-8 text-center text-[#64748B]">
                       <div className="flex flex-col items-center justify-center gap-2">
-                        <div className="w-6 h-6 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+                        <div className="w-6 h-6 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
                         Loading departments...
                       </div>
                     </td>
@@ -151,7 +146,7 @@ export default function AdminDepartments() {
                   departments.map((dept) => (
                     <tr key={dept._id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 group">
                       <td className="px-4 py-3 text-center">
-                        <input type="checkbox" checked={selectedIds.includes(dept._id)} onChange={() => handleSelect(dept._id)} className="w-4 h-4 rounded border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB]" />
+                        <input type="checkbox" checked={selectedIds.includes(dept._id)} onChange={() => handleSelect(dept._id)} className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C] accent-[#EA580C]" />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3 cursor-pointer hover:underline text-[#0F172A]" onClick={() => navigate(`/admin/departments/${dept._id}`)}>
@@ -165,7 +160,7 @@ export default function AdminDepartments() {
                         {!dept.head ? (
                           <span className="text-[#F59E0B] italic">Unassigned</span>
                         ) : (
-                          <span className="text-[#2563EB] hover:underline cursor-pointer">{dept.head.name}</span>
+                          <span className="text-[#EA580C] hover:underline cursor-pointer">{dept.head.name}</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-[13px] text-[#64748B] font-mono">{dept.memberCount || 0}</td>
@@ -179,14 +174,14 @@ export default function AdminDepartments() {
                       <td className="px-4 py-3 text-[13px] text-[#64748B]">{dept.createdAt ? new Date(dept.createdAt).toLocaleDateString() : 'N/A'}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button onClick={() => navigate(`/admin/departments/${dept._id}`)} className="text-[#64748B] hover:text-[#2563EB] transition-colors" title="View Details">
+                          <button onClick={() => navigate(`/admin/departments/${dept._id}`)} className="text-[#64748B] hover:text-[#EA580C] transition-colors" title="View Details">
                             <span className="material-symbols-outlined text-[18px]">visibility</span>
                           </button>
                           <button
                             onClick={() => canUpdate && navigate(`/admin/departments/${dept._id}/edit`)}
                             disabled={!canUpdate}
                             title={canUpdate ? 'Edit' : 'You do not have permission to edit departments. Contact your administrator.'}
-                            className={`transition-colors ${canUpdate ? 'text-[#64748B] hover:text-[#2563EB]' : 'text-[#CBD5E1] cursor-not-allowed'}`}
+                            className={`transition-colors ${canUpdate ? 'text-[#64748B] hover:text-[#EA580C]' : 'text-[#CBD5E1] cursor-not-allowed'}`}
                           >
                             <span className="material-symbols-outlined text-[18px]">edit</span>
                           </button>
@@ -221,6 +216,6 @@ export default function AdminDepartments() {
         entityLabel="department"
         onConfirm={executeDelete}
       />
-    </PageWrapper>
+    </AdminLayout>
   );
 }
