@@ -210,6 +210,10 @@ export const getMyLeaves = async (req, res, next) => {
   }
 };
 
+/**
+ * HR self-leave is auto-approved — HR does NOT need PMO approval.
+ * We deduct the balance, mark attendance, and only *notify* PMO (informational).
+ */
 export const applyMyLeave = async (req, res, next) => {
   try {
     const { type, fromDate, toDate, reason, projectImpact } = req.body;
@@ -224,6 +228,23 @@ export const applyMyLeave = async (req, res, next) => {
     const days = getWorkingDays(from, to);
     if (days === 0) return sendError(res, 'Selected dates contain no working days', 400);
 
+    const typeKey = type.toLowerCase();
+    const currentYear = new Date().getFullYear();
+
+    // Check + deduct leave balance
+    let balance = await LeaveBalance.findOne({ user: req.user._id, year: currentYear });
+    if (!balance) balance = await LeaveBalance.create({ user: req.user._id, year: currentYear });
+    if (!balance[typeKey]) return sendError(res, `Invalid leave type: ${type}`, 400);
+
+    const available = balance[typeKey].total - balance[typeKey].used;
+    if (days > available) {
+      return sendError(res, `Insufficient ${type} leave balance. Available: ${available} day(s).`, 400);
+    }
+    balance[typeKey].used += days;
+    balance.markModified(typeKey);
+    await balance.save();
+
+    // Create the request already Approved (self-service, no PMO gate)
     const leave = await LeaveRequest.create({
       user: req.user._id,
       type,
@@ -232,9 +253,27 @@ export const applyMyLeave = async (req, res, next) => {
       days,
       reason,
       projectImpact: projectImpact || '',
+      status: 'Approved',
+      reviewedBy: req.user._id,
+      reviewedAt: new Date(),
+      reviewNote: 'Auto-approved (HR self-service)',
     });
 
-    // Notify PMO leads dynamically — managers of projects this HR is assigned to
+    // Mark attendance as Leave for each working day in range
+    const cur = new Date(from);
+    while (cur <= to) {
+      const dow = cur.getDay();
+      if (dow !== 0 && dow !== 6) {
+        await Attendance.findOneAndUpdate(
+          { user: req.user._id, date: new Date(cur) },
+          { $set: { status: 'Leave', note: `${type} Leave`, markedBy: req.user._id } },
+          { upsert: true }
+        );
+      }
+      cur.setDate(cur.getDate() + 1);
+    }
+
+    // Notify PMO leads — informational only (no approval required)
     const projects = await Project.find({
       $or: [{ 'team.user': req.user._id }, { manager: req.user._id }],
     }).select('manager').lean();
@@ -247,26 +286,53 @@ export const applyMyLeave = async (req, res, next) => {
       sendNotification({
         recipient: managerId,
         type: 'system_alert',
-        title: 'HR Leave Request',
-        message: `${req.user.name} (HR Manager) has applied for ${type} leave from ${from.toDateString()} to ${to.toDateString()} (${days} day${days > 1 ? 's' : ''}). Pending your approval.`,
+        title: 'HR on Leave',
+        message: `${req.user.name} (HR Manager) will be on ${type} leave from ${from.toDateString()} to ${to.toDateString()} (${days} day${days > 1 ? 's' : ''}).`,
         link: '/pmo/approvals',
         sender: req.user._id,
       })
     ));
 
-    sendSuccess(res, leave, 'Leave application submitted successfully');
+    sendSuccess(res, leave, 'Leave applied successfully');
   } catch (error) {
     next(error);
   }
 };
 
+/**
+ * Cancel an upcoming (not-yet-started) HR leave — restores balance & attendance.
+ */
 export const deleteMyLeave = async (req, res, next) => {
   try {
     const leave = await LeaveRequest.findOne({ _id: req.params.id, user: req.user._id });
     if (!leave) return sendError(res, 'Leave request not found', 404);
-    if (leave.status !== 'Pending') return sendError(res, 'Only pending leave requests can be deleted', 400);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (new Date(leave.fromDate) <= today) {
+      return sendError(res, 'Only upcoming leave (not yet started) can be cancelled', 400);
+    }
+
+    // Restore balance if it was deducted
+    if (leave.status === 'Approved') {
+      const year = new Date(leave.fromDate).getFullYear();
+      const typeKey = leave.type.toLowerCase();
+      const balance = await LeaveBalance.findOne({ user: req.user._id, year });
+      if (balance && balance[typeKey]) {
+        balance[typeKey].used = Math.max(0, balance[typeKey].used - leave.days);
+        balance.markModified(typeKey);
+        await balance.save();
+      }
+      // Remove the Leave attendance records for this range
+      await Attendance.deleteMany({
+        user: req.user._id,
+        date: { $gte: new Date(leave.fromDate), $lte: new Date(leave.toDate) },
+        status: 'Leave',
+      });
+    }
+
     await leave.deleteOne();
-    sendSuccess(res, null, 'Leave request deleted');
+    sendSuccess(res, null, 'Leave cancelled');
   } catch (error) {
     next(error);
   }

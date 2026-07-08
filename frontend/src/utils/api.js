@@ -224,6 +224,7 @@ export const pmoAPI = {
   requestInterns: (data) => api.post('/pmo/interns/request', data),
 
   getPendingLeaves: () => api.get('/pmo/approvals/leaves'),
+  getLeaveOverview: () => api.get('/pmo/approvals/leave-overview'),
   getTasksInReview: () => api.get('/pmo/approvals/tasks'),
   getPendingOnboarding: () => api.get('/pmo/approvals/onboarding'),
   approveOnboarding: (id) => api.post(`/pmo/approvals/onboarding/${id}/approve`),

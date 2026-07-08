@@ -44,6 +44,44 @@ export const getPendingLeaves = async (req, res, next) => {
   }
 };
 
+/**
+ * Read-only leave overview for PMO — shows who is / was on leave across the
+ * PMO's project team (employees + interns) and all HR managers. Approved leaves
+ * only, from the last 30 days onward. PMO cannot act on these — visibility only.
+ */
+export const getLeaveOverview = async (req, res, next) => {
+  try {
+    const projects = await Project.find({ ...req.projectFilter }).select('team');
+    const memberIds = new Set();
+    projects.forEach(p => p.team.forEach(t => memberIds.add(t.user.toString())));
+
+    // Include all HR managers
+    const hrRoles = await Role.find({ slug: { $in: ['hr', 'hr-manager'] } }).select('_id');
+    const hrRoleIds = hrRoles.map(r => r._id);
+    const hrUsers = await User.find({ role: { $in: hrRoleIds } }).select('_id');
+    hrUsers.forEach(u => memberIds.add(u._id.toString()));
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+
+    const leaves = await LeaveRequest.find({
+      user: { $in: Array.from(memberIds) },
+      status: 'Approved',
+      toDate: { $gte: cutoff },
+    })
+      .populate({
+        path: 'user',
+        select: 'name employeeId avatar department designation role',
+        populate: { path: 'role', select: 'name slug' },
+      })
+      .sort({ fromDate: -1 });
+
+    sendSuccess(res, leaves);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const getPendingOnboarding = async (req, res, next) => {
   try {
     // Show recently added employees/interns with incomplete onboarding across PMO's
@@ -172,36 +210,13 @@ export const updateApproval = async (req, res, next) => {
       return sendSuccess(res, task, `Task successfully ${action}d`);
     }
 
-    // 2. Check if it is a LeaveRequest
-    let leave = await LeaveRequest.findById(id).populate('user');
+    // 2. Leave requests are informational for PMO — they cannot approve/reject.
+    const leave = await LeaveRequest.findById(id);
     if (leave) {
-      if (projectImpact) {
-        leave.projectImpact = projectImpact;
-      }
-      
-      if (action) {
-        const status = action === 'approve' ? 'Approved' : 'Rejected';
-        leave.status = status;
-        leave.reviewedBy = req.user._id;
-        leave.reviewedAt = new Date();
-        if (note) leave.reviewNote = note;
-        
-        await sendNotification({
-          recipient: leave.user._id,
-          type: action === 'approve' ? 'leave_approved' : 'leave_rejected',
-          title: action === 'approve' ? 'Leave Approved' : 'Leave Rejected',
-          message: action === 'approve' 
-            ? `Your leave request has been approved by PMO Lead ${req.user.name}.`
-            : `Your leave request was rejected by PMO Lead ${req.user.name}. Reason: ${note || 'No reason provided'}`,
-          sender: req.user._id,
-        });
-      }
-      
-      await leave.save();
-      return sendSuccess(res, leave, `Leave request successfully updated`);
+      return sendError(res, 'Leave requests are informational only and cannot be approved or rejected by PMO.', 403);
     }
 
-    return sendError(res, 'Task or Leave Request not found with the provided ID', 404);
+    return sendError(res, 'Task not found with the provided ID', 404);
   } catch (error) {
     next(error);
   }

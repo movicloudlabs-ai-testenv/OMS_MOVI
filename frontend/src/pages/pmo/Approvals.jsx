@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import PageWrapper from '../../components/PageWrapper';
 import toast from 'react-hot-toast';
 import { pmoAPI } from '../../utils/api';
@@ -8,10 +8,9 @@ export default function PMOApprovals() {
   const { hasPermission, user } = useAuth();
   const isPMOLead       = user?.role?.slug === 'pmo-lead' || user?.role?.slug === 'super-admin';
   const canUpdateTask   = hasPermission('Tasks', 'update')   || isPMOLead;
-  const canApproveLeave = hasPermission('Leave', 'approve')  || isPMOLead;
   const [activeTab, setActiveTab] = useState('Tasks');
   const [taskApprovals, setTaskApprovals] = useState([]);
-  const [leaveApprovals, setLeaveApprovals] = useState([]);
+  const [leaveOverview, setLeaveOverview] = useState([]);
   const [onboardingList, setOnboardingList] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,11 +19,11 @@ export default function PMOApprovals() {
     try {
       const [tasksRes, leavesRes, onboardRes] = await Promise.all([
         pmoAPI.getTasksInReview(),
-        pmoAPI.getPendingLeaves(),
+        pmoAPI.getLeaveOverview(),
         pmoAPI.getPendingOnboarding(),
       ]);
       setTaskApprovals(tasksRes.data.data || []);
-      setLeaveApprovals(leavesRes.data.data || []);
+      setLeaveOverview(leavesRes.data.data || []);
       setOnboardingList(onboardRes.data.data || []);
     } catch (error) {
       toast.error('Failed to load approvals');
@@ -67,26 +66,6 @@ export default function PMOApprovals() {
     }
   };
 
-  const handleLeaveAction = async (id, action) => {
-    try {
-      await pmoAPI.reviewApproval(id, { action });
-      setLeaveApprovals(prev => prev.filter(a => a._id !== id));
-      if (action === 'approve') {
-        toast.success('Leave request approved!', {
-          style: { background: '#10B981', color: '#fff' },
-          iconTheme: { primary: '#fff', secondary: '#10B981' }
-        });
-      } else {
-        toast('Leave request rejected.', {
-          style: { background: '#EF4444', color: '#fff' },
-          iconTheme: { primary: '#fff', secondary: '#EF4444' }
-        });
-      }
-    } catch (error) {
-      toast.error('Failed to update leave request status');
-    }
-  };
-
   return (
     <PageWrapper>
       <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-8 max-w-[1000px] mx-auto pb-12">
@@ -121,10 +100,10 @@ export default function PMOApprovals() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[18px]">event_busy</span>
-                Leave Requests
-                {!loading && leaveApprovals.length > 0 && (
-                  <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === 'Leave' ? 'bg-[#EF4444] text-white' : 'bg-[#E2E8F0]'}`}>
-                    {leaveApprovals.length}
+                On Leave
+                {!loading && leaveOverview.length > 0 && (
+                  <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === 'Leave' ? 'bg-[#2563EB] text-white' : 'bg-[#E2E8F0]'}`}>
+                    {leaveOverview.length}
                   </span>
                 )}
               </button>
@@ -221,70 +200,66 @@ export default function PMOApprovals() {
             })
           )}
 
-          {/* Leave Tab */}
+          {/* Leave Tab — read-only overview (PMO can see who's on leave, cannot act) */}
           {!loading && activeTab === 'Leave' && (
-            leaveApprovals.length === 0 ? (
-              <EmptyState title="No Leave Requests!" subtitle="Your isolated team members are fully present. No leave requests to review." icon="event_available" color="text-[#2563EB]" bg="bg-[#EFF6FF]" />
-            ) : leaveApprovals.map(approval => {
-              const name = approval.user?.name || 'Unknown User';
-              const initial = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-              const datesStr = `${new Date(approval.fromDate).toLocaleDateString()} - ${new Date(approval.toDate).toLocaleDateString()} (${approval.days} Days)`;
-              const requestedAtStr = approval.createdAt ? new Date(approval.createdAt).toLocaleDateString() : 'recently';
-              const impact = approval.projectImpact || 'No assessed impact';
-              return (
-                <div key={approval._id} className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm overflow-hidden flex flex-col sm:flex-row hover:border-[#CBD5E1] transition-colors group">
-                  <div className="flex-1 p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-bold text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-md border border-[#E2E8F0]">{approval._id.slice(-6).toUpperCase()}</span>
-                        <span className="text-[11px] font-bold text-[#0F172A] bg-[#F8FAFC] px-2 py-0.5 rounded-md border border-[#E2E8F0]">{approval.user?.department?.name || 'OWMS'}</span>
-                      </div>
-                      <span className="text-[11px] font-medium text-[#64748B] flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[14px]">schedule</span> Requested {requestedAtStr}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-[16px] font-bold text-[#0F172A] group-hover:text-[#EF4444] transition-colors">{approval.type} Leave</h3>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${impact.includes('High') ? 'bg-[#FEF2F2] text-[#DC2626] border-[#FECACA]' : 'bg-[#FFFBEB] text-[#D97706] border-[#FDE68A]'}`}>
-                        Impact: {impact}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <span className="material-symbols-outlined text-[18px] text-[#64748B]">date_range</span>
-                      <span className="text-[13px] font-bold text-[#0F172A]">{datesStr}</span>
-                    </div>
-                    <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 mb-4">
-                      <p className="text-[13px] text-[#475569] leading-relaxed">
-                        <span className="font-bold text-[#0F172A] mr-2">Reason:</span>{approval.reason}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] bg-purple-100 text-purple-700">{initial}</div>
-                      <div>
-                        <p className="text-[12px] font-bold text-[#0F172A] leading-tight">{name}</p>
-                        <p className="text-[11px] text-[#64748B]">{approval.user?.designation || 'Team Member'}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="bg-[#F8FAFC] border-t sm:border-t-0 sm:border-l border-[#E2E8F0] p-6 sm:w-[240px] flex flex-row sm:flex-col items-center justify-center gap-3 shrink-0">
-                    <button
-                      onClick={() => canApproveLeave && handleLeaveAction(approval._id, 'approve')}
-                      disabled={!canApproveLeave}
-                      className={`w-full py-2.5 rounded-xl text-[13px] font-bold transition-colors shadow-sm flex items-center justify-center gap-2 ${canApproveLeave ? 'bg-[#10B981] text-white hover:bg-[#059669]' : 'bg-[#E2E8F0] text-[#94A3B8] cursor-not-allowed'}`}
-                    >
-                      <span className="material-symbols-outlined text-[18px]">thumb_up</span> Approve Leave
-                    </button>
-                    <button
-                      onClick={() => canApproveLeave && handleLeaveAction(approval._id, 'reject')}
-                      disabled={!canApproveLeave}
-                      className={`w-full py-2.5 bg-white rounded-xl text-[13px] font-bold transition-colors shadow-sm flex items-center justify-center gap-2 ${canApproveLeave ? 'border border-[#EF4444] text-[#DC2626] hover:bg-[#FEF2F2]' : 'border border-[#E2E8F0] text-[#CBD5E1] cursor-not-allowed'}`}
-                    >
-                      <span className="material-symbols-outlined text-[18px]">thumb_down</span> Deny Request
-                    </button>
-                  </div>
+            leaveOverview.length === 0 ? (
+              <EmptyState title="No one on leave" subtitle="No approved leaves across your team or HR in the recent window." icon="event_available" color="text-[#2563EB]" bg="bg-[#EFF6FF]" />
+            ) : (
+              <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                  <span className="material-symbols-outlined text-[18px] text-[#64748B]">visibility</span>
+                  <span className="text-[13px] font-bold text-[#0F172A]">Leave Overview</span>
+                  <span className="text-[11px] text-[#64748B]">· view-only</span>
                 </div>
-              );
-            })
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[640px]">
+                    <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                      <tr>
+                        {['Member', 'Role', 'Type', 'Duration', 'Days', 'Status'].map(h => (
+                          <th key={h} className="px-4 py-2.5 text-[10px] font-bold text-[#64748B] uppercase tracking-wider">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaveOverview.map(lv => {
+                        const name = lv.user?.name || 'Unknown';
+                        const initial = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                        const roleName = lv.user?.role?.name || lv.user?.designation || 'Member';
+                        const slug = lv.user?.role?.slug || '';
+                        const roleBadge = slug.includes('hr') ? 'bg-purple-100 text-purple-700'
+                          : slug.includes('intern') ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-blue-100 text-blue-700';
+                        const today = new Date(); today.setHours(0,0,0,0);
+                        const ongoing = new Date(lv.fromDate) <= today && new Date(lv.toDate) >= today;
+                        const upcoming = new Date(lv.fromDate) > today;
+                        return (
+                          <tr key={lv._id} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] last:border-0">
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-full bg-[#E2E8F0] text-[#64748B] flex items-center justify-center text-[10px] font-bold shrink-0">{initial}</div>
+                                <div>
+                                  <p className="text-xs font-semibold text-[#0F172A]">{name}</p>
+                                  <p className="text-[10px] text-[#64748B]">{lv.user?.employeeId || ''}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${roleBadge}`}>{roleName}</span></td>
+                            <td className="px-4 py-3"><span className="text-[10px] font-bold bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded uppercase">{lv.type}</span></td>
+                            <td className="px-4 py-3 text-xs text-[#0F172A] whitespace-nowrap">{new Date(lv.fromDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → {new Date(lv.toDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
+                            <td className="px-4 py-3 text-xs font-bold text-[#0F172A]">{lv.days}</td>
+                            <td className="px-4 py-3">
+                              {ongoing ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase">On leave</span>
+                                : upcoming ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase">Upcoming</span>
+                                : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#64748B] uppercase">Completed</span>}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
           )}
 
           {/* Onboarding Tab */}
