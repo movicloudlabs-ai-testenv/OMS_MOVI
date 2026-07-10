@@ -231,6 +231,7 @@ export const pmoAPI = {
 
   getProjectHealth: () => api.get('/pmo/reports/health'),
   getResourceWarnings: () => api.get('/pmo/reports/warnings'),
+  getReports: (params) => api.get('/pmo/reports', { params }),
   getDashboardStats: () => api.get('/pmo/dashboard'),
   reviewApproval: (id, data) => api.put(`/pmo/approvals/${id}`, data),
 };

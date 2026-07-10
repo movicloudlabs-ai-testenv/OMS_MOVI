@@ -241,7 +241,7 @@ export default function PMOTeam() {
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2" onClick={e => e.stopPropagation()}>
                           <button 
-                            onClick={() => canViewProfile ? navigate(`/hr/employees/${member.id}`) : toast.error('Permission denied')}
+                            onClick={() => canViewProfile ? navigate(`/pmo/employees/${member.id}`) : toast.error('Permission denied')}
                             className="p-1.5 text-[#64748B] hover:text-[#2563EB] hover:bg-[#EFF6FF] rounded transition-colors"
                             title="View Profile"
                           >
@@ -347,7 +347,7 @@ export default function PMOTeam() {
 
                 <div className="flex flex-col gap-3">
                   <button 
-                    onClick={() => canViewProfile ? navigate(`/hr/employees/${selectedMember.id}`) : toast.error('Permission denied')}
+                    onClick={() => canViewProfile ? navigate(`/pmo/employees/${selectedMember.id}`) : toast.error('Permission denied')}
                     className="w-full py-2.5 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] text-sm font-bold rounded-lg hover:bg-[#F1F5F9] flex items-center justify-center gap-2"
                   >
                     <Eye size={16} /> View Full Profile

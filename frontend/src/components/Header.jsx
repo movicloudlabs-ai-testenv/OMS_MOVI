@@ -16,16 +16,17 @@ const PROFILE_PATH = {
 };
 
 // Visual accent + icon per notification type, for quick scanning.
-function notifMeta(type = '') {
-  if (type.includes('approved') || type === 'milestone_reached')
+function notifMeta(type) {
+  const t = type || '';
+  if (t.includes('approved') || t === 'milestone_reached')
     return { icon: 'check_circle', color: 'text-emerald-600', bg: 'bg-emerald-50' };
-  if (type.includes('rejected') || type.includes('blocked'))
+  if (t.includes('rejected') || t.includes('blocked'))
     return { icon: 'error', color: 'text-rose-600', bg: 'bg-rose-50' };
-  if (type.includes('task'))
+  if (t.includes('task'))
     return { icon: 'task_alt', color: 'text-blue-600', bg: 'bg-blue-50' };
-  if (type.includes('leave'))
+  if (t.includes('leave'))
     return { icon: 'event', color: 'text-amber-600', bg: 'bg-amber-50' };
-  if (type.includes('project'))
+  if (t.includes('project'))
     return { icon: 'work', color: 'text-indigo-600', bg: 'bg-indigo-50' };
   return { icon: 'notifications', color: 'text-slate-500', bg: 'bg-slate-100' };
 }

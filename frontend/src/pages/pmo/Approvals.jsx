@@ -13,35 +13,22 @@ export default function PMOApprovals() {
   const [activeTab, setActiveTab] = useState('Tasks');
   const [taskApprovals, setTaskApprovals] = useState([]);
   const [leaveOverview, setLeaveOverview] = useState([]);
-  const [onboardingList, setOnboardingList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchApprovals = async () => {
     if (!canRead) return;
     setLoading(true);
     try {
-      const [tasksRes, leavesRes, onboardRes] = await Promise.all([
+      const [tasksRes, leavesRes] = await Promise.all([
         pmoAPI.getTasksInReview(),
         pmoAPI.getLeaveOverview(),
-        pmoAPI.getPendingOnboarding(),
       ]);
       setTaskApprovals(tasksRes.data.data || []);
       setLeaveOverview(leavesRes.data.data || []);
-      setOnboardingList(onboardRes.data.data || []);
     } catch (error) {
       toast.error('Failed to load approvals');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleOnboardingApprove = async (id) => {
-    try {
-      await pmoAPI.approveOnboarding(id);
-      setOnboardingList(prev => prev.filter(u => u._id !== id));
-      toast.success('Onboarding approved!', { style: { background: '#10B981', color: '#fff' } });
-    } catch {
-      toast.error('Failed to approve onboarding');
     }
   };
 
@@ -109,20 +96,6 @@ export default function PMOApprovals() {
                 {!loading && leaveOverview.length > 0 && (
                   <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === 'Leave' ? 'bg-[#2563EB] text-white' : 'bg-[#E2E8F0]'}`}>
                     {leaveOverview.length}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('Onboarding')}
-                className={`px-6 py-2 rounded-md text-[13px] font-bold transition-all flex items-center gap-2 ${
-                  activeTab === 'Onboarding' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-[#64748B] hover:text-[#0F172A]'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[18px]">person_add</span>
-                Onboarding
-                {!loading && onboardingList.length > 0 && (
-                  <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === 'Onboarding' ? 'bg-[#7C3AED] text-white' : 'bg-[#E2E8F0]'}`}>
-                    {onboardingList.length}
                   </span>
                 )}
               </button>
@@ -266,56 +239,6 @@ export default function PMOApprovals() {
               </div>
             )
           )}
-
-          {/* Onboarding Tab */}
-          {!loading && activeTab === 'Onboarding' && (
-            onboardingList.length === 0 ? (
-              <EmptyState title="No Pending Onboarding" subtitle="All new team members have completed their onboarding process." icon="person_check" color="text-[#7C3AED]" bg="bg-[#F5F3FF]" />
-            ) : onboardingList.map(user => {
-              const name = user.name || 'New Member';
-              const initial = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-              const joinedStr = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—';
-              const progress = user.onboardingProgress || 0;
-              return (
-                <div key={user._id} className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm overflow-hidden flex flex-col sm:flex-row hover:border-[#CBD5E1] transition-colors group">
-                  <div className="flex-1 p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center font-bold text-sm">{initial}</div>
-                        <div>
-                          <p className="text-[15px] font-bold text-[#0F172A]">{name}</p>
-                          <p className="text-[12px] text-[#64748B]">{user.designation || 'New Employee'} • {user.department?.name || '—'}</p>
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-bold bg-[#F5F3FF] text-[#7C3AED] px-2 py-0.5 rounded-full border border-[#DDD6FE]">{user.employmentType || 'Employee'}</span>
-                    </div>
-                    <div className="mb-2">
-                      <div className="flex justify-between text-[11px] font-bold mb-1.5">
-                        <span className="text-[#64748B]">Onboarding Progress</span>
-                        <span className="text-[#0F172A]">{progress}%</span>
-                      </div>
-                      <div className="h-2 w-full bg-[#F1F5F9] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#7C3AED] rounded-full transition-all" style={{ width: `${progress}%` }} />
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-[#64748B] mt-2 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                      Joined {joinedStr}
-                    </p>
-                  </div>
-                  <div className="bg-[#F8FAFC] border-t sm:border-t-0 sm:border-l border-[#E2E8F0] p-6 sm:w-[200px] flex items-center justify-center shrink-0">
-                    <button
-                      onClick={() => handleOnboardingApprove(user._id)}
-                      className="w-full py-2.5 bg-[#7C3AED] text-white rounded-xl text-[13px] font-bold hover:bg-purple-700 transition-colors shadow-sm flex items-center justify-center gap-2"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">check_circle</span> Approve
-                    </button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-
         </div>
 
       </div>

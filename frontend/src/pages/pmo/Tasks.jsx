@@ -40,6 +40,8 @@ const STATUS_MAP_BE_TO_FE = {
 export default function PMOTaskBoard() {
   const { hasPermission } = useAuth();
   const navigate = useNavigate();
+  const canRead = hasPermission('Tasks', 'read');
+  const canCreate = hasPermission('Tasks', 'create');
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [currentProjectDetails, setCurrentProjectDetails] = useState(null);
@@ -224,9 +226,6 @@ export default function PMOTaskBoard() {
     });
     return pool;
   };
-
-  const canRead = hasPermission('Tasks', 'read');
-  const canCreate = hasPermission('Tasks', 'create');
 
   if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view the task board." /></PageWrapper>;
 

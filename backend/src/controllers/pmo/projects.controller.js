@@ -199,19 +199,6 @@ export const updateProject = async (req, res, next) => {
     if (hrManager) {
       const hrUser = await User.findById(hrManager);
       if (hrUser) {
-        const allMembers = [...project.team.map(t => t.user), ...project.interns.map(i => i.user)];
-        for (const userId of allMembers) {
-          if (userId) {
-            await User.findByIdAndUpdate(userId, { hrManager });
-            await sendNotification({
-              recipient: userId,
-              type: 'system_alert',
-              title: 'HR Manager Updated',
-              message: `Your HR Manager has been updated to ${hrUser.name} for project ${project.name}`,
-              sender: req.user._id,
-            });
-          }
-        }
         await sendNotification({
           recipient: hrManager,
           type: 'project_assigned',
@@ -251,18 +238,6 @@ export const addTeamMembers = async (req, res, next) => {
     const project = await Project.findOne({ _id: req.params.id, ...req.projectFilter });
     if (!project) return sendError(res, 'Project not found', 404);
 
-    // Identify the HR rep: first check incoming members list, then fall back to existing team
-    const hrMemberIncoming = members.find(m => m.role === 'HR Representative');
-    let hrRepId = hrMemberIncoming?.userId || null;
-
-    if (!hrRepId) {
-      // Look for an HR manager already on the project team
-      const existingTeamUsers = await User.find({
-        _id: { $in: project.team.map(t => t.user) },
-      }).populate('role', 'slug').select('_id role');
-      const existingHR = existingTeamUsers.find(u => u.role?.slug === 'hr-manager');
-      if (existingHR) hrRepId = existingHR._id.toString();
-    }
 
     for (const member of members) {
       const user = await User.findById(member.userId).populate('role', 'name slug');
@@ -281,10 +256,6 @@ export const addTeamMembers = async (req, res, next) => {
       // Lock this user to the project and set reporting chain
       user.project = project._id;
       user.manager = req.user._id; // PMO Lead is reporting manager
-      // Assign HR manager: if the new member IS the HR rep, skip; otherwise link them
-      if (hrRepId && member.userId !== hrRepId) {
-        user.hrManager = hrRepId;
-      }
       await user.save({ validateBeforeSave: false });
 
       // In-app notification
@@ -299,7 +270,6 @@ export const addTeamMembers = async (req, res, next) => {
 
       // Email notification
       try {
-        const hrUser = hrRepId ? await User.findById(hrRepId).select('name') : null;
         await sendProjectAssignmentEmail({
           to: user.email,
           employeeName: user.name,
@@ -307,7 +277,6 @@ export const addTeamMembers = async (req, res, next) => {
           projectCode: project.code,
           role: member.role,
           pmoName: req.user.name,
-          hrName: hrUser?.name || null,
           loginUrl: process.env.APP_URL,
         });
       } catch (_) {
@@ -335,7 +304,7 @@ export const removeTeamMember = async (req, res, next) => {
 
     // Free the user from their project lock and clear reporting chain set by this project
     await User.findByIdAndUpdate(userId, {
-      $unset: { project: 1, manager: 1, hrManager: 1 },
+      $unset: { project: 1, manager: 1 },
     });
 
     await sendNotification({
@@ -359,9 +328,6 @@ export const assignInterns = async (req, res, next) => {
     const project = await Project.findOne({ _id: req.params.id, ...req.projectFilter });
     if (!project) return sendError(res, 'Project not found', 404);
 
-    // Find HR rep from project team
-    const hrTeamMember = project.team.find(t => t.role === 'HR Representative');
-    const hrRepId = hrTeamMember?.user || null;
 
     for (const internId of internIds) {
       const intern = await User.findOne({ _id: internId, employmentType: 'Intern' });
@@ -372,7 +338,6 @@ export const assignInterns = async (req, res, next) => {
         project.interns.push({ user: internId, joinedAt: new Date() });
         intern.project = project._id;
         intern.manager = req.user._id; // PMO Lead is reporting manager
-        if (hrRepId) intern.hrManager = hrRepId; // Project HR rep
         await intern.save({ validateBeforeSave: false });
 
         await sendNotification({

@@ -12,11 +12,14 @@ import { InternProgressRing } from '../../components/pmo/InternProgressRing';
 import { ProjectHealthBadge } from '../../components/pmo/ProjectHealthBadge';
 import { MilestoneTimeline } from '../../components/pmo/MilestoneTimeline';
 import { pmoAPI } from '../../utils/api';
+import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function ProjectDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasPermission } = useAuth();
+  const canUpdate = hasPermission('Projects', 'update');
   
   const [activeTab, setActiveTab] = useState('Overview');
   const [selectedTask, setSelectedTask] = useState(null);
@@ -196,6 +199,17 @@ export default function ProjectDetails() {
       fetchProjectDetails();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create task');
+    }
+  };
+
+  const handleRemoveTeamMember = async (userId) => {
+    if (!window.confirm("Are you sure you want to remove this employee from the project team?")) return;
+    try {
+      await pmoAPI.removeProjectTeamMember(id, userId);
+      toast.success("Team member removed successfully");
+      fetchProjectDetails();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove team member');
     }
   };
 
@@ -394,6 +408,8 @@ export default function ProjectDetails() {
           <TeamTab 
             team={teamWithTaskStats} 
             navigate={navigate} 
+            canUpdate={canUpdate}
+            onRemoveTeamMemberClick={handleRemoveTeamMember}
             onAddTeamMemberClick={() => {
               fetchAvailablePool();
               setIsTeamModalOpen(true);
@@ -725,7 +741,7 @@ export default function ProjectDetails() {
           setRequirements={setTeamRequirements}
           reqInput={reqInput}
           setReqInput={setReqInput}
-          availablePool={availablePool.filter(emp => emp.employmentType !== 'Intern' && !project.team.some(t => t.user?._id === emp._id))}
+          availablePool={availablePool.filter(emp => !project.team.some(t => (t.user?._id || t.user) === emp._id))}
           selectedForTeam={selectedForTeam}
           setSelectedForTeam={setSelectedForTeam}
           onClose={() => { setIsTeamModalOpen(false); setTeamWizardStep(1); setTeamRequirements([]); setSelectedForTeam({}); setReqInput({ role: '', qty: 1, skills: [], experience: '' }); }}
@@ -742,7 +758,7 @@ export default function ProjectDetails() {
           setRequirements={setInternRequirements}
           reqInput={internReqInput}
           setReqInput={setInternReqInput}
-          availablePool={availableInternPool.filter(intern => !project.interns.some(i => i.user?._id === intern._id))}
+          availablePool={availableInternPool.filter(intern => !project.interns.some(i => (i.user?._id || i.user) === intern._id))}
           selectedForIntern={selectedForIntern}
           setSelectedForIntern={setSelectedForIntern}
           onClose={() => {
@@ -887,7 +903,7 @@ export default function ProjectDetails() {
 
 // --- TAB COMPONENTS ---
 
-const OverviewTab = ({ project, team, onAddMilestoneClick, onAddTaskClick, onAddTeamMemberClick, onAssignInternClick, onExportReportClick }) => {
+const OverviewTab = ({ project, team, onAddMilestoneClick, onAddTaskClick, onAddTeamMemberClick, onAssignInternClick, onAssignHRClick, onExportReportClick }) => {
   const managerName = project.manager?.name || 'Unknown PMO';
   const managerAvatar = project.manager?.avatar || managerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
   const deptName = project.department?.name || 'Engineering';
@@ -1095,7 +1111,7 @@ const TasksTab = ({ tasks, onTaskClick, onAddTaskClick }) => (
   </div>
 );
 
-const TeamTab = ({ team, navigate, onAddTeamMemberClick, onAssignTaskClick }) => (
+const TeamTab = ({ team, navigate, onAddTeamMemberClick, onAssignTaskClick, onRemoveTeamMemberClick, canUpdate }) => (
   <div className="space-y-6 text-left">
     <div className="flex justify-between items-center">
       <h2 className="text-lg font-bold text-[#0F172A]">Project Team ({team.length})</h2>
@@ -1125,6 +1141,9 @@ const TeamTab = ({ team, navigate, onAddTeamMemberClick, onAssignTaskClick }) =>
             <div className="mt-5 flex gap-2">
               <button onClick={(e) => { e.stopPropagation(); if(member.user?._id) navigate(`/pmo/employees/${member.user._id}`); }} className="flex-1 py-1.5 border border-[#E2E8F0] text-[#0F172A] text-xs font-bold rounded-lg hover:bg-[#F8FAFC] transition-colors">View Profile</button>
               <button onClick={() => onAssignTaskClick(member.user?._id)} className="flex-1 py-1.5 border border-[#E2E8F0] text-[#0F172A] text-xs font-bold rounded-lg hover:bg-[#F8FAFC] transition-colors">Assign Task</button>
+              {canUpdate && (
+                <button onClick={() => onRemoveTeamMemberClick(member.user?._id)} className="flex-1 py-1.5 border border-[#EF4444] text-[#EF4444] text-xs font-bold rounded-lg hover:bg-[#FEF2F2] transition-colors">Remove</button>
+              )}
             </div>
           </div>
         );
