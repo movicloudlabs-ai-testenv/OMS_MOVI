@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, Users, Flag, CheckCircle2, Clock, AlertCircle, Layers } from 'lucide-react';
+import { X, ChevronRight, Users, Flag, CheckCircle2, Clock, Layers, Search, Plus, ArrowUpRight, CircleSlash, CheckCircle, AlertTriangle } from 'lucide-react';
 import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -63,6 +63,96 @@ function ProgressRing({ pct, size = 64 }) {
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#2563EB" strokeWidth="6"
         strokeDasharray={`${dash} ${c}`} strokeLinecap="round" />
     </svg>
+  );
+}
+
+function TinyTrend({ color = '#F97316' }) {
+  // Dotted-point sparkline like the reference UI
+  const points = [
+    { x: 2, y: 18 },
+    { x: 18, y: 12 },
+    { x: 34, y: 15 },
+    { x: 50, y: 22 },
+    { x: 66, y: 12 },
+    { x: 82, y: 10 },
+    { x: 98, y: 22 },
+    { x: 118, y: 8 },
+  ];
+  const d = `M${points[0].x} ${points[0].y} ` + points.slice(1).map(p => `L${p.x} ${p.y}`).join(' ');
+  return (
+    <svg viewBox="0 0 120 24" className="h-6 w-full">
+      <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+      {points.map((p, idx) => (
+        <circle key={idx} cx={p.x} cy={p.y} r="2.4" fill="white" stroke={color} strokeWidth="2" />
+      ))}
+    </svg>
+  );
+}
+
+function SummaryCard({ icon, value, label, accent, trendColor }) {
+  const Icon = icon;
+  return (
+    <div className="rounded-[24px] border border-[#F1E8E0] bg-white px-5 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${accent}`}>
+          <Icon size={20} className="text-[#F97316]" />
+        </div>
+        <div className="min-w-0 text-right">
+          <div className="text-[26px] font-bold leading-none text-[#111827]">{value}</div>
+          <div className="mt-1 text-[12px] text-[#6B7280]">{label}</div>
+        </div>
+      </div>
+      <div className="mt-4">
+        <TinyTrend color={trendColor} />
+      </div>
+    </div>
+  );
+}
+
+function DonutChart({ values, colors, size = 92, stroke = 12 }) {
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const total = values.reduce((a, v) => a + v, 0) || 1;
+  let offset = 0;
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#F3F4F6" strokeWidth={stroke} />
+      {values.map((v, i) => {
+        const seg = (v / total) * c;
+        const dash = `${seg} ${c - seg}`;
+        const el = (
+          <circle
+            key={i}
+            cx={size / 2}
+            cy={size / 2}
+            r={r}
+            fill="none"
+            stroke={colors[i]}
+            strokeWidth={stroke}
+            strokeDasharray={dash}
+            strokeDashoffset={-offset}
+            strokeLinecap="round"
+          />
+        );
+        offset += seg;
+        return el;
+      })}
+    </svg>
+  );
+}
+
+function SectionCard({ title, right, children }) {
+  return (
+    <div className="rounded-[28px] border border-[#F3E8DE] bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-[16px] font-bold text-[#111827]">{title}</h3>
+        </div>
+        {right}
+      </div>
+      {children}
+    </div>
   );
 }
 
@@ -411,23 +501,25 @@ function ProjectCard({ project, onClick }) {
 
   return (
     <div onClick={onClick}
-      className="bg-white border border-[#E2E8F0] rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#2563EB] transition-all cursor-pointer group">
+      className="group rounded-[26px] border border-[#F3E8DE] bg-white p-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)] cursor-pointer">
 
       {/* Top row */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-mono font-bold text-[#94A3B8]">{project.code}</span>
+            <span className="rounded-full bg-[#FFF1E8] px-2 py-0.5 text-[10px] font-mono font-bold text-[#D97706]">{project.code}</span>
             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${pr}`}>{project.priority}</span>
           </div>
-          <h3 className="text-[15px] font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">
+          <h3 className="text-[18px] font-bold text-[#111827] group-hover:text-[#F97316] transition-colors truncate">
             {project.name}
           </h3>
           {project.description && (
-            <p className="text-[12px] text-[#64748B] mt-0.5 line-clamp-1">{project.description}</p>
+            <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-[#6B7280]">{project.description}</p>
           )}
         </div>
-        <ChevronRight size={16} className="text-[#CBD5E1] group-hover:text-[#2563EB] transition-colors shrink-0 mt-1" />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#F3E8DE] bg-[#FFF8F3]">
+          <ChevronRight size={16} className="text-[#F97316] transition-colors shrink-0" />
+        </div>
       </div>
 
       {/* Badges */}
@@ -447,27 +539,27 @@ function ProjectCard({ project, onClick }) {
 
       {/* Progress */}
       <div className="mb-4">
-        <div className="flex justify-between text-[11px] font-bold mb-1.5">
+        <div className="mb-1.5 flex justify-between text-[11px] font-bold">
           <span className="text-[#64748B]">Completion</span>
           <span className="text-[#0F172A]">{stats.completion || 0}%</span>
         </div>
-        <div className="h-1.5 w-full bg-[#E2E8F0] rounded-full overflow-hidden">
+        <div className="relative h-2 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
           <div className={`h-full rounded-full transition-all ${
-            (stats.completion || 0) >= 80 ? 'bg-[#059669]' :
-            (stats.completion || 0) >= 50 ? 'bg-[#2563EB]' : 'bg-[#D97706]'
+            (stats.completion || 0) >= 80 ? 'bg-[#22C55E]' :
+            (stats.completion || 0) >= 50 ? 'bg-[#F59E0B]' : 'bg-[#60A5FA]'
           }`} style={{ width: `${stats.completion || 0}%` }} />
         </div>
       </div>
 
       {/* Task mini stats */}
-      <div className="grid grid-cols-4 gap-1.5 mb-4">
+      <div className="mb-4 grid grid-cols-4 gap-2 rounded-[20px] bg-[#FFFDFC] p-3">
         {[
           { label: 'Total',    val: stats.total    || 0, color: 'text-[#0F172A]',  bg: 'bg-[#F8FAFC]' },
           { label: 'Done',     val: stats.done     || 0, color: 'text-[#059669]',  bg: 'bg-[#ECFDF5]' },
           { label: 'Blocked',  val: stats.blocked  || 0, color: 'text-[#DC2626]',  bg: 'bg-[#FEF2F2]' },
           { label: 'Overdue',  val: stats.overdue  || 0, color: 'text-[#EA580C]',  bg: 'bg-[#FFF7ED]' },
         ].map(s => (
-          <div key={s.label} className={`${s.bg} rounded-lg p-2 text-center`}>
+          <div key={s.label} className={`${s.bg} rounded-2xl p-2.5 text-center`}>
             <p className={`text-[16px] font-black ${s.color} leading-none`}>{s.val}</p>
             <p className="text-[9px] font-bold text-[#94A3B8] uppercase mt-0.5">{s.label}</p>
           </div>
@@ -475,7 +567,7 @@ function ProjectCard({ project, onClick }) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-[#F1F5F9]">
+      <div className="flex items-center justify-between border-t border-[#F3E8DE] pt-3">
         {/* Team avatars */}
         <div className="flex items-center gap-1">
           {(project.team || []).slice(0, 5).map((member, idx) => {
@@ -484,7 +576,7 @@ function ProjectCard({ project, onClick }) {
             const initial = u.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
             return (
               <div key={idx} title={u.name}
-                className="w-6 h-6 rounded-full bg-[#EFF6FF] text-[#2563EB] flex items-center justify-center text-[9px] font-bold border-2 border-white -ml-1 first:ml-0">
+                className="w-7 h-7 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center text-[10px] font-bold border-2 border-white -ml-1 first:ml-0">
                 {initial}
               </div>
             );
@@ -541,54 +633,128 @@ export default function HRProjects() {
   const blockedTasks   = projects.reduce((a, p) => a + (p.taskStats?.blocked   || 0), 0);
   const overdueTasks   = projects.reduce((a, p) => a + (p.taskStats?.overdue   || 0), 0);
 
+  // Project overview (status buckets)
+  const statusCounts = {
+    Planning: projects.filter(p => p.status === 'Planning').length,
+    Active: projects.filter(p => p.status === 'Active').length,
+    'On Hold': projects.filter(p => p.status === 'On Hold').length,
+    Completed: projects.filter(p => p.status === 'Completed').length,
+  };
+
+  // Upcoming deadlines: pick earliest of milestone date or project end date
+  const upcomingDeadlines = projects
+    .flatMap((p) => {
+      const items = [];
+      (p.milestones || []).forEach((m) => {
+        if (!m?.date) return;
+        const dt = new Date(m.date);
+        if (Number.isNaN(dt.getTime())) return;
+        if (m.status === 'completed') return;
+        items.push({
+          type: 'milestone',
+          title: m.name,
+          projectName: p.name,
+          date: dt,
+        });
+      });
+      if (p.endDate) {
+        const dt = new Date(p.endDate);
+        if (!Number.isNaN(dt.getTime())) {
+          items.push({
+            type: 'project',
+            title: 'Project deadline',
+            projectName: p.name,
+            date: dt,
+          });
+        }
+      }
+      return items;
+    })
+    .filter((i) => i.date >= new Date(Date.now() - 86400000))
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 4);
+
+  // Recent activity: lightweight feed from createdAt and milestone scheduling
+  const recentActivity = projects
+    .slice()
+    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 4)
+    .flatMap((p) => {
+      const rows = [
+        {
+          icon: 'rocket_launch',
+          color: 'text-[#2563EB]',
+          bg: 'bg-[#EFF6FF]',
+          text: `Project created:`,
+          target: p.name,
+          time: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'Recently',
+        },
+      ];
+
+      const ms = (p.milestones || []).filter(m => m?.date && m.status !== 'completed').slice(0, 1);
+      ms.forEach((m) => {
+        rows.push({
+          icon: 'flag',
+          color: 'text-[#F59E0B]',
+          bg: 'bg-[#FFFBEB]',
+          text: `Milestone scheduled:`,
+          target: `${m.name} · ${p.name}`,
+          time: m.date ? new Date(m.date).toLocaleDateString() : 'Upcoming',
+        });
+      });
+      return rows;
+    })
+    .slice(0, 5);
+
   return (
     <HRLayout bare>
-      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 max-w-[1400px] mx-auto pb-12">
+      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-5 pb-12 font-sans text-[#0F172A]">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-6">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-[22px] font-semibold tracking-tight">My Projects</h1>
             <p className="text-[13px] text-[#64748B] mt-0.5">Projects you are assigned to as HR Representative</p>
           </div>
-          <button onClick={fetchProjects}
-            className="border border-[#E2E8F0] text-[#0F172A] px-3 py-2 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-1.5 self-start">
-            <span className="material-symbols-outlined text-[16px]">sync</span> Refresh
-          </button>
+          <div className="flex items-center gap-3 self-start">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#F97316] px-4 py-2.5 text-[13px] font-semibold text-white shadow-[0_10px_20px_rgba(249,115,22,0.28)] transition hover:bg-[#EA580C]"
+            >
+              <Plus size={16} />
+              New Project
+            </button>
+            <button onClick={fetchProjects}
+              className="inline-flex items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-[13px] font-medium text-[#111827] transition hover:bg-[#F9FAFB]">
+              <span className="material-symbols-outlined text-[16px]">sync</span>
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Stats bar */}
         {!loading && projects.length > 0 && (
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-6 py-3 flex items-center overflow-x-auto shadow-sm gap-0">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {[
-              { icon: 'folder_open',   value: projects.length, label: 'Projects',       color: 'text-[#2563EB]' },
-              { icon: 'task_alt',      value: totalTasks,      label: 'Total Tasks',    color: 'text-[#0F172A]' },
-              { icon: 'check_circle',  value: completedTasks,  label: 'Completed',      color: 'text-[#059669]' },
-              { icon: 'block',         value: blockedTasks,    label: 'Blocked',        color: 'text-[#DC2626]' },
-              { icon: 'schedule',      value: overdueTasks,    label: 'Overdue',        color: 'text-[#D97706]' },
-            ].map((s, idx) => (
-              <div key={s.label} className="flex items-center">
-                {idx > 0 && <div className="w-px h-8 bg-[#E2E8F0] mx-4 shrink-0" />}
-                <div className="flex items-center gap-2.5 shrink-0">
-                  <span className={`material-symbols-outlined text-[20px] ${s.color}`}>{s.icon}</span>
-                  <div>
-                    <p className={`text-[18px] font-bold ${s.color} leading-none`}>{s.value}</p>
-                    <p className="text-[11px] text-[#64748B]">{s.label}</p>
-                  </div>
-                </div>
-              </div>
+              { icon: Layers, value: projects.length, label: 'Total Projects', accent: 'bg-[#FFF7ED]', trendColor: '#F59E0B' },
+              { icon: ArrowUpRight, value: totalTasks, label: 'Total Tasks', accent: 'bg-[#EEF2FF]', trendColor: '#60A5FA' },
+              { icon: CheckCircle, value: completedTasks, label: 'Completed', accent: 'bg-[#ECFDF5]', trendColor: '#22C55E' },
+              { icon: CircleSlash, value: blockedTasks, label: 'Blocked', accent: 'bg-[#FEF2F2]', trendColor: '#F43F5E' },
+              { icon: AlertTriangle, value: overdueTasks, label: 'Overdue', accent: 'bg-[#FFF7ED]', trendColor: '#EAB308' },
+            ].map((stat) => (
+              <SummaryCard key={stat.label} {...stat} />
             ))}
           </div>
         )}
 
         {/* Toolbar */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="relative flex-1 max-w-sm">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-[18px]">search</span>
-            <input type="text" placeholder="Search projects..." value={search} onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 bg-white border border-[#E2E8F0] rounded-lg text-[13px] focus:outline-none focus:border-[#2563EB] transition-colors" />
+        <div className="flex flex-col gap-3 rounded-[26px] border border-[#F3E8DE] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] xl:flex-row xl:items-center xl:justify-between">
+          <div className="relative w-full max-w-[520px]">
+            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+            <input type="text" placeholder="Search projects by name, code, or description..." value={search} onChange={e => setSearch(e.target.value)}
+              className="w-full rounded-2xl border border-[#EEE5DB] bg-[#FFFDFC] py-3 pl-11 pr-4 text-[13px] focus:border-[#F97316] focus:outline-none" />
           </div>
-          <div className="flex gap-1">
+          <div className="flex flex-wrap gap-2">
             {[
               { id: 'all',       label: 'All' },
               { id: 'active',    label: 'Active' },
@@ -597,12 +763,18 @@ export default function HRProjects() {
               { id: 'completed', label: 'Completed' },
             ].map(f => (
               <button key={f.id} onClick={() => setFilter(f.id)}
-                className={`px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors ${
-                  filter === f.id ? 'bg-[#2563EB] text-white' : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC]'
+                className={`rounded-xl px-4 py-2 text-[12px] font-medium transition-colors ${
+                  filter === f.id ? 'bg-[#F97316] text-white shadow-[0_8px_20px_rgba(249,115,22,0.2)]' : 'border border-[#EEE5DB] bg-white text-[#6B7280] hover:bg-[#FFF7ED]'
                 }`}>
                 {f.label}
               </button>
             ))}
+          </div>
+          <div className="flex items-center gap-2 self-start xl:self-auto">
+            <span className="text-[12px] text-[#9CA3AF]">Sort by:</span>
+            <div className="rounded-xl border border-[#EEE5DB] bg-white px-3 py-2 text-[12px] font-medium text-[#374151]">
+              Recent
+            </div>
           </div>
         </div>
 
@@ -612,7 +784,7 @@ export default function HRProjects() {
             <span className="material-symbols-outlined text-[32px] text-[#2563EB] animate-spin">sync</span>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white border border-dashed border-[#E2E8F0] rounded-2xl py-20 flex flex-col items-center justify-center text-center">
+          <div className="flex flex-col items-center justify-center rounded-[28px] border border-dashed border-[#E5DCD3] bg-white py-20 text-center">
             <Layers size={40} className="text-[#CBD5E1] mb-3" />
             <p className="text-[15px] font-medium text-[#0F172A] mb-1">
               {projects.length === 0 ? 'No projects assigned yet' : 'No projects match your filter'}
@@ -624,11 +796,108 @@ export default function HRProjects() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map(project => (
-              <ProjectCard key={project._id} project={project} onClick={() => setOpenId(project._id)} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {filtered.map(project => (
+                <ProjectCard key={project._id} project={project} onClick={() => setOpenId(project._id)} />
+              ))}
+            </div>
+
+            {/* Lower dashboard cards like reference */}
+            {!loading && projects.length > 0 && (
+              <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+                {/* Project Overview */}
+                <SectionCard
+                  title="Project Overview"
+                  right={
+                    <div className="text-[12px] font-semibold text-[#9CA3AF]">
+                      {projects.length} total
+                    </div>
+                  }
+                >
+                  <div className="flex items-center gap-5">
+                    <div className="relative">
+                      <DonutChart
+                        values={[statusCounts.Planning, statusCounts.Active, statusCounts['On Hold'], statusCounts.Completed]}
+                        colors={['#60A5FA', '#F59E0B', '#A78BFA', '#22C55E']}
+                        size={96}
+                        stroke={12}
+                      />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <div className="text-[20px] font-bold text-[#111827]">{projects.length}</div>
+                        <div className="text-[11px] text-[#9CA3AF]">Projects</div>
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2.5">
+                      {[
+                        { label: 'Planning', val: statusCounts.Planning, dot: 'bg-[#60A5FA]' },
+                        { label: 'In Progress', val: statusCounts.Active, dot: 'bg-[#F59E0B]' },
+                        { label: 'On Hold', val: statusCounts['On Hold'], dot: 'bg-[#A78BFA]' },
+                        { label: 'Completed', val: statusCounts.Completed, dot: 'bg-[#22C55E]' },
+                      ].map((row) => (
+                        <div key={row.label} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`h-2.5 w-2.5 rounded-full ${row.dot}`} />
+                            <span className="text-[12px] font-medium text-[#6B7280]">{row.label}</span>
+                          </div>
+                          <span className="text-[12px] font-semibold text-[#111827]">{row.val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </SectionCard>
+
+                {/* Upcoming Deadlines */}
+                <SectionCard title="Upcoming Deadlines" right={<span className="text-[12px] font-semibold text-[#F97316]">View All</span>}>
+                  {upcomingDeadlines.length > 0 ? (
+                    <div className="space-y-3">
+                      {upcomingDeadlines.map((d, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-3 rounded-2xl border border-[#F6EADF] bg-[#FFFEFD] p-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-[13px] font-semibold text-[#111827]">
+                              {d.type === 'milestone' ? d.title : d.projectName}
+                            </p>
+                            <p className="truncate text-[12px] text-[#9CA3AF]">
+                              {d.type === 'milestone' ? d.projectName : 'Project deadline'}
+                            </p>
+                          </div>
+                          <span className="shrink-0 rounded-xl bg-[#FFF1E8] px-2.5 py-1.5 text-[11px] font-semibold text-[#F97316]">
+                            {d.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-8 text-center text-[13px] text-[#9CA3AF]">No upcoming deadlines.</p>
+                  )}
+                </SectionCard>
+
+                {/* Recent Activity */}
+                <SectionCard title="Recent Activity" right={<span className="text-[12px] font-semibold text-[#F97316]">View All</span>}>
+                  {recentActivity.length > 0 ? (
+                    <div className="space-y-3">
+                      {recentActivity.slice(0, 4).map((a, idx) => (
+                        <div key={idx} className="flex items-start gap-3">
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl border-2 border-white ${a.bg} ${a.color}`}>
+                            <span className="material-symbols-outlined text-[16px]">{a.icon}</span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] text-[#374151]">
+                              <span className="font-semibold">{a.text}</span>{' '}
+                              <span className="font-semibold text-[#2563EB]">{a.target}</span>
+                            </p>
+                            <p className="mt-0.5 text-[11px] font-medium text-[#9CA3AF]">{a.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="py-8 text-center text-[13px] text-[#9CA3AF]">No recent activity.</p>
+                  )}
+                </SectionCard>
+              </div>
+            )}
+          </>
         )}
       </div>
 

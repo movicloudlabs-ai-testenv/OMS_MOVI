@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Star, ShieldAlert, Plus, X, Award, Users } from 'lucide-react';
+import { Star, ShieldAlert, Plus, X, Award, Users, Search, Filter, RefreshCw, ChevronDown } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
 
@@ -52,6 +52,52 @@ function RoleBreakdown({ ratings }) {
           {pmo.toFixed(1)}★
         </span>
       )}
+    </div>
+  );
+}
+
+function TinyTrend({ color = '#F97316' }) {
+  // Match Projects page sparkline (line with dotted points)
+  const points = [
+    { x: 2, y: 18 },
+    { x: 18, y: 15 },
+    { x: 34, y: 14 },
+    { x: 50, y: 12 },
+    { x: 66, y: 13 },
+    { x: 82, y: 11 },
+    { x: 98, y: 13 },
+    { x: 118, y: 10 },
+  ];
+  const d = `M${points[0].x} ${points[0].y} ` + points.slice(1).map((p) => `L${p.x} ${p.y}`).join(' ');
+  return (
+    <svg viewBox="0 0 120 24" className="h-6 w-full">
+      <path d={d} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+      {points.map((p, idx) => (
+        <circle key={idx} cx={p.x} cy={p.y} r="2.4" fill="white" stroke={color} strokeWidth="2" />
+      ))}
+    </svg>
+  );
+}
+
+function MetricCard({ title, value, suffix, iconBg, iconColor, icon: Icon, trendColor, subtitle }) {
+  return (
+    <div className="rounded-[20px] border border-[#F3E8DE] bg-white p-4 shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-semibold text-[#6B7280]">{title}</p>
+          <div className="mt-1.5 flex items-end gap-1">
+            <span className="text-[28px] font-bold leading-none text-[#111827]">{value}</span>
+            {suffix ? <span className="pb-0.5 text-[13px] text-[#9CA3AF]">{suffix}</span> : null}
+          </div>
+          {subtitle ? <p className="mt-1 text-[11px] text-[#9CA3AF]">{subtitle}</p> : null}
+        </div>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconBg}`}>
+          <Icon size={18} className={iconColor} />
+        </div>
+      </div>
+      <div className="mt-3">
+        <TinyTrend color={trendColor} />
+      </div>
     </div>
   );
 }
@@ -178,45 +224,117 @@ function RatingPanel({ person, label, onSubmit, onClose }) {
 }
 
 // ─── People Table ──────────────────────────────────────────────────────────────
-function PeopleTable({ people, selectedId, onSelect, label }) {
+function PeopleTable({ people, selectedId, onSelect, label, activeTab, onTabChange, internCount, employeeCount }) {
   const [search, setSearch] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('all');
+
+  const departments = useMemo(() => {
+    const unique = [...new Set((people || []).map((p) => p.department?.name).filter(Boolean))];
+    return unique.sort((a, b) => a.localeCompare(b));
+  }, [people]);
+
   const filtered = useMemo(() =>
-    people.filter(p => p.name?.toLowerCase().includes(search.toLowerCase())),
-    [people, search]
+    people.filter((p) => {
+      const matchesSearch =
+        p.name?.toLowerCase().includes(search.toLowerCase()) ||
+        p.employeeId?.toLowerCase().includes(search.toLowerCase());
+      const matchesDepartment = departmentFilter === 'all' || p.department?.name === departmentFilter;
+      return matchesSearch && matchesDepartment;
+    }),
+    [people, search, departmentFilter]
   );
 
   return (
-    <div className="flex-1 bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden flex flex-col">
-      <div className="p-3 border-b border-[#E2E8F0] bg-[#F8FAFC] flex items-center gap-2">
-        <div className="relative flex-1 max-w-xs">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] text-[16px]">search</span>
-          <input type="text" placeholder={`Search ${label}...`} value={search} onChange={e => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 border border-[#E2E8F0] rounded-md text-[13px] focus:outline-none focus:border-[#2563EB]" />
-        </div>
-        <span className="text-[12px] text-[#64748B]">{filtered.length} {label}</span>
+    <div className="flex min-h-[560px] flex-1 flex-col overflow-hidden rounded-[20px] border border-[#F3E8DE] bg-white shadow-[0_8px_24px_rgba(15,23,42,0.04)]">
+      {/* Tabs — flush to card top like reference */}
+      <div className="flex items-center gap-1 border-b border-[#F6EADF] px-5 pt-3">
+        {[
+          { id: 'interns', label: 'Intern Ratings', count: internCount },
+          { id: 'employees', label: 'Employee Ratings', count: employeeCount },
+        ].map((tab) => (
+          <button
+            type="button"
+            key={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={`inline-flex items-center gap-2 border-b-2 px-3 pb-2.5 pt-1 text-[13px] font-semibold transition-colors ${
+              activeTab === tab.id
+                ? 'border-[#F97316] text-[#F97316]'
+                : 'border-transparent text-[#9CA3AF] hover:text-[#6B7280]'
+            }`}
+          >
+            <span>{tab.label}</span>
+            <span className={`flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+              activeTab === tab.id ? 'bg-[#FFF1E8] text-[#F97316]' : 'bg-[#F3F4F6] text-[#9CA3AF]'
+            }`}>
+              {tab.count}
+            </span>
+          </button>
+        ))}
       </div>
 
-      <div className="overflow-auto flex-1">
+      {/* Search / filters — tight under tabs */}
+      <div className="flex flex-col gap-2.5 border-b border-[#F6EADF] px-5 py-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="relative w-full xl:max-w-[420px]">
+          <Search size={17} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          <input
+            type="text"
+            placeholder={`Search ${label.toLowerCase()}s by name or ID...`}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-[#EEE5DB] bg-[#FFFDFC] py-2.5 pl-10 pr-4 text-[13px] focus:border-[#F97316] focus:outline-none"
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative min-w-[190px]">
+            <select
+              value={departmentFilter}
+              onChange={(e) => setDepartmentFilter(e.target.value)}
+              className="w-full appearance-none rounded-xl border border-[#EEE5DB] bg-white py-2.5 pl-3.5 pr-9 text-[13px] text-[#374151] focus:border-[#F97316] focus:outline-none"
+            >
+              <option value="all">All Departments</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+            <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+          </div>
+          <button
+            type="button"
+            className="inline-flex h-[42px] w-[42px] items-center justify-center rounded-xl border border-[#EEE5DB] bg-white text-[#6B7280] transition hover:bg-[#F9FAFB]"
+          >
+            <Filter size={17} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-              <th className="px-4 py-3 text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider">Name</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider">ID</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider">Reviews</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider">Avg Rating</th>
-              <th className="px-4 py-3 text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider"></th>
+            <tr className="border-b border-[#F6EADF] bg-[#FFFEFD]">
+              <th className="px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">Name</th>
+              <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">ID</th>
+              <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">Department</th>
+              <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">Reviews</th>
+              <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">Avg Rating</th>
+              <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">Last Review</th>
+              <th className="px-3 py-3 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">Status</th>
+              <th className="px-5 py-3 text-right text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length > 0 ? filtered.map(person => {
               const avg = combinedRating(person.performanceRatings);
               const isSelected = selectedId === person._id;
+              const lastReview = person.performanceRatings?.length
+                ? [...person.performanceRatings].sort((a, b) => b.week - a.week)[0]
+                : null;
               return (
                 <tr key={person._id} onClick={() => onSelect(person)}
-                  className={`border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors cursor-pointer last:border-0 ${isSelected ? 'bg-[#EFF6FF]' : ''}`}>
-                  <td className="px-4 py-3">
+                  className={`cursor-pointer border-b border-[#FAEFE7] transition-colors last:border-0 hover:bg-[#FFFBF8] ${isSelected ? 'bg-[#FFF7F2]' : ''}`}>
+                  <td className="px-5 py-3">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-[#EDE9FE] text-[#7C3AED] flex items-center justify-center font-bold text-[11px] shrink-0">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#FFF1E8] font-bold text-[11px] text-[#F97316]">
                         {person.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                       <div>
@@ -225,9 +343,10 @@ function PeopleTable({ people, selectedId, onSelect, label }) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-[12px] font-mono text-[#64748B]">{person.employeeId || '—'}</td>
-                  <td className="px-4 py-3 text-[13px] text-[#64748B]">{person.performanceRatings?.length || 0} review(s)</td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3 text-[12px] font-mono text-[#64748B]">{person.employeeId || '—'}</td>
+                  <td className="px-3 py-3 text-[12px] text-[#64748B]">{person.department?.name || '—'}</td>
+                  <td className="px-3 py-3 text-[13px] text-[#64748B]">{person.performanceRatings?.length || 0}</td>
+                  <td className="px-3 py-3">
                     <div>
                       <div className="flex items-center gap-1">
                         <Star size={13} className="text-amber-400" fill="currentColor" />
@@ -237,9 +356,21 @@ function PeopleTable({ people, selectedId, onSelect, label }) {
                       <RoleBreakdown ratings={person.performanceRatings} />
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-3 py-3 text-[12px] text-[#64748B]">
+                    {lastReview ? `Week ${lastReview.week}` : 'No review yet'}
+                  </td>
+                  <td className="px-3 py-3">
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                      (person.performanceRatings?.length || 0) > 0
+                        ? 'bg-[#ECFDF5] text-[#16A34A]'
+                        : 'bg-[#FFF7ED] text-[#D97706]'
+                    }`}>
+                      {(person.performanceRatings?.length || 0) > 0 ? 'Reviewed' : 'Pending'}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-right">
                     <button onClick={e => { e.stopPropagation(); onSelect(person); }}
-                      className="text-[#2563EB] hover:underline text-[12px] font-semibold flex items-center gap-1 ml-auto">
+                      className="ml-auto inline-flex items-center gap-1 rounded-xl border border-[#F3E8DE] bg-[#FFF8F3] px-3 py-1.5 text-[12px] font-semibold text-[#F97316] transition hover:bg-[#FFF1E8]">
                       <Plus size={13} /> Evaluate
                     </button>
                   </td>
@@ -247,7 +378,21 @@ function PeopleTable({ people, selectedId, onSelect, label }) {
               );
             }) : (
               <tr>
-                <td colSpan={5} className="px-4 py-12 text-center text-[13px] text-[#94A3B8]">No {label} found</td>
+                <td colSpan={8} className="px-4 py-10">
+                  <div className="flex flex-col items-center justify-center text-center">
+                    <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#FFF8F3] text-[#F59E0B]">
+                      <ShieldAlert size={24} />
+                    </div>
+                    <p className="text-[18px] font-semibold text-[#111827]">No {label.toLowerCase()} found</p>
+                    <p className="mt-1 text-[13px] text-[#9CA3AF]">No {label.toLowerCase()}s match your current filters.</p>
+                    <button
+                      type="button"
+                      className="mt-5 rounded-xl border border-[#F3E8DE] bg-[#FFF8F3] px-4 py-2 text-[13px] font-semibold text-[#F97316]"
+                    >
+                      Add New {label}
+                    </button>
+                  </div>
+                </td>
               </tr>
             )}
           </tbody>
@@ -313,67 +458,50 @@ export default function HRPerformance() {
 
   return (
     <HRLayout bare>
-      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 max-w-[1400px] mx-auto pb-8">
+      <div className="mx-auto flex min-h-full w-full max-w-[1480px] flex-col gap-3 pb-4 font-sans text-[#0F172A]">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-6">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-[22px] font-semibold tracking-tight">Performance Reviews</h1>
             <p className="text-[13px] text-[#64748B] mt-0.5">Submit weekly evaluations and track team performance</p>
           </div>
           <button onClick={loadData}
-            className="border border-[#E2E8F0] text-[#0F172A] px-3 py-2 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-1.5 self-start">
-            <span className="material-symbols-outlined text-[16px]">sync</span> Refresh
+            className="inline-flex items-center gap-2 rounded-xl border border-[#E5E7EB] bg-white px-4 py-2.5 text-[13px] font-medium text-[#111827] transition hover:bg-[#F9FAFB] self-start">
+            <RefreshCw size={15} /> Refresh
           </button>
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider mb-1">Average Rating</p>
-              <p className="text-[26px] font-bold text-[#0F172A] leading-none">{avgRating}<span className="text-[14px] text-[#94A3B8] font-normal"> / 5</span></p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-[#FFFBEB] flex items-center justify-center">
-              <Star size={20} className="text-amber-400" fill="currentColor" />
-            </div>
-          </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider mb-1">Reviews Submitted</p>
-              <p className="text-[26px] font-bold text-[#16A34A] leading-none">{totalReviews}</p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-[#ECFDF5] flex items-center justify-center">
-              <Award size={20} className="text-[#16A34A]" />
-            </div>
-          </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 shadow-sm flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider mb-1">{label}s Managed</p>
-              <p className="text-[26px] font-bold text-[#2563EB] leading-none">{people.length}</p>
-            </div>
-            <div className="w-10 h-10 rounded-full bg-[#EFF6FF] flex items-center justify-center">
-              <Users size={20} className="text-[#2563EB]" />
-            </div>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex gap-1 bg-[#F8FAFC] border border-[#E2E8F0] p-1 rounded-lg w-fit">
-          {[
-            { id: 'interns',   label: 'Intern Ratings',   count: interns.length },
-            { id: 'employees', label: 'Employee Ratings',  count: employees.length },
-          ].map(tab => (
-            <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSelected(null); }}
-              className={`px-5 py-2 rounded-md text-[12px] font-bold transition-all flex items-center gap-2 ${
-                activeTab === tab.id ? 'bg-white text-[#0F172A] shadow-sm' : 'text-[#64748B] hover:text-[#0F172A]'
-              }`}>
-              {tab.label}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                activeTab === tab.id ? 'bg-[#2563EB] text-white' : 'bg-[#E2E8F0] text-[#64748B]'
-              }`}>{tab.count}</span>
-            </button>
-          ))}
+        <div className="grid gap-3 md:grid-cols-3">
+          <MetricCard
+            title="Average Rating"
+            value={avgRating}
+            suffix="/ 5"
+            subtitle="Based on all reviews"
+            icon={Star}
+            iconBg="bg-[#FFF7ED]"
+            iconColor="text-[#F97316]"
+            trendColor="#F59E0B"
+          />
+          <MetricCard
+            title="Reviews Submitted"
+            value={totalReviews}
+            subtitle="This period"
+            icon={Award}
+            iconBg="bg-[#ECFDF5]"
+            iconColor="text-[#16A34A]"
+            trendColor="#22C55E"
+          />
+          <MetricCard
+            title={`${label}s Managed`}
+            value={people.length}
+            subtitle={`Total ${label.toLowerCase()}s under review`}
+            icon={Users}
+            iconBg="bg-[#EFF6FF]"
+            iconColor="text-[#3B82F6]"
+            trendColor="#60A5FA"
+          />
         </div>
 
         {/* Content */}
@@ -382,12 +510,16 @@ export default function HRPerformance() {
             <span className="material-symbols-outlined text-[32px] text-[#2563EB] animate-spin">sync</span>
           </div>
         ) : (
-          <div className="flex flex-col lg:flex-row gap-5 items-stretch">
+          <div className="flex flex-1 flex-col gap-3">
             <PeopleTable
               people={people}
               selectedId={selected?._id}
               onSelect={p => setSelected(prev => prev?._id === p._id ? null : p)}
               label={label}
+              activeTab={activeTab}
+              onTabChange={(tab) => { setActiveTab(tab); setSelected(null); }}
+              internCount={interns.length}
+              employeeCount={employees.length}
             />
             {selected && (
               <RatingPanel
