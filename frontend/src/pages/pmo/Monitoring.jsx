@@ -5,6 +5,8 @@ import { pmoAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { motion } from 'framer-motion';
 
 export default function PMOMonitoring() {
   const { hasPermission } = useAuth();
@@ -13,16 +15,18 @@ export default function PMOMonitoring() {
   const [projectHealthList, setProjectHealthList] = useState([]);
   const [activeBlockers, setActiveBlockers] = useState([]);
   const [resourceWarnings, setResourceWarnings] = useState({ overloadedMembers: [], leaveWarnings: [] });
+  const [barData, setBarData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchMonitoringData = async () => {
     if (!canRead) return;
     setLoading(true);
     try {
-      const [healthRes, warningsRes, blockedTasksRes] = await Promise.all([
+      const [healthRes, warningsRes, blockedTasksRes, teamRes] = await Promise.all([
         pmoAPI.getProjectHealth(),
         pmoAPI.getResourceWarnings(),
-        pmoAPI.getTasks({ status: 'Blocked' })
+        pmoAPI.getTasks({ status: 'Blocked' }),
+        pmoAPI.getTeam()
       ]);
       setProjectHealthList(healthRes.data.data || []);
       setResourceWarnings(warningsRes.data.data || { overloadedMembers: [], leaveWarnings: [] });
@@ -36,6 +40,26 @@ export default function PMOMonitoring() {
         timeBlocked: 'Active',
       }));
       setActiveBlockers(blockers);
+
+      // Process Team Data for Department Workload
+      const teamData = teamRes.data.data || [];
+      const deptWorkloadMap = {};
+      teamData.forEach(item => {
+        if (!item.user) return;
+        const dept = item.user.department?.name || 'General';
+        const workload = item.stats?.workload || 0;
+        if (!deptWorkloadMap[dept]) {
+          deptWorkloadMap[dept] = { total: 0, count: 0 };
+        }
+        deptWorkloadMap[dept].total += workload;
+        deptWorkloadMap[dept].count += 1;
+      });
+      const processedBarData = Object.keys(deptWorkloadMap).map(dept => ({
+        name: dept,
+        workload: Math.round(deptWorkloadMap[dept].total / deptWorkloadMap[dept].count)
+      }));
+      setBarData(processedBarData);
+
     } catch (error) {
       toast.error('Failed to load monitoring data');
     } finally {
@@ -48,6 +72,12 @@ export default function PMOMonitoring() {
   }, []);
 
   if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view monitoring data." /></PageWrapper>;
+
+  const pieData = [
+    { name: 'On Track', value: projectHealthList.filter(p => p.health === 'On Track').length, color: '#10B981' },
+    { name: 'At Risk', value: projectHealthList.filter(p => p.health === 'At Risk').length, color: '#F59E0B' },
+    { name: 'Delayed', value: projectHealthList.filter(p => p.health === 'Delayed').length, color: '#EF4444' }
+  ].filter(d => d.value > 0);
 
   return (
     <PageWrapper>
@@ -80,8 +110,70 @@ export default function PMOMonitoring() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* LEFT: Project Health Cards */}
+            {/* LEFT: Charts and Project Health Cards */}
             <div className="lg:col-span-2 space-y-6">
+
+              {/* CHARTS ROW */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                {/* Chart 1: Project Health Distribution */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm flex flex-col items-center"
+                >
+                  <h3 className="text-sm font-bold text-[#0F172A] mb-4 w-full text-left">Project Health Distribution</h3>
+                  {pieData.length > 0 ? (
+                    <div className="w-full h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                            {pieData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '12px', fontWeight: 'bold' }} />
+                          <Legend wrapperStyle={{ fontSize: '12px', fontWeight: '600' }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-[200px] flex items-center justify-center text-sm text-[#64748B]">No projects available</div>
+                  )}
+                </motion.div>
+
+                {/* Chart 2: Department Workload */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="bg-white p-6 rounded-2xl border border-[#E2E8F0] shadow-sm"
+                >
+                  <h3 className="text-sm font-bold text-[#0F172A] mb-4">Average Workload by Department</h3>
+                  {barData.length > 0 ? (
+                    <div className="w-full h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                          <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: '#64748B' }} axisLine={false} tickLine={false} />
+                          <Tooltip 
+                            cursor={{ fill: '#F1F5F9' }} 
+                            contentStyle={{ borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '12px', fontWeight: 'bold' }}
+                            formatter={(value) => [`${value}%`, 'Workload']}
+                          />
+                          <Bar dataKey="workload" fill="#2563EB" radius={[4, 4, 0, 0]} barSize={30}>
+                            {barData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.workload > 100 ? '#DC2626' : entry.workload >= 80 ? '#D97706' : '#2563EB'} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  ) : (
+                    <div className="h-[200px] flex items-center justify-center text-sm text-[#64748B]">No workload data available</div>
+                  )}
+                </motion.div>
+              </div>
+
               <h2 className="text-[15px] font-bold text-[#0F172A] flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#2563EB] text-[20px]">donut_large</span>
                 Execution Health

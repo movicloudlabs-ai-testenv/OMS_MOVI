@@ -54,6 +54,7 @@ const NAV_CONFIG = {
     { to: '/pmo/tasks', icon: 'task_alt', label: 'Task Assignment', permission: { resource: 'Tasks', action: 'read' } },
     { to: '/pmo/team', icon: Users, label: 'Team', isLucide: true, permission: { resource: 'Users', action: 'read' } },
     { to: '/pmo/interns', icon: GraduationCap, label: 'Interns', isLucide: true, permission: { resource: 'Interns', action: 'read' } },
+    { to: '/pmo/leaves', icon: 'event_note', label: 'Leaves', permission: { resource: 'Projects', action: 'read' } },
     { to: '/pmo/monitoring', icon: 'monitoring', label: 'Monitoring' },
     { to: '/pmo/timeline', icon: 'timeline', label: 'Timeline' },
     { to: '/pmo/approvals', icon: 'approval', label: 'Approvals', permission: { resource: 'Tasks', action: 'read' } },

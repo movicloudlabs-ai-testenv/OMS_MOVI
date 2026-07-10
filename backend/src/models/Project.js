@@ -22,6 +22,7 @@ const ProjectSchema = new Schema({
     default: 'Medium',
   },
   manager: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  hrManager: { type: Schema.Types.ObjectId, ref: 'User', default: null },
   department: { type: Schema.Types.ObjectId, ref: 'Department' },
   team: [{
     user: { type: Schema.Types.ObjectId, ref: 'User' },

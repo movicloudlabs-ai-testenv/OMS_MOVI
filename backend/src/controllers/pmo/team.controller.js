@@ -2,6 +2,7 @@ import Project from '../../models/Project.js';
 import Task from '../../models/Task.js';
 import User from '../../models/User.js';
 import Role from '../../models/Role.js';
+import LeaveRequest from '../../models/LeaveRequest.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 
 export const getTeam = async (req, res, next) => {
@@ -137,19 +138,55 @@ export const getAvailableMembers = async (req, res, next) => {
       employmentTypeFilter = { employmentType: { $ne: 'Intern' } };
     }
 
-    const filter = {
+    let filter = {
       status: 'Active',
-      $or: [{ project: { $exists: false } }, { project: null }],
       ...roleFilter,
       ...employmentTypeFilter,
     };
 
-    const availableUsers = await User.find(filter)
-      .select('name designation department avatar employmentType role email')
+    if (type !== 'hr') {
+      filter.$or = [{ project: { $exists: false } }, { project: null }];
+    }
+
+    let availableUsers = await User.find(filter)
+      .select('name designation department avatar employmentType role email employeeId')
       .populate('role', 'name slug')
       .populate('department', 'name code');
+      
+    if (type === 'hr') {
+      availableUsers = await Promise.all(
+        availableUsers.map(async (u) => {
+          const userObj = u.toJSON();
+          userObj.currentProjects = await Project.countDocuments({
+            hrManager: u._id,
+            status: { $in: ['Active', 'Planning'] },
+          });
+          return userObj;
+        })
+      );
+    }
 
     sendSuccess(res, availableUsers);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTeamLeaves = async (req, res, next) => {
+  try {
+    const projects = await Project.find({ ...req.projectFilter });
+    
+    const userIds = new Set();
+    projects.forEach(p => {
+      p.team.forEach(m => userIds.add(m.user.toString()));
+      p.interns.forEach(m => userIds.add(m.user.toString()));
+    });
+    
+    const leaves = await LeaveRequest.find({ user: { $in: Array.from(userIds) } })
+      .populate('user', 'name employeeId avatar designation department')
+      .sort({ createdAt: -1 });
+      
+    sendSuccess(res, leaves);
   } catch (error) {
     next(error);
   }

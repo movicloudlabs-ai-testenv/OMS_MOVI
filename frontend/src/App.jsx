@@ -60,6 +60,7 @@ import PMOInternDetails from './pages/pmo/InternDetails';
 import PMOEmployees from './pages/pmo/Employees';
 import PMOEmployeeDetails from './pages/pmo/EmployeeDetails';
 import PMOReports from './pages/pmo/Reports';
+import PMOLeaves from './pages/pmo/Leaves';
 import PMOProfile from './pages/pmo/Profile';
 
 // Admin

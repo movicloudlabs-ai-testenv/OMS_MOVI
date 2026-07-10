@@ -31,6 +31,8 @@ export default function ProjectDetails() {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [isInternModalOpen, setIsInternModalOpen] = useState(false);
+  const [isHRModalOpen, setIsHRModalOpen] = useState(false);
+  const [availableHRs, setAvailableHRs] = useState([]);
 
   // Modals form states
   const [editData, setEditData] = useState({ name: '', description: '', status: 'Planning', priority: 'Medium', dueDate: '' });
@@ -81,6 +83,26 @@ export default function ProjectDetails() {
       setAvailableInternPool(internRes.data.data || []);
     } catch {
       console.warn('Failed to load available pool');
+    }
+  };
+
+  const fetchHRs = async () => {
+    try {
+      const res = await pmoAPI.getAvailableMembers({ type: 'hr' });
+      setAvailableHRs(res.data.data || []);
+    } catch (err) {
+      console.warn('Failed to load HRs');
+    }
+  };
+
+  const handleAssignHR = async (hrId) => {
+    try {
+      await pmoAPI.updateProject(id, { hrManager: hrId });
+      toast.success('HR Manager assigned successfully');
+      setIsHRModalOpen(false);
+      fetchProjectDetails();
+    } catch (err) {
+      toast.error('Failed to assign HR Manager');
     }
   };
 
@@ -348,6 +370,10 @@ export default function ProjectDetails() {
             onAssignInternClick={() => {
               fetchAvailablePool();
               setIsInternModalOpen(true);
+            }}
+            onAssignHRClick={() => {
+              fetchHRs();
+              setIsHRModalOpen(true);
             }}
             onExportReportClick={handleExportReport}
           />
@@ -730,6 +756,62 @@ export default function ProjectDetails() {
         />
       )}
 
+      {/* --- ASSIGN HR MODAL --- */}
+      {isHRModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col h-[80vh] text-left">
+            <div className="px-6 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC] flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                <UserPlus size={20} className="text-[#2563EB]" />
+                <div>
+                  <h2 className="text-[15px] font-bold text-[#0F172A]">Assign HR Manager</h2>
+                  <p className="text-[12px] text-[#64748B]">Select an HR Manager for this project</p>
+                </div>
+              </div>
+              <button onClick={() => setIsHRModalOpen(false)} className="text-[#64748B] hover:bg-[#E2E8F0] p-1 rounded-full">
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6 bg-[#F8FAFC]">
+              {availableHRs.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm text-[#64748B]">No HR Managers found.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availableHRs.map(hr => {
+                    const n = hr.currentProjects || 0;
+                    return (
+                      <div key={hr._id} className="bg-white border border-[#E2E8F0] rounded-xl p-4 flex flex-col">
+                        <div className="flex items-center gap-3 mb-3">
+                          <img src={hr.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(hr.name)}&background=EFF6FF&color=1D4ED8`} alt={hr.name} className="w-10 h-10 rounded-full" />
+                          <div>
+                            <h3 className="text-sm font-bold text-[#0F172A]">{hr.name}</h3>
+                            <p className="text-xs text-[#64748B] font-mono">{hr.employeeId || 'ID N/A'}</p>
+                          </div>
+                        </div>
+                        <div className="mb-4">
+                          {n === 0 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-[#DCFCE7] text-[#16A34A]">Available</span>
+                          ) : n <= 2 ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-[#FEF3C7] text-[#D97706]">Managing {n} projects</span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-[#FEE2E2] text-[#DC2626]">High workload ({n} projects)</span>
+                          )}
+                        </div>
+                        <button onClick={() => handleAssignHR(hr._id)} className="w-full mt-auto py-2 bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-xs font-bold rounded-lg transition-colors">
+                          Assign to Project
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- INTERN PROFILE MODAL --- */}
       {viewingIntern && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/40 backdrop-blur-sm">
@@ -924,6 +1006,9 @@ const OverviewTab = ({ project, team, onAddMilestoneClick, onAddTaskClick, onAdd
             </button>
             <button onClick={onAssignInternClick} className="w-full py-2.5 px-4 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg text-sm font-semibold text-[#0F172A] flex items-center gap-3 transition-colors">
               <GraduationCap size={18} className="text-[#64748B]" /> Assign Intern
+            </button>
+            <button onClick={onAssignHRClick} className="w-full py-2.5 px-4 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg text-sm font-semibold text-[#0F172A] flex items-center gap-3 transition-colors">
+              <UserPlus size={18} className="text-[#64748B]" /> Assign HR Manager
             </button>
             <button onClick={onAddMilestoneClick} className="w-full py-2.5 px-4 bg-[#F8FAFC] hover:bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg text-sm font-semibold text-[#0F172A] flex items-center gap-3 transition-colors">
               <Flag size={18} className="text-[#64748B]" /> Add Milestone

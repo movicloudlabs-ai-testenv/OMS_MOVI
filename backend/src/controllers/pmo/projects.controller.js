@@ -176,7 +176,7 @@ export const getProjectById = async (req, res, next) => {
 
 export const updateProject = async (req, res, next) => {
   try {
-    const { name, description, status, priority, endDate, budget, tags, healthStatus, milestones } = req.body;
+    const { name, description, status, priority, endDate, budget, tags, healthStatus, milestones, hrManager } = req.body;
     
     const project = await Project.findOne({ _id: req.params.id, ...req.projectFilter });
     if (!project) return sendError(res, 'Project not found', 404);
@@ -192,20 +192,49 @@ export const updateProject = async (req, res, next) => {
     if (tags) project.tags = tags;
     if (healthStatus) project.healthStatus = healthStatus;
     if (milestones) project.milestones = milestones;
+    if (hrManager) project.hrManager = hrManager;
 
     await project.save();
+
+    if (hrManager) {
+      const hrUser = await User.findById(hrManager);
+      if (hrUser) {
+        const allMembers = [...project.team.map(t => t.user), ...project.interns.map(i => i.user)];
+        for (const userId of allMembers) {
+          if (userId) {
+            await User.findByIdAndUpdate(userId, { hrManager });
+            await sendNotification({
+              recipient: userId,
+              type: 'system_alert',
+              title: 'HR Manager Updated',
+              message: `Your HR Manager has been updated to ${hrUser.name} for project ${project.name}`,
+              sender: req.user._id,
+            });
+          }
+        }
+        await sendNotification({
+          recipient: hrManager,
+          type: 'project_assigned',
+          title: 'Project Assigned',
+          message: `You have been assigned as HR Manager for project: ${project.name} by ${req.user.name}`,
+          sender: req.user._id,
+        });
+      }
+    }
 
     if (status !== oldStatus && (status === 'Completed' || status === 'Cancelled')) {
       const allMembers = [...project.team.map(t => t.user), ...project.interns.map(i => i.user)];
       for (const userId of allMembers) {
-        await sendNotification({
-          recipient: userId,
-          type: 'system_alert',
-          title: `Project ${status}`,
-          message: `Project ${project.name} has been marked as ${status.toLowerCase()}.`,
-          link: '/employee/projects',
-          sender: req.user._id,
-        });
+        if (userId) {
+          await sendNotification({
+            recipient: userId,
+            type: 'system_alert',
+            title: `Project ${status}`,
+            message: `Project ${project.name} has been marked as ${status.toLowerCase()}.`,
+            link: '/employee/projects',
+            sender: req.user._id,
+          });
+        }
       }
     }
 
