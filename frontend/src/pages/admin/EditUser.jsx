@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -114,16 +114,16 @@ export default function AdminEditUser() {
 
   if (fetching) {
     return (
-      <AdminLayout bare>
+      <DynamicLayout bare>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="w-8 h-8 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
         </div>
-      </AdminLayout>
+      </DynamicLayout>
     );
   }
 
   return (
-    <AdminLayout bare>
+    <DynamicLayout bare>
       <form onSubmit={handleSubmit} className="font-sans text-[#0F172A] max-w-[1000px] mx-auto flex flex-col h-full gap-8 pb-24">
 
         {/* Page Header */}
@@ -296,6 +296,6 @@ export default function AdminEditUser() {
         </div>
 
       </form>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

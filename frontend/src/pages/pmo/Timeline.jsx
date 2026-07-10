@@ -3,14 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import { pmoAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import AccessDenied from '../../components/shared/AccessDenied';
 
 export default function PMOTimeline() {
+  const { hasPermission } = useAuth();
+  const canRead = hasPermission('Projects', 'read');
   const navigate = useNavigate();
   const [viewState, setViewState] = useState('Weeks'); // Weeks, Months, Quarters
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProjects = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const response = await pmoAPI.getProjects();
@@ -25,6 +30,8 @@ export default function PMOTimeline() {
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view the project timeline." /></PageWrapper>;
 
   // Set Timeline Start to Monday of the current week
   const getTimelineStartDate = () => {

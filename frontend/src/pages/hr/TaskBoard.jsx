@@ -5,10 +5,12 @@ import {
   Paperclip, MessageSquare, CheckSquare, UploadCloud, Download, RefreshCw, CalendarDays,
   Circle, CheckCircle2,
 } from 'lucide-react';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import AccessDenied from '../../components/shared/AccessDenied';
+
 
 const COLUMNS = [
   { id: 'Todo',        label: 'To Do',       border: 'border-t-[#64748B]', badge: 'bg-[#F1F5F9] text-[#64748B]' },
@@ -644,6 +646,7 @@ function AssignModal({ teamMembers, projects, onClose, onSubmit }) {
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function HRTaskBoard() {
   const { hasPermission } = useAuth();
+  const canRead   = hasPermission('Tasks', 'read');
   const canCreate = hasPermission('Tasks', 'create');
 
   const [activeBoard, setActiveBoard]     = useState('my');
@@ -657,6 +660,7 @@ export default function HRTaskBoard() {
   const [selectedTask, setSelectedTask]   = useState(null);
 
   const fetchAll = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const [myRes, internRes, empRes, empListRes, internListRes] = await Promise.all([
@@ -686,6 +690,9 @@ export default function HRTaskBoard() {
   };
 
   useEffect(() => { fetchAll(); }, []);
+
+  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view the task board." /></HRLayout>;
+
 
   const handleStatusChange = async (taskId, newStatus, note) => {
     try {
@@ -728,7 +735,7 @@ export default function HRTaskBoard() {
   ];
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] w-full flex flex-col h-[calc(100vh-80px)] overflow-hidden gap-4 max-w-[1600px] mx-auto pb-2">
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-6 shrink-0">
@@ -788,6 +795,6 @@ export default function HRTaskBoard() {
           <ViewDrawer key={selectedTask._id} task={selectedTask} onClose={() => setSelectedTask(null)} />
         )}
       </AnimatePresence>
-    </PageWrapper>
+    </HRLayout>
   );
 }

@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { Star, ShieldAlert, Plus, X, Award, Users } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import AccessDenied from '../../components/shared/AccessDenied';
 
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 function roleAvg(ratings, source) {
@@ -257,6 +259,8 @@ function PeopleTable({ people, selectedId, onSelect, label }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function HRPerformance() {
+  const { hasPermission } = useAuth();
+  const canRead = hasPermission('Interns', 'read');
   const [activeTab, setActiveTab]     = useState('interns');
   const [interns,   setInterns]       = useState([]);
   const [employees, setEmployees]     = useState([]);
@@ -264,6 +268,7 @@ export default function HRPerformance() {
   const [selected,  setSelected]      = useState(null);
 
   const loadData = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const [internRes, empRes] = await Promise.all([
@@ -280,6 +285,8 @@ export default function HRPerformance() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view performance data." /></HRLayout>;
 
   const isInternTab = activeTab === 'interns';
   const people      = isInternTab ? interns : employees;
@@ -305,7 +312,7 @@ export default function HRPerformance() {
   const avgRating    = combinedRating(allRatings);
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 max-w-[1400px] mx-auto pb-8">
 
         {/* Header */}
@@ -393,6 +400,6 @@ export default function HRPerformance() {
           </div>
         )}
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }

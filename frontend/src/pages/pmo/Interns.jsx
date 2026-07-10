@@ -40,7 +40,11 @@ export default function PMOInterns() {
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [requestData, setRequestData] = useState({ projectId: '', department: '', duration: 3, skills: '', note: '' });
 
+  const canRead = hasPermission('Interns', 'read');
+  const canAssignTask = hasPermission('Tasks', 'create');
+
   const fetchData = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const [internsRes, tasksInReviewRes, projectsRes, allTasksRes] = await Promise.all([
@@ -82,7 +86,7 @@ export default function PMOInterns() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [canRead]);
 
   const handleRequestSubmit = async (e) => {
     e.preventDefault();
@@ -138,9 +142,6 @@ export default function PMOInterns() {
       intern.project?.name?.toLowerCase().includes(term)
     );
   });
-
-  const canRead = hasPermission('Interns', 'read');
-  const canAssignTask = hasPermission('Tasks', 'create');
 
   if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view interns." /></PageWrapper>;
 

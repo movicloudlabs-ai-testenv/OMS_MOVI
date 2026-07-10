@@ -64,6 +64,7 @@ export default function PMOTaskBoard() {
   });
 
   const fetchProjects = async () => {
+    if (!canRead) return;
     try {
       const res = await pmoAPI.getProjects();
       const projectList = res.data.data || [];
@@ -117,7 +118,7 @@ export default function PMOTaskBoard() {
 
   useEffect(() => {
     fetchProjects();
-  }, []);
+  }, [canRead]);
 
   useEffect(() => {
     fetchProjectTasksAndDetails();

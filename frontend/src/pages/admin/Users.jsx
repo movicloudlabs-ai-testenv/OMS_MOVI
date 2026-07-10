@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2, Upload } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import DeleteUserModal from '../../components/shared/DeleteUserModal';
 import BulkImportModal from '../../components/shared/BulkImportModal';
@@ -240,10 +240,10 @@ export default function AdminUsers() {
     </tr>
   );
 
-  if (!canRead) return <AdminLayout title="Users"><AccessDenied message="You don't have permission to view users." /></AdminLayout>;
+  if (!canRead) return <DynamicLayout title="Users"><AccessDenied message="You don't have permission to view users." /></DynamicLayout>;
 
   return (
-    <AdminLayout title="Users" subtitle="Manage user accounts, roles, and system access.">
+    <DynamicLayout title="Users" subtitle="Manage user accounts, roles, and system access.">
       <div className="font-sans text-[#0F172A] w-full flex flex-col gap-4">
 
         {/* User Metrics Snapshot */}
@@ -594,6 +594,6 @@ export default function AdminUsers() {
         }}
       />
       <UserHoverCard user={hoveredUser} style={hoverStyle} />
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

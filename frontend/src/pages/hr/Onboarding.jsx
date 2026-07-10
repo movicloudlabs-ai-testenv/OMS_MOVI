@@ -4,9 +4,11 @@ import {
   ChevronDown, Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import AccessDenied from '../../components/shared/AccessDenied';
 
 // ─── Task definitions with metadata ──────────────────────────────────────────
 const PHASES = [
@@ -469,6 +471,8 @@ function ChecklistDrawer({ person, onClose, onReassign, onTaskToggle }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function HROnboarding() {
+  const { hasPermission } = useAuth();
+  const canRead = hasPermission('Users', 'update');
   const [activeTab, setActiveTab] = useState('pending');
   const [selectedOnboardee, setSelectedOnboardee] = useState(null);
   const [pendingOnboarding, setPendingOnboarding] = useState([]);
@@ -478,6 +482,7 @@ export default function HROnboarding() {
   const [reassignTarget, setReassignTarget] = useState(null);
 
   const loadData = async () => {
+    if (!canRead) return;
     try {
       setLoading(true);
       const [pendingRes, completedRes] = await Promise.all([
@@ -492,6 +497,8 @@ export default function HROnboarding() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to manage onboarding." /></HRLayout>;
 
   const handleToggleTask = async (userId, taskKey, isChecked) => {
     await hrAPI.updateOnboardingChecklist(userId, { item: taskKey, completed: isChecked });
@@ -522,7 +529,7 @@ export default function HROnboarding() {
   );
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] flex h-full overflow-hidden">
 
         {/* ── LEFT: full-height scrollable column ───────────────────────── */}
@@ -757,6 +764,6 @@ export default function HROnboarding() {
           />
         )}
       </AnimatePresence>
-    </PageWrapper>
+    </HRLayout>
   );
 }

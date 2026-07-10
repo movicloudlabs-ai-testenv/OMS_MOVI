@@ -6,7 +6,7 @@ import {
   ChevronLeft, Bot, SearchX, Flag, User, Grid2X2, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
@@ -604,10 +604,10 @@ export default function AdminAuditLogs() {
       .catch(() => toast.error('Export failed'));
   };
 
-  if (!canRead) return <AdminLayout title="Audit Logs"><AccessDenied message="You don't have permission to view audit logs." /></AdminLayout>;
+  if (!canRead) return <DynamicLayout title="Audit Logs"><AccessDenied message="You don't have permission to view audit logs." /></DynamicLayout>;
 
   return (
-    <AdminLayout
+    <DynamicLayout
       title="Audit Logs"
       subtitle="Track system changes, security events, and administrative actions."
       actions={(
@@ -726,6 +726,6 @@ export default function AdminAuditLogs() {
         </div>
 
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

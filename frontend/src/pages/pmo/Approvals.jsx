@@ -3,11 +3,13 @@ import PageWrapper from '../../components/PageWrapper';
 import toast from 'react-hot-toast';
 import { pmoAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
+import AccessDenied from '../../components/shared/AccessDenied';
 
 export default function PMOApprovals() {
   const { hasPermission, user } = useAuth();
-  const isPMOLead       = user?.role?.slug === 'pmo-lead' || user?.role?.slug === 'super-admin';
-  const canUpdateTask   = hasPermission('Tasks', 'update')   || isPMOLead;
+  const isPMOLead     = user?.role?.slug === 'pmo-lead' || user?.role?.slug === 'super-admin';
+  const canRead       = hasPermission('Tasks', 'read') || isPMOLead;
+  const canUpdateTask = hasPermission('Tasks', 'update') || isPMOLead;
   const [activeTab, setActiveTab] = useState('Tasks');
   const [taskApprovals, setTaskApprovals] = useState([]);
   const [leaveOverview, setLeaveOverview] = useState([]);
@@ -15,6 +17,7 @@ export default function PMOApprovals() {
   const [loading, setLoading] = useState(true);
 
   const fetchApprovals = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const [tasksRes, leavesRes, onboardRes] = await Promise.all([
@@ -45,6 +48,8 @@ export default function PMOApprovals() {
   useEffect(() => {
     fetchApprovals();
   }, []);
+
+  if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view approvals." /></PageWrapper>;
 
   const handleTaskAction = async (id, action) => {
     try {

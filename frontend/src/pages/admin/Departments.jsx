@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import AccessDenied from '../../components/shared/AccessDenied';
 import { adminAPI } from '../../utils/api';
@@ -58,10 +58,10 @@ export default function AdminDepartments() {
     await fetchDepartments();
   };
 
-  if (!canRead) return <AdminLayout title="Departments"><AccessDenied message="You don't have permission to view departments." /></AdminLayout>;
+  if (!canRead) return <DynamicLayout title="Departments"><AccessDenied message="You don't have permission to view departments." /></DynamicLayout>;
 
   return (
-    <AdminLayout
+    <DynamicLayout
       title="Departments"
       subtitle="Manage organizational structure and departmental configurations."
       actions={canCreate && (
@@ -216,6 +216,6 @@ export default function AdminDepartments() {
         entityLabel="department"
         onConfirm={executeDelete}
       />
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

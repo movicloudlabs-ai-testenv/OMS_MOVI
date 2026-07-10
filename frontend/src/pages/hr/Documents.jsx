@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { documentsAPI, usersAPI } from '../../api';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
 import toast from 'react-hot-toast';
@@ -64,7 +64,7 @@ export default function HRDocuments() {
   };
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -141,6 +141,6 @@ export default function HRDocuments() {
           </button>
         </form>
       </Modal>
-    </PageWrapper>
+    </HRLayout>
   );
 }

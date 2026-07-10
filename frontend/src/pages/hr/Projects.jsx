@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronRight, Users, Flag, CheckCircle2, Clock, AlertCircle, Layers } from 'lucide-react';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import AccessDenied from '../../components/shared/AccessDenied';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_STYLES = {
@@ -503,6 +505,8 @@ function ProjectCard({ project, onClick }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function HRProjects() {
+  const { hasPermission } = useAuth();
+  const canRead = hasPermission('Projects', 'read');
   const [projects, setProjects]   = useState([]);
   const [loading,  setLoading]    = useState(true);
   const [openId,   setOpenId]     = useState(null);
@@ -510,6 +514,7 @@ export default function HRProjects() {
   const [filter,   setFilter]     = useState('all');
 
   const fetchProjects = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const res = await hrAPI.getMyProjects();
@@ -523,6 +528,8 @@ export default function HRProjects() {
 
   useEffect(() => { fetchProjects(); }, []);
 
+  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view projects." /></HRLayout>;
+
   const filtered = projects.filter(p => {
     const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.code?.toLowerCase().includes(search.toLowerCase());
     const matchFilter = filter === 'all' || p.status.toLowerCase().replace(' ', '-') === filter;
@@ -535,7 +542,7 @@ export default function HRProjects() {
   const overdueTasks   = projects.reduce((a, p) => a + (p.taskStats?.overdue   || 0), 0);
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 max-w-[1400px] mx-auto pb-12">
 
         {/* Header */}
@@ -631,6 +638,6 @@ export default function HRProjects() {
           <ProjectDrawer projectId={openId} onClose={() => setOpenId(null)} />
         )}
       </AnimatePresence>
-    </PageWrapper>
+    </HRLayout>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { announcementsAPI } from '../../api';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -36,7 +36,7 @@ export default function HRCommunication() {
   };
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="space-y-8">
         <div>
           <h1 className="font-headline font-bold text-2xl text-slate-900">Communication</h1>
@@ -97,6 +97,6 @@ export default function HRCommunication() {
           )}
         </div>
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }

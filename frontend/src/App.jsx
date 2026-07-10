@@ -43,7 +43,7 @@ import HRCommunication from './pages/hr/Communication';
 import HRAssignTask from './pages/hr/AssignTask';
 import HRTaskBoard from './pages/hr/TaskBoard';
 import HRProjects from './pages/hr/Projects';
-import HRLeave from './pages/hr/Leave';
+import HRMyLeave from './pages/hr/MyLeave';
 import HRProfile from './pages/hr/Profile';
 
 // PMO
@@ -57,6 +57,7 @@ import PMOApprovals from './pages/pmo/Approvals';
 import PMOTeam from './pages/pmo/Team';
 import PMOInterns from './pages/pmo/Interns';
 import PMOInternDetails from './pages/pmo/InternDetails';
+import PMOEmployees from './pages/pmo/Employees';
 import PMOEmployeeDetails from './pages/pmo/EmployeeDetails';
 import PMOReports from './pages/pmo/Reports';
 import PMOProfile from './pages/pmo/Profile';
@@ -125,35 +126,36 @@ export default function App() {
 
       {/* HR */}
       <Route path="/hr/dashboard" element={<ProtectedRoute allowedRoles={['hr']}><HRDashboard /></ProtectedRoute>} />
-      <Route path="/hr/employees" element={<ProtectedRoute allowedRoles={['hr']}><HREmployees /></ProtectedRoute>} />
-      <Route path="/hr/employees/new" element={<ProtectedRoute allowedRoles={['hr']}><HRAddEmployee /></ProtectedRoute>} />
-      <Route path="/hr/employees/:id" element={<ProtectedRoute allowedRoles={['hr']}><HREmployeeDetails /></ProtectedRoute>} />
+      <Route path="/hr/employees" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'read' }}><HREmployees /></ProtectedRoute>} />
+      <Route path="/hr/employees/new" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'create' }}><HRAddEmployee /></ProtectedRoute>} />
+      <Route path="/hr/employees/:id" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'read' }}><HREmployeeDetails /></ProtectedRoute>} />
       <Route path="/hr/interns"    element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Interns', action: 'read' }}><HRInterns /></ProtectedRoute>} />
       <Route path="/hr/interns/:id" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Interns', action: 'read' }}><HRInternDetails /></ProtectedRoute>} />
-      <Route path="/hr/onboarding" element={<ProtectedRoute allowedRoles={['hr']}><HROnboarding /></ProtectedRoute>} />
-      <Route path="/hr/attendance" element={<ProtectedRoute allowedRoles={['hr']}><HRAttendance /></ProtectedRoute>} />
+      <Route path="/hr/onboarding" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'update' }}><HROnboarding /></ProtectedRoute>} />
+      <Route path="/hr/attendance" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Attendance', action: 'read' }}><HRAttendance /></ProtectedRoute>} />
       <Route path="/hr/documents" element={<ProtectedRoute allowedRoles={['hr']}><HRDocuments /></ProtectedRoute>} />
-      <Route path="/hr/tasks" element={<ProtectedRoute allowedRoles={['hr']}><HRTaskBoard /></ProtectedRoute>} />
-      <Route path="/hr/performance" element={<ProtectedRoute allowedRoles={['hr']}><HRPerformance /></ProtectedRoute>} />
-      <Route path="/hr/projects" element={<ProtectedRoute allowedRoles={['hr']}><HRProjects /></ProtectedRoute>} />
-      <Route path="/hr/leave" element={<ProtectedRoute allowedRoles={['hr']}><HRLeave /></ProtectedRoute>} />
+      <Route path="/hr/tasks" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Tasks', action: 'read' }}><HRTaskBoard /></ProtectedRoute>} />
+      <Route path="/hr/performance" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Interns', action: 'read' }}><HRPerformance /></ProtectedRoute>} />
+      <Route path="/hr/projects" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Projects', action: 'read' }}><HRProjects /></ProtectedRoute>} />
+      <Route path="/hr/my-leave" element={<ProtectedRoute allowedRoles={['hr']}><HRMyLeave /></ProtectedRoute>} />
       <Route path="/hr/communication" element={<ProtectedRoute allowedRoles={['hr']}><HRCommunication /></ProtectedRoute>} />
-      <Route path="/hr/tasks/new" element={<ProtectedRoute allowedRoles={['hr']}><HRAssignTask /></ProtectedRoute>} />
+      <Route path="/hr/tasks/new" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Tasks', action: 'create' }}><HRAssignTask /></ProtectedRoute>} />
       <Route path="/hr/profile" element={<ProtectedRoute allowedRoles={['hr']}><HRProfile /></ProtectedRoute>} />
 
       {/* PMO */}
       <Route path="/pmo/dashboard" element={<ProtectedRoute allowedRoles={['pmo']}><PMODashboard /></ProtectedRoute>} />
-      <Route path="/pmo/projects" element={<ProtectedRoute allowedRoles={['pmo']}><PMOProjects /></ProtectedRoute>} />
-      <Route path="/pmo/projects/:id" element={<ProtectedRoute allowedRoles={['pmo']}><PMOProjectDetails /></ProtectedRoute>} />
-      <Route path="/pmo/tasks" element={<ProtectedRoute allowedRoles={['pmo']}><PMOTasks /></ProtectedRoute>} />
-      <Route path="/pmo/team" element={<ProtectedRoute allowedRoles={['pmo']}><PMOTeam /></ProtectedRoute>} />
-      <Route path="/pmo/interns" element={<ProtectedRoute allowedRoles={['pmo']}><PMOInterns /></ProtectedRoute>} />
-      <Route path="/pmo/interns/:id" element={<ProtectedRoute allowedRoles={['pmo']}><PMOInternDetails /></ProtectedRoute>} />
-      <Route path="/pmo/employees/:id" element={<ProtectedRoute allowedRoles={['pmo']}><PMOEmployeeDetails /></ProtectedRoute>} />
-      <Route path="/pmo/monitoring" element={<ProtectedRoute allowedRoles={['pmo']}><PMOMonitoring /></ProtectedRoute>} />
-      <Route path="/pmo/timeline" element={<ProtectedRoute allowedRoles={['pmo']}><PMOTimeline /></ProtectedRoute>} />
-      <Route path="/pmo/approvals" element={<ProtectedRoute allowedRoles={['pmo']}><PMOApprovals /></ProtectedRoute>} />
-      <Route path="/pmo/reports" element={<ProtectedRoute allowedRoles={['pmo']}><PMOReports /></ProtectedRoute>} />
+      <Route path="/pmo/projects" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Projects', action: 'read' }}><PMOProjects /></ProtectedRoute>} />
+      <Route path="/pmo/projects/:id" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Projects', action: 'read' }}><PMOProjectDetails /></ProtectedRoute>} />
+      <Route path="/pmo/tasks" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Tasks', action: 'read' }}><PMOTasks /></ProtectedRoute>} />
+      <Route path="/pmo/team" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Users', action: 'read' }}><PMOTeam /></ProtectedRoute>} />
+      <Route path="/pmo/interns" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Interns', action: 'read' }}><PMOInterns /></ProtectedRoute>} />
+      <Route path="/pmo/interns/:id" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Interns', action: 'read' }}><PMOInternDetails /></ProtectedRoute>} />
+      <Route path="/pmo/employees" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Users', action: 'read' }}><PMOEmployees /></ProtectedRoute>} />
+      <Route path="/pmo/employees/:id" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Users', action: 'read' }}><PMOEmployeeDetails /></ProtectedRoute>} />
+      <Route path="/pmo/monitoring" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Projects', action: 'read' }}><PMOMonitoring /></ProtectedRoute>} />
+      <Route path="/pmo/timeline" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Projects', action: 'read' }}><PMOTimeline /></ProtectedRoute>} />
+      <Route path="/pmo/approvals" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Tasks', action: 'read' }}><PMOApprovals /></ProtectedRoute>} />
+      <Route path="/pmo/reports" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Reports', action: 'read' }}><PMOReports /></ProtectedRoute>} />
       <Route path="/pmo/profile" element={<ProtectedRoute allowedRoles={['pmo']}><PMOProfile /></ProtectedRoute>} />
 
       {/* Admin — strictly admin-only (security-sensitive) */}

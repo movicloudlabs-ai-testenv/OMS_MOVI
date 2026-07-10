@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 
 export default function HREmployeeDetails() {
@@ -88,17 +88,17 @@ export default function HREmployeeDetails() {
 
   if (loading) {
     return (
-      <PageWrapper>
+      <HRLayout bare>
         <div className="font-sans text-[#0F172A] max-w-6xl mx-auto py-10 text-[14px] text-[#64748B]">
           Loading employee profile...
         </div>
-      </PageWrapper>
+      </HRLayout>
     );
   }
 
   if (error || !emp) {
     return (
-      <PageWrapper>
+      <HRLayout bare>
         <div className="font-sans text-[#0F172A] max-w-6xl mx-auto py-10">
           <p className="text-[14px] font-medium text-[#DC2626]">{error || 'Employee not found'}</p>
           <button
@@ -108,12 +108,12 @@ export default function HREmployeeDetails() {
             Back to Employees
           </button>
         </div>
-      </PageWrapper>
+      </HRLayout>
     );
   }
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] max-w-6xl mx-auto space-y-6 pb-20">
         
         {/* Breadcrumb Navigation */}
@@ -328,6 +328,6 @@ export default function HREmployeeDetails() {
         </div>
 
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }

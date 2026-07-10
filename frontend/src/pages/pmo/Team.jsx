@@ -22,6 +22,7 @@ export default function PMOTeam() {
   const [selectedWorkload, setSelectedWorkload] = useState('All');
 
   const fetchTeam = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const response = await pmoAPI.getTeam();
@@ -35,7 +36,7 @@ export default function PMOTeam() {
 
   useEffect(() => {
     fetchTeam();
-  }, []);
+  }, [canRead]);
 
   const getInitials = (name) => {
     if (!name) return 'U';

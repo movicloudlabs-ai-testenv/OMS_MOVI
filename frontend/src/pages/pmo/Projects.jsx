@@ -26,6 +26,7 @@ export default function PMOProjects() {
   const [availableHRs, setAvailableHRs] = useState([]);
 
   const fetchData = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const projRes = await pmoAPI.getProjects();
@@ -52,7 +53,8 @@ export default function PMOProjects() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [canRead]);
+
 
   const filteredProjects = projects.filter(p => {
     const matchesFilter = filter === 'All' || p.status === filter;

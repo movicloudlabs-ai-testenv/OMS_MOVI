@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 
 // --- MOCK DATA ---
 const PROJECTS = [
@@ -99,7 +99,7 @@ export default function AssignTask() {
   const selectedProjectObj = PROJECTS.find(p => p.id === formData.project);
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-8 max-w-[1100px] mx-auto pb-24 relative">
         
         {/* Toast Notification */}
@@ -420,6 +420,6 @@ export default function AssignTask() {
 
         </div>
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }

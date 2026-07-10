@@ -7,6 +7,7 @@ import { Grid2X2, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard,
 // Shown in "Granted Access" sidebar section when a non-native role has the permission.
 const CROSS_ROLE_LINKS = [
   { resource: 'Users',      action: 'read',   to: '/admin/users',       icon: 'group',     label: 'Users'       },
+  { resource: 'Users',      action: 'read',   to: '/hr/employees',      icon: 'badge',     label: 'Employees'   },
   { resource: 'Departments',action: 'read',   to: '/admin/departments', icon: 'domain',    label: 'Departments' },
   { resource: 'Roles',      action: 'read',   to: '/admin/roles',       icon: 'badge',     label: 'Roles'       },
   { resource: 'Audit Logs', action: 'read',   to: '/admin/audit',       icon: 'history',   label: 'Audit Logs'  },
@@ -48,6 +49,7 @@ const NAV_CONFIG = {
   ],
   pmo: [
     { to: '/pmo/dashboard', icon: 'dashboard', label: 'Dashboard' },
+    { to: '/pmo/employees', icon: 'badge', label: 'Employees', permission: { resource: 'Users', action: 'read' } },
     { to: '/pmo/projects', icon: 'work', label: 'Projects', permission: { resource: 'Projects', action: 'read' } },
     { to: '/pmo/tasks', icon: 'task_alt', label: 'Task Assignment', permission: { resource: 'Tasks', action: 'read' } },
     { to: '/pmo/team', icon: Users, label: 'Team', isLucide: true, permission: { resource: 'Users', action: 'read' } },
@@ -93,9 +95,8 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   };
 
   const navKey = resolveNavKey(user?.role);
-  const links = (NAV_CONFIG[navKey] || []).filter(
-    ({ permission }) => !permission || hasPermission(permission.resource, permission.action)
-  );
+  // Show all primary links unconditionally; route guards will handle unauthorized access
+  const links = NAV_CONFIG[navKey] || [];
 
   // Extra links unlocked via Access Matrix for this user's role
   const existingPaths = new Set(links.map(l => l.to));

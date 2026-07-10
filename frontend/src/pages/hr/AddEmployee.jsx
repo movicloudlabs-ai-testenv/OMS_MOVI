@@ -1,11 +1,11 @@
 import { useNavigate } from 'react-router-dom';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 
 export default function HRAddEmployee() {
   const navigate = useNavigate();
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] max-w-[1000px] mx-auto flex flex-col h-full gap-8 pb-24">
         
         {/* Page Header */}
@@ -200,6 +200,6 @@ export default function HRAddEmployee() {
         </div>
 
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }

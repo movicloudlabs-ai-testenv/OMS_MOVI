@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import AccessDenied from '../../components/shared/AccessDenied';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -151,10 +151,10 @@ export default function AdminCreateUser() {
 
   const selectedRole = roles.find(r => r._id === formData.role);
 
-  if (!canCreate) return <AdminLayout bare><AccessDenied message="You don't have permission to create users." /></AdminLayout>;
+  if (!canCreate) return <DynamicLayout bare><AccessDenied message="You don't have permission to create users." /></DynamicLayout>;
 
   return (
-    <AdminLayout bare>
+    <DynamicLayout bare>
       <form onSubmit={handleSubmit} className="font-sans text-[#0F172A] max-w-[1040px] mx-auto flex flex-col gap-8 pb-24">
 
         {/* Header */}
@@ -431,6 +431,6 @@ export default function AdminCreateUser() {
         </div>
 
       </form>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

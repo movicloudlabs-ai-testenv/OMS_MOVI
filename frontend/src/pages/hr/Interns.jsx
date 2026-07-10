@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import AccessDenied from '../../components/shared/AccessDenied';
 
@@ -25,6 +25,7 @@ export default function HRInterns() {
 
   useEffect(() => {
     const loadInterns = async () => {
+      if (!canRead) return;
       try {
         setLoading(true);
         setError('');
@@ -38,7 +39,7 @@ export default function HRInterns() {
     };
 
     loadInterns();
-  }, []);
+  }, [canRead]);
 
   const initialsFor = (name = '') => name
     .split(' ')
@@ -73,10 +74,10 @@ export default function HRInterns() {
     return matchesSearch && matchesUniv && matchesStatus;
   }), [interns, filterUniversity, filterStatus, searchTerm]);
 
-  if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view interns." /></PageWrapper>;
+  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view interns." /></HRLayout>;
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-5 max-w-[1440px] mx-auto pb-8">
         
         {/* HEADER */}
@@ -279,6 +280,6 @@ export default function HRInterns() {
 
         </div>
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }

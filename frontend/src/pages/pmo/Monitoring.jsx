@@ -3,8 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import { pmoAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
+import AccessDenied from '../../components/shared/AccessDenied';
 
 export default function PMOMonitoring() {
+  const { hasPermission } = useAuth();
+  const canRead = hasPermission('Projects', 'read');
   const navigate = useNavigate();
   const [projectHealthList, setProjectHealthList] = useState([]);
   const [activeBlockers, setActiveBlockers] = useState([]);
@@ -12,6 +16,7 @@ export default function PMOMonitoring() {
   const [loading, setLoading] = useState(true);
 
   const fetchMonitoringData = async () => {
+    if (!canRead) return;
     setLoading(true);
     try {
       const [healthRes, warningsRes, blockedTasksRes] = await Promise.all([
@@ -41,6 +46,8 @@ export default function PMOMonitoring() {
   useEffect(() => {
     fetchMonitoringData();
   }, []);
+
+  if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view monitoring data." /></PageWrapper>;
 
   return (
     <PageWrapper>

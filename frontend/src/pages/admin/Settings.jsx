@@ -9,7 +9,7 @@ import {
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 
 // ─── Primitive: Toggle ────────────────────────────────────────────────────────
 const Toggle = ({ checked, onChange, disabled }) => (
@@ -817,15 +817,15 @@ export default function Settings() {
   const tabErr   = (k) => Object.keys(valErrs).some(e => e.startsWith(k+'.'));
 
   // ── Guards ────────────────────────────────────────────────────────────────
-  if (!canRead) return <AdminLayout title="Settings"><AccessDenied /></AdminLayout>;
+  if (!canRead) return <DynamicLayout title="Settings"><AccessDenied /></DynamicLayout>;
   if (loading || !settings) return (
-    <AdminLayout title="Settings" subtitle="System-wide configuration for your OWMS installation">
+    <DynamicLayout title="Settings" subtitle="System-wide configuration for your OWMS installation">
       <Skeleton/>
-    </AdminLayout>
+    </DynamicLayout>
   );
 
   return (
-    <AdminLayout
+    <DynamicLayout
       title="Settings"
       subtitle="System-wide configuration for your OWMS installation"
       actions={(
@@ -904,6 +904,6 @@ export default function Settings() {
       {danger && (
         <DangerModal action={danger} onCancel={()=>setDanger(null)} onConfirm={handleDangerConfirm} loading={dangerBusy}/>
       )}
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

@@ -8,7 +8,7 @@ import {
   Search, X, CalendarDays, Zap, HardDrive,
   Eye, Archive, Copy, Trash2, Building2, ShieldX,
 } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
@@ -802,11 +802,11 @@ export default function AdminReports() {
 
   // ── Permission gate ──
   if (!canRead) {
-    return <AdminLayout title="Reports"><AccessDenied message="You don't have permission to view reports." /></AdminLayout>;
+    return <DynamicLayout title="Reports"><AccessDenied message="You don't have permission to view reports." /></DynamicLayout>;
   }
 
   return (
-    <AdminLayout
+    <DynamicLayout
       title="Reports"
       subtitle="Monitor, run, and export administrative reports from live system data."
       actions={(
@@ -1043,6 +1043,6 @@ export default function AdminReports() {
           />
         )}
       </AnimatePresence>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

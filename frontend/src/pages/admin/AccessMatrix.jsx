@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, Save, AlertCircle, CheckCircle, Lock, X, Check, Minus, ShieldAlert } from 'lucide-react';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
@@ -217,7 +217,7 @@ export default function AdminAccessMatrix() {
   // ── Loading Skeleton ──────────────────────────────────────────────────────
   if (loading) {
     return (
-      <AdminLayout title="Access Matrix">
+      <DynamicLayout title="Access Matrix">
         <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-6 pb-20">
           <div>
             <div className="h-6 bg-[#E2E8F0] rounded w-48 mb-2 animate-pulse" />
@@ -233,14 +233,14 @@ export default function AdminAccessMatrix() {
             </div>
           </div>
         </div>
-      </AdminLayout>
+      </DynamicLayout>
     );
   }
 
   // ── Load Error ────────────────────────────────────────────────────────────
   if (loadError) {
     return (
-      <AdminLayout title="Access Matrix">
+      <DynamicLayout title="Access Matrix">
         <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-6 pb-20">
           <div className="bg-[#FEF2F2] border border-[#DC2626] rounded-lg p-4 text-sm text-[#DC2626] font-medium flex items-center gap-3">
             <AlertCircle size={18} />
@@ -248,14 +248,14 @@ export default function AdminAccessMatrix() {
             <button onClick={fetchMatrix} className="ml-auto text-xs underline">Retry</button>
           </div>
         </div>
-      </AdminLayout>
+      </DynamicLayout>
     );
   }
 
-  if (!canManageMatrix) return <AdminLayout title="Access Matrix"><AccessDenied message="You don't have permission to manage the Access Matrix." /></AdminLayout>;
+  if (!canManageMatrix) return <DynamicLayout title="Access Matrix"><AccessDenied message="You don't have permission to manage the Access Matrix." /></DynamicLayout>;
 
   return (
-    <AdminLayout
+    <DynamicLayout
       title="Access Matrix"
       subtitle="Toggle permissions per role. Click a column or a module header to apply to all roles at once."
       actions={(
@@ -521,6 +521,6 @@ export default function AdminAccessMatrix() {
         </AnimatePresence>
 
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

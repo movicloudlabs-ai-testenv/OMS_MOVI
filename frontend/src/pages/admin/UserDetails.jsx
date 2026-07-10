@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Copy, Check, ExternalLink, Mail, Phone, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI, hrAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -211,16 +211,16 @@ export default function AdminUserDetails() {
 
   // ── Loading / Error states ──────────────────────────────────────────────────
   if (loading) return (
-    <AdminLayout bare>
+    <DynamicLayout bare>
       <div className="flex items-center justify-center min-h-[400px] flex-col gap-3">
         <div className="w-8 h-8 border-2 border-[#EA580C] border-t-transparent rounded-full animate-spin" />
         <p className="text-[13px] text-[#64748B]">Loading profile…</p>
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 
   if (error || !user) return (
-    <AdminLayout bare>
+    <DynamicLayout bare>
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <span className="material-symbols-outlined text-[48px] text-[#DC2626]">error</span>
         <p className="text-[15px] text-[#0F172A] font-medium">{error || 'User not found'}</p>
@@ -228,7 +228,7 @@ export default function AdminUserDetails() {
           ← Back to Users
         </button>
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 
   // ── Derived values ──────────────────────────────────────────────────────────
@@ -263,7 +263,7 @@ export default function AdminUserDetails() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <AdminLayout bare>
+    <DynamicLayout bare>
       <div className="font-sans text-[#0F172A] w-full space-y-5 pb-16">
 
         {/* Breadcrumb */}
@@ -962,6 +962,6 @@ export default function AdminUserDetails() {
         )}
 
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

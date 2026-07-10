@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import ConfirmDialog from '../../components/shared/ConfirmDialog';
 import AccessDenied from '../../components/shared/AccessDenied';
 import { adminAPI } from '../../utils/api';
@@ -59,10 +59,10 @@ export default function AdminRoles() {
     }
   };
 
-  if (!canRead) return <AdminLayout title="Roles"><AccessDenied message="You don't have permission to view roles." /></AdminLayout>;
+  if (!canRead) return <DynamicLayout title="Roles"><AccessDenied message="You don't have permission to view roles." /></DynamicLayout>;
 
   return (
-    <AdminLayout
+    <DynamicLayout
       title="Roles"
       subtitle="Manage system access profiles and define standard operational roles."
       actions={canCreate && (
@@ -193,6 +193,6 @@ export default function AdminRoles() {
         entityLabel="role"
         onConfirm={executeDelete}
       />
-    </AdminLayout>
+    </DynamicLayout>
   );
 }

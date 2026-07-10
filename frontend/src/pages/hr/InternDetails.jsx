@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, UploadCloud, FileText, Play, ExternalLink, GraduationCap,
@@ -265,24 +265,24 @@ export default function HRInternDetails() {
 
   if (loading) {
     return (
-      <PageWrapper>
+      <HRLayout bare>
         <div className="flex justify-center items-center h-96">
           <span className="material-symbols-outlined text-[32px] text-[#2563EB] animate-spin">sync</span>
         </div>
-      </PageWrapper>
+      </HRLayout>
     );
   }
 
   if (error) {
     return (
-      <PageWrapper>
+      <HRLayout bare>
         <div className="p-8 text-center text-[#DC2626] font-medium">{error}</div>
-      </PageWrapper>
+      </HRLayout>
     );
   }
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="font-sans text-[#0F172A] max-w-6xl mx-auto space-y-6 pb-20">
         
         {/* Breadcrumb Navigation */}
@@ -613,6 +613,6 @@ export default function HRInternDetails() {
         onAssign={handleAssignMaterial}
         saving={assignSaving}
       />
-    </PageWrapper>
+    </HRLayout>
   );
 }

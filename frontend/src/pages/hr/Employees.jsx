@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import AccessDenied from '../../components/shared/AccessDenied';
 
@@ -33,6 +33,7 @@ export default function Employees() {
 
   useEffect(() => {
     const loadEmployees = async () => {
+      if (!canRead) return;
       try {
         setLoading(true);
         setError('');
@@ -46,7 +47,7 @@ export default function Employees() {
     };
 
     loadEmployees();
-  }, []);
+  }, [canRead]);
 
   const initialsFor = (name = '') => name
     .split(' ')
@@ -74,22 +75,14 @@ export default function Employees() {
     return matchesSearch && matchesDept && matchesType && matchesStatus;
   }), [employees, filterDept, filterStatus, filterType, searchTerm]);
 
-  if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view employees." /></PageWrapper>;
+  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view employees." /></HRLayout>;
 
   return (
-    <PageWrapper>
+    <HRLayout 
+      title="Employee Directory" 
+      subtitle="View and manage all employee records assigned to you."
+    >
       <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-5 max-w-[1440px] mx-auto pb-8">
-        
-        {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
-          <div>
-            <h1 className="text-[22px] font-semibold tracking-tight text-[#0F172A]">Employee Directory</h1>
-            <p className="text-[13px] text-[#64748B] mt-0.5">
-              View and manage all employee records assigned to you.
-            </p>
-          </div>
-        </div>
-
         {/* TOOLBAR */}
         <div className="bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -285,6 +278,6 @@ export default function Employees() {
 
         </div>
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }

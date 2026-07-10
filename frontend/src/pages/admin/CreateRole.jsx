@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import AdminLayout from '../../components/admin/AdminLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI } from '../../utils/api';
 
 export default function AdminCreateRole() {
@@ -64,7 +64,7 @@ export default function AdminCreateRole() {
   };
 
   return (
-    <AdminLayout bare>
+    <DynamicLayout bare>
       <div className="font-sans text-[#0F172A] max-w-[1000px] mx-auto flex flex-col h-full gap-8 pb-24">
         
         {/* Page Header */}
@@ -229,6 +229,6 @@ export default function AdminCreateRole() {
         </div>
 
       </div>
-    </AdminLayout>
+    </DynamicLayout>
   );
 }
