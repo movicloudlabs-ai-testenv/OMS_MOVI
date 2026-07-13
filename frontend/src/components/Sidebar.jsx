@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { Grid2X2, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase } from 'lucide-react';
@@ -54,7 +54,6 @@ const NAV_CONFIG = {
     { to: '/pmo/tasks', icon: 'task_alt', label: 'Task Assignment', permission: { resource: 'Tasks', action: 'read' } },
     { to: '/pmo/team', icon: Users, label: 'Team', isLucide: true, permission: { resource: 'Users', action: 'read' } },
     { to: '/pmo/interns', icon: GraduationCap, label: 'Interns', isLucide: true, permission: { resource: 'Interns', action: 'read' } },
-    { to: '/pmo/leaves', icon: 'event_note', label: 'Leaves', permission: { resource: 'Projects', action: 'read' } },
     { to: '/pmo/monitoring', icon: 'monitoring', label: 'Monitoring' },
     { to: '/pmo/timeline', icon: 'timeline', label: 'Timeline' },
     { to: '/pmo/approvals', icon: 'approval', label: 'Approvals', permission: { resource: 'Tasks', action: 'read' } },
@@ -74,8 +73,9 @@ const NAV_CONFIG = {
 };
 
 export default function Sidebar({ collapsed, setCollapsed }) {
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, logout } = useAuth();
   const { hasActivity } = useNotifications();
+  const navigate = useNavigate();
   // user.role from real backend is a populated object { slug, name, ... }
   // Resolve to the NAV_CONFIG key (legacy short slugs)
   const resolveNavKey = (role) => {
@@ -97,100 +97,107 @@ export default function Sidebar({ collapsed, setCollapsed }) {
 
   const navKey = resolveNavKey(user?.role);
   // Show all primary links unconditionally; route guards will handle unauthorized access
-  const links = NAV_CONFIG[navKey] || [];
+  const visibleLinks = NAV_CONFIG[navKey] || [];
 
-  // Extra links unlocked via Access Matrix for this user's role
-  const existingPaths = new Set(links.map(l => l.to));
+  const existingPaths = new Set(visibleLinks.map(l => l.to));
   const grantedLinks = (navKey === 'admin') ? [] : CROSS_ROLE_LINKS.filter(
     l => !existingPaths.has(l.to) && hasPermission(l.resource, l.action)
   );
 
-  const isIntern = navKey === 'intern';
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-50 transition-all duration-300 flex flex-col ${collapsed ? 'w-20' : 'w-[260px]'} hidden lg:flex font-sans ${isIntern ? 'bg-[#1E293B] border-r border-[#1E293B]' : 'bg-[#F8FAFC] border-r border-[#E2E8F0]'}`}>
+    <aside className={`h-full shrink-0 bg-[#111111] text-white flex flex-col transition-all duration-300 ${collapsed ? 'w-[76px]' : 'w-[240px]'}`}>
       
-      {/* Spacer for Header */}
-      <div className="h-16 flex-shrink-0" />
+      {/* Hamburger + brand */}
+      <div className={`shrink-0 ${collapsed ? 'py-3 flex flex-col items-center gap-3' : 'px-4 py-3 flex items-center gap-3'}`}>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          <span className="material-symbols-outlined text-[20px]">menu</span>
+        </button>
+        <img src="/assets/company_logo/movi%20logo.png" alt="Movi logo" className="h-9 w-9 object-contain shrink-0" />
+        {!collapsed && (
+          <div className="min-w-0 leading-tight">
+            <p className="text-[16px] font-bold tracking-wide">OWMS</p>
+            <p className="text-[9px] text-slate-400">Office Workspace<br />Management System</p>
+          </div>
+        )}
+      </div>
 
-      <button 
-        onClick={() => setCollapsed(!collapsed)}
-        className={`absolute -right-3 top-20 w-6 h-6 border rounded-full flex items-center justify-center shadow-sm z-50 transition-colors ${
-          isIntern 
-            ? 'bg-[#334155] border-[#475569] text-slate-300 hover:text-white hover:border-[#2563EB]' 
-            : 'bg-white border-[#E2E8F0] text-slate-500 hover:text-blue-600 hover:border-blue-600'
-        }`}
-      >
-        <span className="material-symbols-outlined text-[14px]">{collapsed ? 'chevron_right' : 'chevron_left'}</span>
-      </button>
-
-      {/* Nav links */}
-      <nav className={`flex-1 py-6 space-y-1 overflow-y-auto custom-scrollbar ${collapsed ? 'px-3' : 'px-4'}`}>
-        {links.map(({ to, icon, label, isLucide }) => {
+      {/* Primary Nav */}
+      <nav className={`flex-1 min-h-0 overflow-y-auto hide-scrollbar py-3 space-y-1 ${collapsed ? 'px-3' : 'px-3'}`}>
+        {visibleLinks.map(({ to, icon, label, isLucide }) => {
           const showDot = hasActivity(to);
           return (
-          <NavLink
-            key={to}
-            to={to}
-            title={collapsed ? label : ''}
-            className={({ isActive }) => {
-              let activeClass = '';
-              let idleClass = '';
-
-              if (isIntern) {
-                activeClass = 'bg-[#2563EB] text-white font-medium';
-                idleClass = 'text-slate-300 hover:bg-[#334155] hover:text-white';
-              } else {
-                activeClass = 'bg-[#E2E8F0] text-[#0F172A] font-medium';
-                idleClass = 'text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A]';
+            <NavLink
+              key={to}
+              to={to}
+              title={collapsed ? label : ''}
+              className={({ isActive }) =>
+                `relative flex items-center gap-3 rounded-xl transition-colors ${collapsed ? 'justify-center py-2.5' : 'px-3 py-2.5'} ${
+                  isActive
+                    ? 'bg-[#EA580C] text-white font-medium'
+                    : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                }`
               }
-
-              return `relative flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive ? activeClass : idleClass} ${collapsed ? 'justify-center px-0 py-3' : ''}`;
-            }}
-          >
-            {isLucide ? (
-              <span className="flex-shrink-0 flex items-center justify-center w-[20px]">
-                {(() => { const Icon = icon; return <Icon size={18} />; })()}
-              </span>
-            ) : (
-              <span className="material-symbols-outlined text-[20px] flex-shrink-0">{icon}</span>
-            )}
-            {!collapsed && <span className="text-[13px] whitespace-nowrap">{label}</span>}
-            {showDot && (collapsed ? (
-              <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            ) : (
-              <span className="ml-auto w-2 h-2 rounded-full bg-rose-500 flex-shrink-0" title="New activity" />
-            ))}
-          </NavLink>
+            >
+              {isLucide ? (
+                <span className="flex-shrink-0 flex items-center justify-center w-[19px]">
+                  {(() => { const Icon = icon; return <Icon size={19} />; })()}
+                </span>
+              ) : (
+                <span className="material-symbols-outlined text-[19px] flex-shrink-0">{icon}</span>
+              )}
+              {!collapsed && <span className="text-[13px] whitespace-nowrap">{label}</span>}
+              {showDot && (
+                collapsed ? (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#EA580C] ring-2 ring-[#111111]" />
+                ) : (
+                  <span className="ml-auto w-2 h-2 rounded-full bg-[#EA580C] flex-shrink-0" />
+                )
+              )}
+            </NavLink>
           );
         })}
 
-        {/* Granted Access — links unlocked via Access Matrix */}
+        {/* Granted Access section */}
         {grantedLinks.length > 0 && (
           <div className={`${collapsed ? 'pt-3' : 'pt-4'}`}>
             {!collapsed && (
               <div className="flex items-center gap-1.5 px-3 mb-2">
-                <div className="flex-1 h-px bg-[#E2E8F0]" />
-                <span className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider whitespace-nowrap">Granted Access</span>
-                <div className="flex-1 h-px bg-[#E2E8F0]" />
+                <div className="flex-1 h-px bg-white/10" />
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">Granted Access</span>
+                <div className="flex-1 h-px bg-white/10" />
               </div>
             )}
-            {collapsed && <div className="h-px bg-[#E2E8F0] mb-3" />}
+            {collapsed && <div className="h-px bg-white/10 mb-3 mx-2" />}
             {grantedLinks.map(({ to, icon, label }) => (
               <NavLink
                 key={to}
                 to={to}
                 title={collapsed ? label : ''}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] ${isActive ? 'bg-[#EFF6FF] text-[#2563EB] font-medium' : ''} ${collapsed ? 'justify-center px-0 py-3' : ''}`
+                  `flex items-center gap-3 rounded-xl transition-colors ${collapsed ? 'justify-center py-2.5' : 'px-3 py-2.5'} ${
+                    isActive
+                      ? 'bg-white/10 text-white font-medium'
+                      : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                  }`
                 }
               >
-                <span className="material-symbols-outlined text-[20px] flex-shrink-0">{icon}</span>
+                <span className="material-symbols-outlined text-[19px] flex-shrink-0">{icon}</span>
                 {!collapsed && (
                   <span className="text-[13px] whitespace-nowrap flex-1">{label}</span>
                 )}
                 {!collapsed && (
-                  <span className="text-[9px] font-bold text-[#2563EB] bg-[#EFF6FF] border border-[#BFDBFE] px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+                  <span className="text-[9px] font-bold text-slate-400 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-full uppercase tracking-wider">
                     Read
                   </span>
                 )}
@@ -199,6 +206,28 @@ export default function Sidebar({ collapsed, setCollapsed }) {
           </div>
         )}
       </nav>
+
+      {/* Profile + logout */}
+      <div className={`shrink-0 border-t border-white/10 p-3 flex items-center gap-3 ${collapsed ? 'flex-col' : ''}`}>
+        <div className="w-9 h-9 rounded-full bg-[#EA580C] flex items-center justify-center text-[12px] font-semibold shrink-0 overflow-hidden">
+          {user?.profileImage || user?.avatar
+            ? <img src={user.profileImage || user.avatar} alt="" className="w-full h-full object-cover" />
+            : initials}
+        </div>
+        {!collapsed && (
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-medium truncate">{user?.name || 'User'}</p>
+            <p className="text-[11px] text-slate-400 truncate capitalize">{user?.role?.name || navKey}</p>
+          </div>
+        )}
+        <button
+          onClick={handleLogout}
+          title="Logout"
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-red-600/80 transition-colors shrink-0"
+        >
+          <span className="material-symbols-outlined text-[18px]">logout</span>
+        </button>
+      </div>
 
     </aside>
   );
