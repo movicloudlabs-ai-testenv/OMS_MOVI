@@ -1,20 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HRLayout from '../../components/hr/HRLayout';
-
-// --- MOCK DATA ---
-const PROJECTS = [
-  { id: 'p1', name: 'Cloud Migration Phase 2' },
-  { id: 'p2', name: 'Q3 Security Audit' },
-  { id: 'p3', name: 'Mobile App Redesign' },
-];
-
-const EMPLOYEES = [
-  { id: 'e1', name: 'Sarah Jenkins', role: 'Frontend Developer', type: 'Employee', initial: 'S', bg: 'bg-[#EFF6FF]', text: 'text-[#1D4ED8]' },
-  { id: 'e2', name: 'Mike Ross', role: 'Security Analyst', type: 'Employee', initial: 'M', bg: 'bg-[#F5F3FF]', text: 'text-[#6D28D9]' },
-  { id: 'e3', name: 'Alex Wong', role: 'UX Design Intern', type: 'Intern', initial: 'A', bg: 'bg-[#ECFDF5]', text: 'text-[#059669]' },
-  { id: 'e4', name: 'Jessica Pearson', role: 'Data Science Intern', type: 'Intern', initial: 'J', bg: 'bg-[#FEF2F2]', text: 'text-[#DC2626]' },
-];
+import { hrAPI } from '../../utils/api';
+import toast from 'react-hot-toast';
 
 const PRIORITIES = [
   { id: 'low', label: 'Low', icon: 'keyboard_arrow_down', color: 'text-[#64748B]', bg: 'bg-[#F1F5F9]', border: 'border-[#E2E8F0]', ring: 'ring-[#CBD5E1]' },
@@ -26,8 +14,48 @@ const PRIORITIES = [
 export default function AssignTask() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showToast, setShowToast] = useState(false);
   
+  const [projects, setProjects] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [projRes, empRes, internRes] = await Promise.all([
+          hrAPI.getMyProjects(),
+          hrAPI.getEmployees(),
+          hrAPI.getInterns()
+        ]);
+        setProjects(projRes.data.data || []);
+        
+        const emps = (empRes.data.data || []).map(e => ({
+          id: e._id,
+          name: e.name,
+          role: e.designation || 'Employee',
+          type: 'Employee',
+          initial: e.name[0]?.toUpperCase(),
+          bg: 'bg-[#EFF6FF]', text: 'text-[#1D4ED8]'
+        }));
+        const interns = (internRes.data.data || []).map(e => ({
+          id: e._id,
+          name: e.name,
+          role: e.role || 'Intern',
+          type: 'Intern',
+          initial: e.name[0]?.toUpperCase(),
+          bg: 'bg-[#ECFDF5]', text: 'text-[#059669]'
+        }));
+        setEmployees([...emps, ...interns]);
+      } catch (error) {
+        toast.error('Failed to load data for task assignment');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -70,13 +98,30 @@ export default function AssignTask() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (validate()) {
-      setShowToast(true);
-      setTimeout(() => {
-        setShowToast(false);
-        navigate('/hr/dashboard');
-      }, 2000);
+      setSubmitting(true);
+      try {
+        const promises = formData.assignees.map(assigneeId => {
+          return hrAPI.assignTask({
+            title: formData.title,
+            description: formData.description,
+            projectId: formData.project,
+            assignedTo: assigneeId,
+            priority: formData.priority,
+            dueDate: formData.dueDate,
+            effortPoints: 5
+          });
+        });
+        await Promise.all(promises);
+        
+        toast.success('Task assigned successfully!');
+        navigate('/hr/tasks');
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to assign task');
+      } finally {
+        setSubmitting(false);
+      }
     }
   };
 
@@ -90,25 +135,19 @@ export default function AssignTask() {
     if (errors.assignees) setErrors(prev => ({ ...prev, assignees: null }));
   };
 
-  const filteredEmployees = EMPLOYEES.filter(e => 
+  const filteredEmployees = employees.filter(e => 
     e.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     e.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const selectedPriority = PRIORITIES.find(p => p.id === formData.priority);
-  const selectedProjectObj = PROJECTS.find(p => p.id === formData.project);
+  const selectedProjectObj = projects.find(p => p._id === formData.project);
 
   return (
     <HRLayout bare>
       <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-8 max-w-[1100px] mx-auto pb-24 relative">
         
-        {/* Toast Notification */}
-        {showToast && (
-          <div className="fixed top-6 right-6 z-50 bg-[#10B981] text-white px-5 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-in slide-in-from-right fade-in">
-            <span className="material-symbols-outlined text-[20px]">check_circle</span>
-            <span className="text-[14px] font-semibold">Task assigned successfully!</span>
-          </div>
-        )}
+        {/* Toast Notification (removed as we use react-hot-toast) */}
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
@@ -127,10 +166,11 @@ export default function AssignTask() {
             </button>
             <button 
               onClick={handleSubmit}
-              className="bg-[#2563EB] text-white px-5 py-2 rounded-lg text-[13px] font-medium hover:bg-[#1D4ED8] transition-colors shadow-sm flex items-center gap-2"
+              disabled={submitting}
+              className="bg-[#2563EB] text-white px-5 py-2 rounded-lg text-[13px] font-medium hover:bg-[#1D4ED8] transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-[18px]">send</span>
-              Dispatch Task
+              {submitting ? 'Dispatching...' : 'Dispatch Task'}
             </button>
           </div>
         </div>
@@ -182,7 +222,7 @@ export default function AssignTask() {
                       className={`w-full px-3 py-2 border rounded-lg text-[14px] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 transition-colors bg-white ${errors.project ? 'border-[#FCA5A5] focus:border-[#EF4444] bg-[#FEF2F2]' : 'border-[#E2E8F0] focus:border-[#2563EB]'}`}
                     >
                       <option value="">Select a project...</option>
-                      {PROJECTS.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                      {projects.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
                     </select>
                     {errors.project && <p className="text-[12px] text-[#EF4444] mt-1">{errors.project}</p>}
                   </div>
@@ -358,7 +398,7 @@ export default function AssignTask() {
                 <div className="flex -space-x-2">
                   {formData.assignees.length > 0 ? (
                     formData.assignees.slice(0, 3).map((id, i) => {
-                      const emp = EMPLOYEES.find(e => e.id === id);
+                      const emp = employees.find(e => e.id === id);
                       return (
                         <div key={id} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] border-2 border-white relative z-[${10-i}] ${emp.bg} ${emp.text}`} title={emp.name}>
                           {emp.initial}

@@ -183,59 +183,94 @@ export default function PMOApprovals() {
             leaveOverview.length === 0 ? (
               <EmptyState title="No one on leave" subtitle="No approved leaves across your team or HR in the recent window." icon="event_available" color="text-[#2563EB]" bg="bg-[#EFF6FF]" />
             ) : (
-              <div className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm overflow-hidden">
-                <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC]">
-                  <span className="material-symbols-outlined text-[18px] text-[#64748B]">visibility</span>
-                  <span className="text-[13px] font-bold text-[#0F172A]">Leave Overview</span>
-                  <span className="text-[11px] text-[#64748B]">· view-only</span>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse min-w-[640px]">
-                    <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
-                      <tr>
-                        {['Member', 'Role', 'Type', 'Duration', 'Days', 'Status'].map(h => (
-                          <th key={h} className="px-4 py-2.5 text-[10px] font-bold text-[#64748B] uppercase tracking-wider">{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {leaveOverview.map(lv => {
-                        const name = lv.user?.name || 'Unknown';
-                        const initial = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-                        const roleName = lv.user?.role?.name || lv.user?.designation || 'Member';
-                        const slug = lv.user?.role?.slug || '';
-                        const roleBadge = slug.includes('hr') ? 'bg-purple-100 text-purple-700'
-                          : slug.includes('intern') ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-blue-100 text-blue-700';
-                        const today = new Date(); today.setHours(0,0,0,0);
-                        const ongoing = new Date(lv.fromDate) <= today && new Date(lv.toDate) >= today;
-                        const upcoming = new Date(lv.fromDate) > today;
-                        return (
-                          <tr key={lv._id} className="border-b border-[#E2E8F0] hover:bg-[#F8FAFC] last:border-0">
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-full bg-[#E2E8F0] text-[#64748B] flex items-center justify-center text-[10px] font-bold shrink-0">{initial}</div>
-                                <div>
-                                  <p className="text-xs font-semibold text-[#0F172A]">{name}</p>
-                                  <p className="text-[10px] text-[#64748B]">{lv.user?.employeeId || ''}</p>
+              <div className="space-y-4">
+                {leaveOverview.map(lv => {
+                  const name = lv.user?.name || 'Unknown';
+                  const initial = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+                  const roleName = lv.user?.role?.name || lv.user?.designation || 'Member';
+                  const slug = lv.user?.role?.slug || '';
+                  const roleBadge = slug.includes('hr') ? 'bg-purple-100 text-purple-700 border-purple-200'
+                    : slug.includes('intern') ? 'bg-emerald-100 text-emerald-700 border-emerald-200'
+                    : 'bg-blue-100 text-blue-700 border-blue-200';
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  const ongoing = new Date(lv.fromDate) <= today && new Date(lv.toDate) >= today;
+                  const upcoming = new Date(lv.fromDate) > today;
+                  const statusBadge = ongoing ? 'bg-amber-100 text-amber-700 border-amber-200'
+                    : upcoming ? 'bg-blue-100 text-blue-700 border-blue-200'
+                    : 'bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]';
+                  const statusText = ongoing ? 'On leave' : upcoming ? 'Upcoming' : 'Completed';
+                  const pendingTasks = lv.pendingTasks || [];
+
+                  return (
+                    <div key={lv._id} className="bg-white border border-[#E2E8F0] rounded-2xl shadow-sm overflow-hidden hover:border-[#CBD5E1] transition-colors p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[#F1F5F9] text-[#64748B] flex items-center justify-center text-[13px] font-bold shrink-0">{initial}</div>
+                          <div>
+                            <h3 className="text-[16px] font-bold text-[#0F172A]">{name}</h3>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${roleBadge}`}>{roleName}</span>
+                              <span className="text-[12px] text-[#64748B]">{lv.user?.employeeId || ''}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border ${statusBadge}`}>
+                          {statusText}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5 p-4 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0]">
+                        <div>
+                          <p className="text-[11px] font-bold text-[#94A3B8] uppercase mb-1">Leave Type</p>
+                          <p className="text-[13px] font-semibold text-[#0F172A]">{lv.type}</p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold text-[#94A3B8] uppercase mb-1">Duration</p>
+                          <p className="text-[13px] font-semibold text-[#0F172A]">
+                            {new Date(lv.fromDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → {new Date(lv.toDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            <span className="text-[#64748B] font-normal ml-1">({lv.days} {lv.days === 1 ? 'day' : 'days'})</span>
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[11px] font-bold text-[#94A3B8] uppercase mb-1">Reason</p>
+                          <p className="text-[13px] text-[#475569] truncate" title={lv.reason}>{lv.reason || 'Not provided'}</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-[#E2E8F0]">
+                        <h4 className="text-[13px] font-bold text-[#0F172A] mb-3 flex items-center gap-2">
+                          <span className="material-symbols-outlined text-[18px] text-[#F59E0B]">pending_actions</span>
+                          Pending Tasks Impacted ({pendingTasks.length})
+                        </h4>
+                        
+                        {pendingTasks.length === 0 ? (
+                          <p className="text-[13px] text-[#64748B] italic bg-[#F8FAFC] p-3 rounded-lg border border-[#E2E8F0] border-dashed">No pending tasks for this user.</p>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[200px] overflow-y-auto custom-scrollbar pr-2 pb-1">
+                            {pendingTasks.map(task => {
+                              const prioColors = {
+                                Critical: 'text-red-700 bg-red-100 border-red-200',
+                                High: 'text-orange-700 bg-orange-100 border-orange-200',
+                                Medium: 'text-amber-700 bg-amber-100 border-amber-200',
+                                Low: 'text-slate-700 bg-slate-100 border-slate-200'
+                              };
+                              const pColor = prioColors[task.priority] || prioColors.Medium;
+                              return (
+                                <div key={task._id} className="p-3 border border-[#E2E8F0] rounded-xl flex flex-col justify-between hover:shadow-sm hover:border-[#CBD5E1] transition-all bg-white">
+                                  <div className="flex justify-between items-start mb-2">
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${pColor}`}>{task.priority}</span>
+                                    <span className="text-[10px] font-semibold text-[#64748B] bg-[#F1F5F9] px-1.5 py-0.5 rounded">{task.status}</span>
+                                  </div>
+                                  <p className="text-[13px] font-bold text-[#0F172A] leading-snug line-clamp-2">{task.title}</p>
                                 </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3"><span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${roleBadge}`}>{roleName}</span></td>
-                            <td className="px-4 py-3"><span className="text-[10px] font-bold bg-[#F1F5F9] text-[#475569] px-2 py-0.5 rounded uppercase">{lv.type}</span></td>
-                            <td className="px-4 py-3 text-xs text-[#0F172A] whitespace-nowrap">{new Date(lv.fromDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} → {new Date(lv.toDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
-                            <td className="px-4 py-3 text-xs font-bold text-[#0F172A]">{lv.days}</td>
-                            <td className="px-4 py-3">
-                              {ongoing ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 uppercase">On leave</span>
-                                : upcoming ? <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase">Upcoming</span>
-                                : <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#64748B] uppercase">Completed</span>}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )
           )}

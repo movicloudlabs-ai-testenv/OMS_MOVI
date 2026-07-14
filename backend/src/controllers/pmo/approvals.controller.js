@@ -74,9 +74,18 @@ export const getLeaveOverview = async (req, res, next) => {
         select: 'name employeeId avatar department designation role',
         populate: { path: 'role', select: 'name slug' },
       })
-      .sort({ fromDate: -1 });
+      .sort({ fromDate: -1 })
+      .lean();
 
-    sendSuccess(res, leaves);
+    const leavesWithTasks = await Promise.all(leaves.map(async (leave) => {
+      const pendingTasks = await Task.find({
+        assignedTo: leave.user._id,
+        status: { $in: ['Todo', 'In Progress', 'In Review', 'Blocked'] }
+      }).select('title status priority dueDate');
+      return { ...leave, pendingTasks };
+    }));
+
+    sendSuccess(res, leavesWithTasks);
   } catch (error) {
     next(error);
   }
