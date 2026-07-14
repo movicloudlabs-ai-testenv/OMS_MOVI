@@ -126,5 +126,6 @@
 
 /* Sidebar nav text (visible only when hovered/expanded) */
 aside:not(:hover) .nav-text {
-  @apply lg:opacity-100;
+  @apply opacity-0;
+  display: none;
 }
