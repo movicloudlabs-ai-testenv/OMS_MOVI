@@ -15,13 +15,12 @@ const ROLE_HOME = {
   'intern':      '/intern/dashboard',
 };
 
-// One demo account per dashboard (compact quick-fill)
 const ACCOUNTS = [
   { label: 'Admin',    email: 'admin@owms.com', pass: 'Admin@123' },
-  { label: 'HR',       email: 'hr@owms.com',    pass: 'HR@123456' },
+  { label: 'HR',       email: 'sarah.hr@owms.com', pass: 'HR@123456' },
   { label: 'PMO',      email: 'pmo@owms.com',   pass: 'PMO@12345' },
-  { label: 'Employee', email: 'john@owms.com',  pass: 'Emp@12345' },
-  { label: 'Intern',   email: 'rahul@owms.com', pass: 'Int@12345' },
+  { label: 'Employee', email: 'alex.emp@owms.com', pass: 'Emp@12345' },
+  { label: 'Intern',   email: 'rahul.intern@owms.com', pass: 'Int@12345' },
 ];
 
 export default function LoginPage() {
