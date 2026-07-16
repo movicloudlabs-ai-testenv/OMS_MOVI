@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   SlidersHorizontal, Shield, Bell, Palette, Server, Users,
   Save, CheckCircle2, AlertTriangle,
   Eye, EyeOff, Upload, Mail, Lock, RefreshCw,
   AlertCircle, X,
+  Archive, RotateCcw, Trash2, ChevronLeft, ChevronRight, GraduationCap, Search,
 } from 'lucide-react';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -693,6 +694,228 @@ function HRTab({ s, upd, err, canEdit }) {
   );
 }
 
+// ─── Retention Tab ────────────────────────────────────────────────────────────
+function RetentionTab({ archivedUsers, loading, pagination, stats, search: _search, setSearch,
+  page, setPage, onRestore, onPermDelete, isSuperAdmin }) {
+
+  const [localSearch, setLocalSearch] = useState(_search || '');
+  const total = stats.reduce((s, x) => s + x.count, 0);
+  const empCount = stats.find(s => s._id === 'Full-time')?.count || 0;
+  const intCount = stats.find(s => s._id === 'Intern')?.count || 0;
+
+  const relTime = (dateStr) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
+    const days = Math.floor(diff / 86400);
+    if (days === 1) return '1 day ago';
+    if (days < 30) return `${days} days ago`;
+    if (days < 365) return `${Math.floor(days / 30)} months ago`;
+    return `${Math.floor(days / 365)} years ago`;
+  };
+
+  const fmtDate = (dateStr) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const initials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  };
+
+  const typeBadge = (t) => {
+    const map = {
+      'Full-time': { bg: '#EFF6FF', text: '#2563EB', border: '#BFDBFE' },
+      'Part-time': { bg: '#FFFBEB', text: '#D97706', border: '#FDE68A' },
+      'Contract':  { bg: '#F5F3FF', text: '#7C3AED', border: '#DDD6FE' },
+      'Intern':    { bg: '#ECFDF5', text: '#059669', border: '#A7F3D0' },
+    };
+    const c = map[t] || map['Full-time'];
+    return (
+      <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium"
+        style={{ background: c.bg, color: c.text, border: `1px solid ${c.border}` }}>
+        {t || 'N/A'}
+      </span>
+    );
+  };
+
+  const from = pagination?.total ? (page - 1) * (pagination?.limit || 15) + 1 : 0;
+  const to = Math.min(page * (pagination?.limit || 15), pagination?.total || 0);
+
+  return (
+    <div>
+      <p className="text-sm font-semibold text-[#0F172A] mb-1">Data Retention & Archive</p>
+      <p className="text-xs text-[#64748B] mb-5">Deleted users are archived here. You can restore them or permanently remove their records.</p>
+
+      {/* Stats Strip */}
+      <div className="flex gap-3 mb-5">
+        <div className="bg-[#F1F5F9] border border-[#E2E8F0] rounded-lg px-4 py-2.5 flex items-center gap-2">
+          <Archive size={14} className="text-[#64748B]" />
+          <span className="text-sm font-medium text-[#0F172A]">Total Archived: {total}</span>
+        </div>
+        <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-lg px-4 py-2.5 flex items-center gap-2">
+          <Users size={14} className="text-[#2563EB]" />
+          <span className="text-sm font-medium text-[#2563EB]">Employees: {empCount}</span>
+        </div>
+        <div className="bg-[#EDE9FE] border border-[#DDD6FE] rounded-lg px-4 py-2.5 flex items-center gap-2">
+          <GraduationCap size={14} className="text-[#7C3AED]" />
+          <span className="text-sm font-medium text-[#7C3AED]">Interns: {intCount}</span>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+          <input
+            type="text"
+            placeholder="Search by name, email, or employee ID..."
+            value={localSearch}
+            onChange={e => { setLocalSearch(e.target.value); setSearch(e.target.value); }}
+            className="bg-white border border-[#E2E8F0] rounded-lg pl-9 pr-4 py-2 text-sm w-72 focus:outline-none focus:border-[#EA580C] focus:ring-1 focus:ring-orange-100 transition"
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
+        {loading ? (
+          /* Loading Skeleton */
+          <div className="p-4 space-y-3">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-full bg-[#E2E8F0] animate-pulse" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 bg-[#E2E8F0] rounded animate-pulse w-1/3" />
+                  <div className="h-2.5 bg-[#F1F5F9] rounded animate-pulse w-1/4" />
+                </div>
+                <div className="h-3 bg-[#E2E8F0] rounded animate-pulse w-24" />
+                <div className="h-3 bg-[#E2E8F0] rounded animate-pulse w-20" />
+                <div className="h-3 bg-[#E2E8F0] rounded animate-pulse w-16" />
+              </div>
+            ))}
+          </div>
+        ) : archivedUsers.length === 0 ? (
+          /* Empty State */
+          <div className="py-16 flex flex-col items-center justify-center">
+            <Archive size={40} className="text-[#CBD5E1] mb-3" />
+            <p className="text-base font-medium text-[#0F172A] mb-1">No archived users</p>
+            <p className="text-sm text-[#64748B]">Deleted users will appear here for easy restoration.</p>
+          </div>
+        ) : (
+          <>
+            <table className="w-full text-left">
+              <thead>
+                <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                  <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Employee</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Email</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Role & Dept</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Type</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Archived On</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">Archived By</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold text-[#64748B] uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {archivedUsers.map(u => (
+                  <tr key={u._id} className="border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC] transition-colors">
+                    {/* Employee */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-[#94A3B8] flex items-center justify-center shrink-0">
+                          <span className="text-[11px] font-bold text-white">{initials(u.name)}</span>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-[#0F172A] leading-tight">{u.name}</p>
+                          <p className="text-xs font-mono text-[#64748B]">{u.employeeId}</p>
+                        </div>
+                      </div>
+                    </td>
+                    {/* Email */}
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-[#64748B] font-mono">{u.email}</span>
+                    </td>
+                    {/* Role & Dept */}
+                    <td className="px-4 py-3">
+                      {u.role ? (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium"
+                          style={{ background: (u.role.color || '#6B7280') + '18', color: u.role.color || '#6B7280', border: `1px solid ${(u.role.color || '#6B7280')}30` }}>
+                          {u.role.name}
+                        </span>
+                      ) : <span className="text-xs text-[#94A3B8]">—</span>}
+                      {u.department && <p className="text-xs text-[#64748B] mt-0.5">{u.department.name}</p>}
+                    </td>
+                    {/* Employment Type */}
+                    <td className="px-4 py-3">{typeBadge(u.employmentType)}</td>
+                    {/* Archived On */}
+                    <td className="px-4 py-3">
+                      <p className="text-sm text-[#0F172A]">{fmtDate(u.archivedAt)}</p>
+                      <p className="text-xs text-[#64748B]">{relTime(u.archivedAt)}</p>
+                    </td>
+                    {/* Archived By */}
+                    <td className="px-4 py-3">
+                      <span className="text-sm text-[#64748B]">{u.archivedByName || u.archivedBy?.name || 'System'}</span>
+                    </td>
+                    {/* Actions */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => onRestore(u)}
+                          className="flex items-center gap-1.5 border border-[#16A34A] text-[#16A34A] hover:bg-[#DCFCE7] text-xs px-3 py-1.5 rounded-lg transition font-medium"
+                        >
+                          <RotateCcw size={14} /> Restore
+                        </button>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => onPermDelete(u)}
+                            title="Permanently delete all records"
+                            className="text-[#DC2626] hover:bg-[#FEE2E2] p-1.5 rounded-lg transition"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Pagination */}
+            {pagination && pagination.total > 0 && (
+              <div className="flex justify-between items-center px-4 py-3 border-t border-[#E2E8F0]">
+                <span className="text-sm text-[#64748B]">
+                  Showing {from}–{to} of {pagination.total} archived users
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    disabled={!pagination.hasPrev}
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    className="p-1.5 rounded-md border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC] transition disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button
+                    disabled={!pagination.hasNext}
+                    onClick={() => setPage(p => p + 1)}
+                    className="p-1.5 rounded-md border border-[#E2E8F0] text-[#64748B] hover:bg-[#F8FAFC] transition disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -703,6 +926,7 @@ const TABS = [
   { key: 'branding',      label: 'Branding',      Icon: Palette },
   { key: 'system',        label: 'System',        Icon: Server },
   { key: 'hr',            label: 'HR',            Icon: Users },
+  { key: 'retention',     label: 'Retention',     Icon: Archive },
 ];
 
 export default function Settings() {
@@ -720,6 +944,19 @@ export default function Settings() {
   const [saveErr,   setSaveErr]   = useState('');
   const [saved,     setSaved]     = useState(false);
   const [valErrs,   setValErrs]   = useState({});
+
+  // ── Retention tab state (independent from settings form) ──────────────
+  const [archivedUsers,      setArchivedUsers]      = useState([]);
+  const [archivedLoading,    setArchivedLoading]    = useState(false);
+  const [archivedPagination, setArchivedPagination] = useState({});
+  const [archiveSearch,      setArchiveSearch]      = useState('');
+  const [archivePage,        setArchivePage]        = useState(1);
+  const [archiveStats,       setArchiveStats]       = useState([]);
+  const [restoreTarget,      setRestoreTarget]      = useState(null);
+  const [restoreBusy,        setRestoreBusy]        = useState(false);
+  const [permDeleteTarget,   setPermDeleteTarget]   = useState(null);
+  const [permDeleteConfirm,  setPermDeleteConfirm]  = useState('');
+  const [permDeleteBusy,     setPermDeleteBusy]     = useState(false);
   const [danger,    setDanger]    = useState(null);
   const [dangerBusy,setDangerBusy]= useState(false);
 
@@ -736,6 +973,70 @@ export default function Settings() {
       finally { setLoading(false); }
     })();
   }, [canRead]);
+
+  // ── Fetch archived users when Retention tab is active ─────────────────
+  const fetchArchivedUsers = useCallback(async () => {
+    setArchivedLoading(true);
+    try {
+      const res = await adminAPI.getArchivedUsers({
+        page: archivePage,
+        limit: 15,
+        search: archiveSearch || undefined,
+      });
+      setArchivedUsers(res.data.data.archived);
+      setArchiveStats(res.data.data.stats);
+      setArchivedPagination(res.data.data.pagination);
+    } catch (err) {
+      console.error('Failed to load archive', err);
+    } finally {
+      setArchivedLoading(false);
+    }
+  }, [archivePage, archiveSearch]);
+
+  useEffect(() => {
+    if (tab === 'retention') fetchArchivedUsers();
+  }, [tab, fetchArchivedUsers]);
+
+  // Debounce archive search
+  const searchTimer = useRef(null);
+  const handleArchiveSearch = (val) => {
+    clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      setArchiveSearch(val);
+      setArchivePage(1);
+    }, 300);
+  };
+
+  // Restore handler
+  const handleRestore = async () => {
+    if (!restoreTarget) return;
+    setRestoreBusy(true);
+    try {
+      await adminAPI.restoreUser(restoreTarget._id);
+      setRestoreTarget(null);
+      fetchArchivedUsers();
+    } catch (e) {
+      setSaveErr(e.response?.data?.message || 'Restore failed');
+    } finally {
+      setRestoreBusy(false);
+    }
+  };
+
+  // Permanent delete handler
+  const handlePermDelete = async () => {
+    if (!permDeleteTarget || permDeleteConfirm !== 'DELETE') return;
+    setPermDeleteBusy(true);
+    try {
+      await adminAPI.permanentlyDelete(permDeleteTarget._id);
+      setPermDeleteTarget(null);
+      setPermDeleteConfirm('');
+      fetchArchivedUsers();
+    } catch (e) {
+      setSaveErr(e.response?.data?.message || 'Permanent delete failed');
+    } finally {
+      setPermDeleteBusy(false);
+    }
+  };
 
   // ── updateField ───────────────────────────────────────────────────────────
   const updateField = (section, field, value) => {
@@ -828,7 +1129,7 @@ export default function Settings() {
     <DynamicLayout
       title="Settings"
       subtitle="System-wide configuration for your OWMS installation"
-      actions={(
+      actions={tab !== 'retention' ? (
         <div className="flex items-center gap-2">
           {dirty && (
             <span className="flex items-center gap-1.5 text-[12px] text-amber-600 font-medium bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
@@ -846,7 +1147,7 @@ export default function Settings() {
             {saving ? <><RefreshCw size={12} className="animate-spin"/>Saving…</> : <><Save size={12}/>Save Changes</>}
           </button>
         </div>
-      )}
+      ) : null}
     >
       {/* Main panel — zoom 1.1 enlarges the settings content ~110% without
           affecting the sidebar or page header. */}
@@ -883,26 +1184,143 @@ export default function Settings() {
               {tab === 'branding'      && <BrandingTab      s={settings.branding}      upd={upd('branding')}      canEdit={canEdit}/>}
               {tab === 'system'        && <SystemTab        s={settings.system}        upd={upd('system')}        err={valErrs} canEdit={canEdit} isSuperAdmin={isSuperAdmin} onDanger={setDanger} updatedAt={settings.updatedAt}/>}
               {tab === 'hr'           && <HRTab            s={settings.hr}            upd={upd('hr')}            err={valErrs} canEdit={canEdit}/>}
+              {tab === 'retention'    && <RetentionTab
+                archivedUsers={archivedUsers} loading={archivedLoading}
+                pagination={archivedPagination} stats={archiveStats}
+                search={archiveSearch} setSearch={handleArchiveSearch}
+                page={archivePage} setPage={setArchivePage}
+                onRestore={setRestoreTarget} onPermDelete={setPermDeleteTarget}
+                isSuperAdmin={isSuperAdmin}
+              />}
             </motion.div>
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Status bar */}
-      <div className="mt-3 flex items-center gap-3 text-[13px]">
-        {saved    && <span className="flex items-center gap-1.5 text-green-600 font-medium"><CheckCircle2 size={14}/>Saved successfully</span>}
-        {!saved && !dirty && <span className="text-[#9CA3AF]">All settings saved</span>}
-        {saveErr && (
-          <div className="flex items-center gap-1.5 text-[12px] text-red-500 max-w-xs truncate ml-auto">
-            <AlertCircle size={13} className="shrink-0"/>
-            <span className="truncate">{saveErr}</span>
-            <button onClick={()=>setSaveErr('')}><X size={12}/></button>
-          </div>
-        )}
-      </div>
+      {/* Status bar — hidden on Retention tab */}
+      {tab !== 'retention' && (
+        <div className="mt-3 flex items-center gap-3 text-[13px]">
+          {saved    && <span className="flex items-center gap-1.5 text-green-600 font-medium"><CheckCircle2 size={14}/>Saved successfully</span>}
+          {!saved && !dirty && <span className="text-[#9CA3AF]">All settings saved</span>}
+          {saveErr && (
+            <div className="flex items-center gap-1.5 text-[12px] text-red-500 max-w-xs truncate ml-auto">
+              <AlertCircle size={13} className="shrink-0"/>
+              <span className="truncate">{saveErr}</span>
+              <button onClick={()=>setSaveErr('')}><X size={12}/></button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Error toast for retention actions */}
+      {tab === 'retention' && saveErr && (
+        <div className="mt-3 flex items-center gap-1.5 text-[12px] text-red-500">
+          <AlertCircle size={13} className="shrink-0"/>
+          <span>{saveErr}</span>
+          <button onClick={()=>setSaveErr('')}><X size={12}/></button>
+        </div>
+      )}
 
       {danger && (
         <DangerModal action={danger} onCancel={()=>setDanger(null)} onConfirm={handleDangerConfirm} loading={dangerBusy}/>
+      )}
+
+      {/* Restore Confirmation Modal */}
+      {restoreTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.14 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6"
+          >
+            <div className="flex justify-center mb-3">
+              <div className="bg-[#DCFCE7] rounded-full p-3">
+                <RotateCcw size={24} className="text-[#16A34A]" />
+              </div>
+            </div>
+            <p className="text-lg font-bold text-[#0F172A] text-center">Restore {restoreTarget.name}?</p>
+
+            <div className="bg-[#F8FAFC] rounded-lg p-4 my-4 space-y-1.5 text-[13px]">
+              <div className="flex justify-between">
+                <span className="text-[#64748B]">Employee ID</span>
+                <span className="font-mono text-[#0F172A]">{restoreTarget.employeeId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#64748B]">Email</span>
+                <span className="font-mono text-[#0F172A]">{restoreTarget.email}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#64748B]">Role</span>
+                <span className="text-[#0F172A]">{restoreTarget.role?.name || '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#64748B]">Archived on</span>
+                <span className="text-[#0F172A]">{restoreTarget.archivedAt ? new Date(restoreTarget.archivedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-[#64748B] text-center mb-5">
+              Their account will be restored with Active status. They will be required to change their password on first login.
+            </p>
+
+            <div className="flex gap-3">
+              <button onClick={() => setRestoreTarget(null)}
+                className="flex-1 px-3 py-2 text-[13px] border border-[#D1D5DB] text-[#6B7280] rounded-lg hover:bg-[#F9FAFB] transition">
+                Cancel
+              </button>
+              <button onClick={handleRestore} disabled={restoreBusy}
+                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[13px] font-medium text-white bg-[#16A34A] hover:bg-[#15803D] rounded-lg transition disabled:opacity-60">
+                {restoreBusy ? <><RefreshCw size={12} className="animate-spin"/>Restoring…</> : 'Restore Account'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Permanent Delete Confirmation Modal (Super Admin only) */}
+      {permDeleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.14 }}
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6"
+          >
+            <div className="flex justify-center mb-3">
+              <div className="bg-[#FEE2E2] rounded-full p-3">
+                <Trash2 size={24} className="text-[#DC2626]" />
+              </div>
+            </div>
+            <p className="text-lg font-bold text-[#DC2626] text-center">Permanently Delete All Records?</p>
+
+            <div className="bg-[#FEE2E2] border border-[#FECACA] rounded-lg p-3 my-4">
+              <p className="text-xs text-[#DC2626] leading-relaxed">
+                This will completely erase <strong>{permDeleteTarget.name}</strong>'s data from OWMS forever.
+                All associated audit logs, tasks, and history will lose this user reference.
+                This cannot be undone.
+              </p>
+            </div>
+
+            <p className="text-[13px] text-[#374151] mb-2">Type <strong>DELETE</strong> to confirm:</p>
+            <input
+              value={permDeleteConfirm}
+              onChange={e => setPermDeleteConfirm(e.target.value)}
+              placeholder="DELETE"
+              className="w-full border border-[#D1D5DB] rounded-lg px-3 py-2 text-[13px] mb-4 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-100"
+            />
+
+            <div className="flex gap-3">
+              <button onClick={() => { setPermDeleteTarget(null); setPermDeleteConfirm(''); }}
+                className="flex-1 px-3 py-2 text-[13px] border border-[#D1D5DB] text-[#6B7280] rounded-lg hover:bg-[#F9FAFB] transition">
+                Cancel
+              </button>
+              <button onClick={handlePermDelete} disabled={permDeleteConfirm !== 'DELETE' || permDeleteBusy}
+                className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-[13px] font-medium text-white rounded-lg transition
+                  ${permDeleteConfirm === 'DELETE' && !permDeleteBusy ? 'bg-[#DC2626] hover:bg-[#B91C1C]' : 'bg-red-300 cursor-not-allowed'}`}>
+                {permDeleteBusy ? <><RefreshCw size={12} className="animate-spin"/>Deleting…</> : 'Delete Forever'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
       )}
     </DynamicLayout>
   );

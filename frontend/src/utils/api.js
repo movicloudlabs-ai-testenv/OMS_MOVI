@@ -129,6 +129,11 @@ export const adminAPI = {
     api.post('/admin/settings/upload-logo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+
+  // Archive / Retention
+  getArchivedUsers: (params) => api.get('/admin/users/archived', { params }),
+  restoreUser: (archivedId, data) => api.post(`/admin/users/archived/${archivedId}/restore`, data),
+  permanentlyDelete: (archivedId) => api.delete(`/admin/users/archived/${archivedId}/permanent`),
 };
 
 // ─── HR API ───────────────────────────────────────────────────────────────

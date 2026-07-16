@@ -2,8 +2,10 @@ import User from '../../models/User.js';
 import Role from '../../models/Role.js';
 import Project from '../../models/Project.js';
 import Task from '../../models/Task.js';
+import ArchivedUser from '../../models/ArchivedUser.js';
+import AuditLog from '../../models/AuditLog.js';
 import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.js';
-import { getPagination } from '../../utils/paginate.js';
+import { getPagination, paginatedResponse } from '../../utils/paginate.js';
 import { sendNotification } from '../../utils/sendNotification.js';
 import { sendWelcomeEmail } from '../../utils/sendEmail.js';
 import { syncEmployeeLeaveBalance } from '../../utils/syncLeaveBalance.js';
@@ -383,18 +385,28 @@ export const getUserDeletionImpact = async (req, res, next) => {
  */
 export const deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id)
+      .populate('role', 'name slug')
+      .populate('department', 'name');
+
     if (!user) {
       return sendError(res, 'User not found', 404);
     }
 
-    // Prevent deleting yourself
+    // Prevent deleting Super Admin
+    if (user.role?.slug === 'super-admin') {
+      return sendError(res, 'Super Admin account cannot be deleted', 403);
+    }
+
+    // Prevent self-deletion
     if (user._id.toString() === req.user._id.toString()) {
       return sendError(res, 'You cannot delete your own account', 400);
     }
 
     const userId = user._id.toString();
     const { managerReassignments = {} } = req.body || {};
+
+    // ── Offboarding cascade (preserved from original) ──────────────────────
 
     // Every project this user touches
     const projects = await Project.find({
@@ -446,35 +458,67 @@ export const deleteUser = async (req, res, next) => {
       );
     }
 
-    // 3) Soft delete — free the email so it can be reused
-    user.status = 'Inactive';
-    user.deletedAt = new Date();
-    user.email = `deleted_${Date.now()}_${user.email}`;
-    await user.save({ validateBeforeSave: false });
+    // ── Archive instead of soft-delete ─────────────────────────────────────
 
-    // 4) Notify the people who now own the handover
+    // 3) Copy full document to ArchivedUser
+    const archived = await ArchivedUser.create({
+      originalId:       user._id,
+      employeeId:       user.employeeId,
+      name:             user.name,
+      email:            user.email,
+      avatar:           user.avatar,
+      role:             user.role?._id,
+      department:       user.department?._id,
+      designation:      user.designation,
+      employmentType:   user.employmentType,
+      joinDate:         user.joinDate,
+      skills:           user.skills,
+      archivedBy:       req.user._id,
+      archivedByName:   req.user.name,
+      archiveReason:    req.body.reason || 'Deleted by administrator',
+      originalDocument: user.toObject(),
+    });
+
+    // 4) Hard delete from users collection
+    await User.findByIdAndDelete(req.params.id);
+
+    // 5) Create audit log
+    await AuditLog.create({
+      user:       req.user._id,
+      userName:   req.user.name,
+      action:     'Delete',
+      module:     'Users',
+      resourceId: user._id,
+      details:    `User ${user.name} (${user.employeeId}) archived by ${req.user.name}`,
+      ipAddress:  req.ip,
+      result:     'WARNING',
+    });
+
+    // 6) Notify the people who now own the handover
     const recipients = new Set(notifyManagerIds);
     if (user.hrManager) recipients.add(user.hrManager.toString());
     if (user.pmoLead) recipients.add(user.pmoLead.toString());
+    if (user.manager) recipients.add(user.manager.toString());
     recipients.delete(userId);
     for (const rid of recipients) {
       await sendNotification({
         recipient: rid,
         type: 'system_alert',
-        title: 'Team member offboarded',
-        message: `${user.name} was removed from the system.${openTaskCount > 0 ? ` ${openTaskCount} of their open task(s) now need reassignment.` : ''}`,
-        link: '/pmo/tasks',
+        title: 'Team Member Removed',
+        message: `${user.name} (${user.employeeId}) has been removed from the system by Admin.${openTaskCount > 0 ? ` ${openTaskCount} of their open task(s) now need reassignment.` : ''}`,
+        link: '/admin/settings?tab=retention',
         sender: req.user._id,
       });
     }
 
     sendSuccess(res, {
-      _id: user._id,
+      archivedId: archived._id,
+      employeeId: user.employeeId,
       name: user.name,
       projectsAffected: projects.length,
       managedReassigned: managed.length,
       tasksUnassigned: openTaskCount,
-    }, 'User deleted and work handed over');
+    }, 'User archived successfully');
   } catch (error) {
     next(error);
   }
@@ -576,6 +620,176 @@ export const getUserProjects = async (req, res, next) => {
     });
 
     sendSuccess(res, enriched, 'Projects fetched');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ARCHIVE / RETENTION CONTROLLERS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/admin/users/archived
+ * List all archived users with search, filters, pagination, and stats.
+ */
+export const getArchivedUsers = async (req, res, next) => {
+  try {
+    const { page, limit, skip } = getPagination(req.query);
+    const { search, employmentType, dateFrom, dateTo } = req.query;
+
+    const filter = { isRestored: false };
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { employeeId: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (employmentType) filter.employmentType = employmentType;
+
+    if (dateFrom || dateTo) {
+      filter.archivedAt = {};
+      if (dateFrom) filter.archivedAt.$gte = new Date(dateFrom);
+      if (dateTo) filter.archivedAt.$lte = new Date(dateTo);
+    }
+
+    const [archived, total] = await Promise.all([
+      ArchivedUser.find(filter)
+        .populate('role', 'name color')
+        .populate('department', 'name')
+        .populate('archivedBy', 'name employeeId')
+        .sort({ archivedAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      ArchivedUser.countDocuments(filter),
+    ]);
+
+    // Summary stats for the Retention tab header
+    const stats = await ArchivedUser.aggregate([
+      { $match: { isRestored: false } },
+      { $group: {
+        _id: '$employmentType',
+        count: { $sum: 1 },
+      }},
+    ]);
+
+    sendSuccess(res, {
+      archived,
+      stats,
+      pagination: paginatedResponse(archived, total, page, limit).pagination,
+    }, 'Archived users fetched');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * POST /api/admin/users/archived/:archivedId/restore
+ * Restore an archived user back to the active users collection.
+ */
+export const restoreUser = async (req, res, next) => {
+  try {
+    const archived = await ArchivedUser.findById(req.params.archivedId);
+
+    if (!archived) {
+      return sendError(res, 'Archived record not found', 404);
+    }
+
+    if (archived.isRestored) {
+      return sendError(res, 'This user has already been restored', 400);
+    }
+
+    // Check if email is already taken by another user
+    const emailTaken = await User.findOne({ email: archived.email });
+    if (emailTaken) {
+      return sendError(res,
+        `Email ${archived.email} is already in use by another account. Cannot restore.`, 400);
+    }
+
+    // Restore using the original document snapshot
+    const originalDoc = { ...archived.originalDocument };
+
+    // Remove MongoDB-internal fields before re-inserting
+    delete originalDoc.__v;
+
+    // Reset status to Active and clear any lock flags
+    originalDoc.status = 'Active';
+    originalDoc.loginAttempts = 0;
+    originalDoc.lockUntil = null;
+    originalDoc.mustChangePassword = true; // Force password change on restore
+    delete originalDoc.deletedAt;
+
+    // Re-create in users collection with SAME _id
+    const restored = await User.create(originalDoc);
+
+    // Mark archive record as restored
+    await ArchivedUser.findByIdAndUpdate(req.params.archivedId, {
+      isRestored: true,
+      restoredAt: Date.now(),
+      restoredBy: req.user._id,
+    });
+
+    // Notify restored user
+    await sendNotification({
+      recipient: restored._id,
+      type: 'system_alert',
+      title: 'Account Restored',
+      message: `Your OWMS account has been restored by ${req.user.name}. Please login and change your password.`,
+    });
+
+    // Audit log
+    await AuditLog.create({
+      user:       req.user._id,
+      userName:   req.user.name,
+      action:     'Restore',
+      module:     'Users',
+      resourceId: restored._id,
+      details:    `User ${restored.name} (${restored.employeeId}) restored by ${req.user.name}`,
+      ipAddress:  req.ip,
+      result:     'SUCCESS',
+    });
+
+    sendSuccess(res, { restored },
+      `${archived.name} has been restored successfully`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * DELETE /api/admin/users/archived/:archivedId/permanent
+ * Permanently delete an archived user. Super Admin only.
+ */
+export const permanentlyDeleteUser = async (req, res, next) => {
+  try {
+    // Only Super Admin can permanently delete
+    if (req.user.role.slug !== 'super-admin') {
+      return sendError(res,
+        'Only Super Admin can permanently delete records', 403);
+    }
+
+    const archived = await ArchivedUser.findById(req.params.archivedId);
+    if (!archived) {
+      return sendError(res, 'Record not found', 404);
+    }
+
+    await ArchivedUser.findByIdAndDelete(req.params.archivedId);
+
+    await AuditLog.create({
+      user:       req.user._id,
+      userName:   req.user.name,
+      action:     'Permanent Delete',
+      module:     'Users',
+      resourceId: archived.originalId,
+      details:    `User ${archived.name} (${archived.employeeId}) permanently deleted by ${req.user.name}`,
+      ipAddress:  req.ip,
+      result:     'WARNING',
+    });
+
+    sendSuccess(res, null, 'User permanently deleted from all records');
   } catch (error) {
     next(error);
   }

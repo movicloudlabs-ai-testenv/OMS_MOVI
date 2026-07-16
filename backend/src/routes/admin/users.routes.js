@@ -3,6 +3,7 @@ import {
   getUsers, createUser, getUserById, updateUser,
   deleteUser, updateUserStatus, resetUserPassword, getUserProjects,
   getUserDeletionImpact,
+  getArchivedUsers, restoreUser, permanentlyDeleteUser,
 } from '../../controllers/admin/users.controller.js';
 import { protect } from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rbac.js';
@@ -12,6 +13,16 @@ const router = Router();
 
 // All routes require authentication
 router.use(protect);
+
+// ── Archive / Retention routes (must come before /:id to avoid conflicts) ──
+// GET /api/admin/users/archived — List all archived users
+router.get('/archived', requirePermission('Users', 'read'), getArchivedUsers);
+
+// POST /api/admin/users/archived/:archivedId/restore — Restore archived user
+router.post('/archived/:archivedId/restore', requirePermission('Users', 'manage'), restoreUser);
+
+// DELETE /api/admin/users/archived/:archivedId/permanent — Permanently delete (Super Admin)
+router.delete('/archived/:archivedId/permanent', requirePermission('Users', 'delete'), permanentlyDeleteUser);
 
 // GET /api/admin/users — List all users with filters + pagination
 router.get('/', requirePermission('Users', 'read'), getUsers);
@@ -31,7 +42,7 @@ router.get('/:id/deletion-impact', requirePermission('Users', 'delete'), getUser
 // PUT /api/admin/users/:id — Update user
 router.put('/:id', requirePermission('Users', 'update'), auditLog('Update', 'Users'), updateUser);
 
-// DELETE /api/admin/users/:id — Soft delete user
+// DELETE /api/admin/users/:id — Archive user (offboarding cascade + move to ArchivedUser)
 router.delete('/:id', requirePermission('Users', 'delete'), auditLog('Delete', 'Users'), deleteUser);
 
 // PATCH /api/admin/users/:id/status — Toggle user status
