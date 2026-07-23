@@ -151,6 +151,7 @@ export const hrAPI = {
   reassignHR: (id, hrManagerId) => api.patch(`/hr/onboarding/${id}/reassign`, { hrManagerId }),
 
   getAttendance: (params) => api.get('/hr/attendance', { params }),
+  getMyAttendance: (params) => api.get('/hr/my-attendance', { params }),
   markAttendance: (data) => api.post('/hr/attendance/mark', data),
   exportAttendance: (params) => api.get('/hr/attendance/export', { params, responseType: 'blob' }),
 
@@ -238,6 +239,7 @@ export const pmoAPI = {
   getResourceWarnings: () => api.get('/pmo/reports/warnings'),
   getReports: (params) => api.get('/pmo/reports', { params }),
   getDashboardStats: () => api.get('/pmo/dashboard'),
+  getAttendance: (params) => api.get('/pmo/attendance', { params }),
   reviewApproval: (id, data) => api.put(`/pmo/approvals/${id}`, data),
 };
 

@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { generateTokenPair } from '../utils/generateToken.js';
 import Settings from '../models/Settings.js';
+import Attendance from '../models/Attendance.js';
 
 const router = Router();
 router.use(protect);
@@ -108,6 +109,25 @@ router.post('/change-password', async (req, res, next) => {
     user.passwordChangedAt = new Date();
     user.mustChangePassword = false;
     await user.save();
+    
+    // Automatically mark attendance for the day if not exists (since they just completed login flow)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const existingAttendance = await Attendance.findOne({
+      user: user._id,
+      date: today
+    });
+    if (!existingAttendance) {
+      await Attendance.create({
+        user: user._id,
+        date: today,
+        status: 'Present',
+        checkIn: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        markedBy: user._id,
+        note: 'Auto-marked after initial password change'
+      });
+    }
+
     const { token, refreshToken } = generateTokenPair(user._id);
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });

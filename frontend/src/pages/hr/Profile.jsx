@@ -157,10 +157,16 @@ export default function HRProfile() {
             <h1 className="text-xl font-bold text-[#0F172A]">My Profile</h1>
             <p className="text-xs text-[#64748B] mt-0.5">Manage your personal information and account settings</p>
           </div>
-          <button onClick={() => navigate('/hr/my-leave')}
-            className="text-sm font-bold text-white bg-[#2563EB] hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm">
-            My Leave
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => navigate('/hr/my-leave')}
+              className="text-sm font-bold text-white bg-[#2563EB] hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm">
+              Apply Leave
+            </button>
+            <button onClick={() => navigate('/hr/my-attendance')}
+              className="text-sm font-bold text-white bg-[#2563EB] hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm">
+              My Attendance
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-5 items-start">

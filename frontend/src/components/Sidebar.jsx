@@ -22,14 +22,14 @@ const NAV_CONFIG = {
     { to: '/employee/tasks', icon: CheckSquare, label: 'My Tasks', isLucide: true },
     { to: '/employee/projects', icon: Briefcase, label: 'My Projects', isLucide: true },
     { to: '/employee/team', icon: Users, label: 'My Team', isLucide: true },
-    { to: '/employee/attendance', icon: CalendarDays, label: 'Attendance', isLucide: true },
+
     { to: '/employee/leave', icon: Clock, label: 'Leave', isLucide: true },
     { to: '/employee/profile', icon: User, label: 'My Profile', isLucide: true },
   ],
   intern: [
     { to: '/intern/dashboard', icon: LayoutDashboard, label: 'Dashboard', isLucide: true },
     { to: '/intern/tasks', icon: CheckSquare, label: 'My Tasks', isLucide: true },
-    { to: '/intern/attendance', icon: CalendarDays, label: 'Attendance', isLucide: true },
+
     { to: '/intern/leave', icon: Clock, label: 'Leave', isLucide: true },
     { to: '/intern/learning', icon: BookOpen, label: 'Learning', isLucide: true },
     { to: '/intern/profile', icon: User, label: 'My Profile', isLucide: true },

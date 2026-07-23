@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import User from '../models/User.js';
 import Settings from '../models/Settings.js';
 import AuditLog from '../models/AuditLog.js';
+import Attendance from '../models/Attendance.js';
 import { generateTokenPair } from '../utils/generateToken.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { sendPasswordResetEmail } from '../utils/sendEmail.js';
@@ -98,6 +99,26 @@ export const login = async (req, res, next) => {
     const { token, refreshToken } = generateTokenPair(user._id);
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
+
+    // 9.5 Automatically mark attendance for the day if not exists, but ONLY if they don't need to change password
+    if (!user.mustChangePassword) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const existingAttendance = await Attendance.findOne({
+        user: user._id,
+        date: today
+      });
+      if (!existingAttendance) {
+        await Attendance.create({
+          user: user._id,
+          date: today,
+          status: 'Present',
+          checkIn: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          markedBy: user._id,
+          note: 'Auto-marked on login'
+        });
+      }
+    }
 
     // 10. Audit successful login
     await AuditLog.create({

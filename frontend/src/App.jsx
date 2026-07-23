@@ -44,6 +44,7 @@ import HRAssignTask from './pages/hr/AssignTask';
 import HRTaskBoard from './pages/hr/TaskBoard';
 import HRProjects from './pages/hr/Projects';
 import HRMyLeave from './pages/hr/MyLeave';
+import HRMyAttendance from './pages/hr/MyAttendance';
 import HRProfile from './pages/hr/Profile';
 
 // PMO
@@ -60,6 +61,7 @@ import PMOInternDetails from './pages/pmo/InternDetails';
 import PMOEmployees from './pages/pmo/Employees';
 import PMOEmployeeDetails from './pages/pmo/EmployeeDetails';
 import PMOReports from './pages/pmo/Reports';
+import PMOAttendance from './pages/pmo/Attendance';
 import PMOProfile from './pages/pmo/Profile';
 
 // Admin
@@ -138,6 +140,7 @@ export default function App() {
       <Route path="/hr/performance" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Interns', action: 'read' }}><HRPerformance /></ProtectedRoute>} />
       <Route path="/hr/projects" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Projects', action: 'read' }}><HRProjects /></ProtectedRoute>} />
       <Route path="/hr/my-leave" element={<ProtectedRoute allowedRoles={['hr']}><HRMyLeave /></ProtectedRoute>} />
+      <Route path="/hr/my-attendance" element={<ProtectedRoute allowedRoles={['hr']}><HRMyAttendance /></ProtectedRoute>} />
       <Route path="/hr/communication" element={<ProtectedRoute allowedRoles={['hr']}><HRCommunication /></ProtectedRoute>} />
       <Route path="/hr/tasks/new" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Tasks', action: 'create' }}><HRAssignTask /></ProtectedRoute>} />
       <Route path="/hr/profile" element={<ProtectedRoute allowedRoles={['hr']}><HRProfile /></ProtectedRoute>} />
@@ -156,6 +159,7 @@ export default function App() {
       <Route path="/pmo/timeline" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Projects', action: 'read' }}><PMOTimeline /></ProtectedRoute>} />
       <Route path="/pmo/approvals" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Tasks', action: 'read' }}><PMOApprovals /></ProtectedRoute>} />
       <Route path="/pmo/reports" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Reports', action: 'read' }}><PMOReports /></ProtectedRoute>} />
+      <Route path="/pmo/attendance" element={<ProtectedRoute allowedRoles={['pmo']}><PMOAttendance /></ProtectedRoute>} />
       <Route path="/pmo/profile" element={<ProtectedRoute allowedRoles={['pmo']}><PMOProfile /></ProtectedRoute>} />
 
       {/* Admin — strictly admin-only (security-sensitive) */}

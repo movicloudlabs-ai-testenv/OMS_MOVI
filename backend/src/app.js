@@ -32,6 +32,7 @@ import hrInternsRoutes from './routes/hr/interns.routes.js';
 import hrReportsRoutes from './routes/hr/reports.routes.js';
 import hrTasksRoutes from './routes/hr/tasks.routes.js';
 import hrProjectsRoutes from './routes/hr/projects.routes.js';
+import hrMyAttendanceRoutes from './routes/hr/myAttendance.routes.js';
 
 import pmoProjectsRoutes from './routes/pmo/projects.routes.js';
 import pmoTasksRoutes from './routes/pmo/tasks.routes.js';
@@ -40,6 +41,7 @@ import pmoInternsRoutes from './routes/pmo/interns.routes.js';
 import pmoApprovalsRoutes from './routes/pmo/approvals.routes.js';
 import pmoReportsRoutes from './routes/pmo/reports.routes.js';
 import pmoDashboardRoutes from './routes/pmo/dashboard.routes.js';
+import pmoAttendanceRoutes from './routes/pmo/attendance.routes.js';
 
 import empProfileRoutes from './routes/employee/profile.routes.js';
 import empTasksRoutes from './routes/employee/tasks.routes.js';
@@ -204,6 +206,7 @@ app.use('/api/hr/interns', hrInternsRoutes);
 app.use('/api/hr/reports', hrReportsRoutes);
 app.use('/api/hr/tasks', hrTasksRoutes);
 app.use('/api/hr/projects', hrProjectsRoutes);
+app.use('/api/hr/my-attendance', hrMyAttendanceRoutes);
 
 // PMO Module
 app.use('/api/pmo/dashboard', pmoDashboardRoutes);
@@ -213,6 +216,7 @@ app.use('/api/pmo/team', pmoTeamRoutes);
 app.use('/api/pmo/interns', pmoInternsRoutes);
 app.use('/api/pmo/approvals', pmoApprovalsRoutes);
 app.use('/api/pmo/reports', pmoReportsRoutes);
+app.use('/api/pmo/attendance', pmoAttendanceRoutes);
 
 // Employee Module
 app.use('/api/employee/profile', empProfileRoutes);

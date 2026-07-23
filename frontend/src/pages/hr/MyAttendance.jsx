@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import { CalendarDays, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { internAPI } from '../../utils/api';
+import { hrAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -57,7 +57,7 @@ function DayDetailsModal({ details, onClose }) {
   );
 }
 
-export default function InternAttendance() {
+export default function HRMyAttendance() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
@@ -71,7 +71,7 @@ export default function InternAttendance() {
   const loadAttendance = async (m, y) => {
     setLoading(true);
     try {
-      const res = await internAPI.getAttendance({ month: m, year: y });
+      const res = await hrAPI.getMyAttendance({ month: m, year: y });
       setData(res.data?.data || res.data);
     } catch {
       toast.error('Failed to load attendance');
@@ -128,10 +128,10 @@ export default function InternAttendance() {
   };
 
   return (
-    <PageWrapper>
+    <HRLayout bare>
       <div className="w-full flex flex-col gap-5 max-w-[1200px] mx-auto pb-10 font-sans mt-5 px-4 lg:px-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/intern/profile')} className="p-2 bg-white border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] text-[#64748B] transition-colors">
+          <button onClick={() => navigate('/hr/profile')} className="p-2 bg-white border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] text-[#64748B] transition-colors">
             <ArrowLeft size={16} />
           </button>
           <div>
@@ -220,6 +220,6 @@ export default function InternAttendance() {
       {selectedDay && (
         <DayDetailsModal details={selectedDay} onClose={() => setSelectedDay(null)} />
       )}
-    </PageWrapper>
+    </HRLayout>
   );
 }

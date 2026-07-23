@@ -1,113 +1,212 @@
 import { useState, useEffect } from 'react';
 import PageWrapper from '../../components/PageWrapper';
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { employeeAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const STATUS_STYLES = {
-  Present:   { bg: 'bg-green-50',  text: 'text-green-700',  dot: 'bg-green-500'  },
-  Absent:    { bg: 'bg-red-50',    text: 'text-red-700',    dot: 'bg-red-500'    },
-  Leave:     { bg: 'bg-blue-50',   text: 'text-blue-700',   dot: 'bg-blue-500'   },
-  Holiday:   { bg: 'bg-purple-50', text: 'text-purple-700', dot: 'bg-purple-500' },
-  'Half-Day':{ bg: 'bg-amber-50',  text: 'text-amber-700',  dot: 'bg-amber-500'  },
-};
+function DayDetailsModal({ details, onClose }) {
+  if (!details) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[400px]" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center px-6 py-4 border-b border-[#E2E8F0]">
+          <h2 className="text-lg font-bold text-[#0F172A]">Date Details</h2>
+          <button onClick={onClose} className="text-[#64748B] hover:bg-[#E2E8F0] p-1.5 rounded-full"><X size={18} /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="flex justify-between">
+            <span className="text-sm font-bold text-[#64748B]">Date</span>
+            <span className="text-sm text-[#0F172A]">{details.date}</span>
+          </div>
+          
+          <div className="flex justify-between">
+            <span className="text-sm font-bold text-[#64748B]">Status</span>
+            <span className="text-sm font-bold text-[#0F172A]">{details.status}</span>
+          </div>
+
+          {details.status === 'Present' && details.loginTime && (
+            <div className="flex justify-between">
+              <span className="text-sm font-bold text-[#64748B]">Login Time</span>
+              <span className="text-sm text-[#0F172A]">{details.loginTime}</span>
+            </div>
+          )}
+
+          {details.status === 'Leave' && (
+            <>
+              <div className="flex justify-between">
+                <span className="text-sm font-bold text-[#64748B]">Leave Type</span>
+                <span className="text-sm text-[#0F172A]">{details.leaveType}</span>
+              </div>
+              <div className="flex justify-between flex-col mt-2">
+                <span className="text-sm font-bold text-[#64748B] mb-1">Reason</span>
+                <span className="text-sm text-[#0F172A] bg-[#F8FAFC] p-2 rounded">{details.reason || 'N/A'}</span>
+              </div>
+            </>
+          )}
+
+          <div className="flex justify-end pt-2 border-t border-[#E2E8F0] mt-4">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-bold bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] rounded-lg">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function EmployeeAttendance() {
-  const now = new Date();
-  const [year,    setYear]    = useState(now.getFullYear());
-  const [month,   setMonth]   = useState(now.getMonth() + 1);
-  const [records, setRecords] = useState([]);
-  const [summary, setSummary] = useState(null);
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(null);
+  
+  const today = new Date();
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth() + 1);
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  
+  const [selectedDay, setSelectedDay] = useState(null);
 
-  const load = async () => {
+  const loadAttendance = async (m, y) => {
     setLoading(true);
     try {
-      const r = await employeeAPI.getAttendance({ month, year });
-      const d = r.data?.data || r.data;
-      setRecords(d?.records || []);
-      setSummary(d?.summary  || null);
-    } catch { toast.error('Failed to load attendance'); }
-    finally { setLoading(false); }
+      const res = await employeeAPI.getAttendance({ month: m, year: y });
+      setData(res.data?.data || res.data);
+    } catch {
+      toast.error('Failed to load attendance');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); }, [month, year]);
+  useEffect(() => {
+    loadAttendance(currentMonth, currentYear);
+  }, [currentMonth, currentYear]);
 
-  const prevMonth = () => { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); };
-  const nextMonth = () => { if (month === 12) { setMonth(1);  setYear(y => y + 1); } else setMonth(m => m + 1); };
+  const handlePrevMonth = () => {
+    if (currentMonth === 1) {
+      setCurrentMonth(12);
+      setCurrentYear(y => y - 1);
+    } else {
+      setCurrentMonth(m => m - 1);
+    }
+  };
 
-  const dayMap = {};
-  records.forEach(r => { dayMap[new Date(r.date).getDate()] = r.status; });
+  const handleNextMonth = () => {
+    if (currentMonth === 12) {
+      setCurrentMonth(1);
+      setCurrentYear(y => y + 1);
+    } else {
+      setCurrentMonth(m => m + 1);
+    }
+  };
 
-  const firstDay    = new Date(year, month - 1, 1).getDay();
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const stats = data?.stats || { present: 0, absent: 0, leave: 0, percentage: 0 };
+  const attendanceList = data?.attendance || [];
+
+  // Calendar logic
+  const firstDayOfMonth = new Date(currentYear, currentMonth - 1, 1).getDay();
+  const emptyDays = Array(firstDayOfMonth).fill(null);
+
+  const getDayColor = (status) => {
+    switch(status) {
+      case 'Present': return 'bg-green-100 border-green-200 text-green-800';
+      case 'Absent': return 'bg-red-100 border-red-200 text-red-800';
+      case 'Leave': return 'bg-yellow-100 border-yellow-200 text-yellow-800';
+      default: return 'bg-white border-[#E2E8F0] text-[#0F172A]'; // Future dates
+    }
+  };
+
+  const getDayStatusLabel = (status) => {
+    switch(status) {
+      case 'Present': return 'Present';
+      case 'Absent': return 'Absent';
+      case 'Leave': return 'Leave';
+      default: return '';
+    }
+  };
 
   return (
     <PageWrapper>
-      <div className="w-full max-w-[900px] mx-auto flex flex-col gap-6 px-6 mt-6 pb-10 font-sans">
-
-        <div>
-          <h1 className="text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-            <CalendarDays size={22} className="text-[#2563EB]" /> Attendance
-          </h1>
-          <p className="text-sm text-[#64748B] mt-1">Your monthly attendance record</p>
+      <div className="w-full flex flex-col gap-5 max-w-[1200px] mx-auto pb-10 font-sans mt-5 px-4 lg:px-0">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate('/employee/profile')} className="p-2 bg-white border border-[#E2E8F0] rounded-lg hover:bg-[#F8FAFC] text-[#64748B] transition-colors">
+            <ArrowLeft size={16} />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-[#0F172A]">My Attendance</h1>
+            <p className="text-xs text-[#64748B] mt-0.5">View your attendance and leave records</p>
+          </div>
         </div>
 
-        {/* Summary cards */}
-        {summary && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[
-              { label: 'Present',    val: summary.present,           color: 'text-green-600', bg: 'bg-green-50'    },
-              { label: 'Absent',     val: summary.absent,            color: 'text-red-600',   bg: 'bg-red-50'      },
-              { label: 'Leave',      val: summary.leave,             color: 'text-blue-600',  bg: 'bg-blue-50'     },
-              { label: 'Attendance', val: `${summary.percentage}%`,  color: 'text-[#2563EB]', bg: 'bg-[#EFF6FF]'   },
-            ].map(({ label, val, color, bg }) => (
-              <div key={label} className={`${bg} border border-[#E2E8F0] rounded-xl p-4 text-center`}>
-                <p className={`text-2xl font-bold ${color}`}>{val}</p>
-                <p className="text-xs text-[#64748B] mt-1 font-medium">{label}</p>
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: 'Present', value: stats.present, color: 'text-green-600', bg: 'bg-green-50' },
+            { label: 'Absent', value: stats.absent, color: 'text-red-600', bg: 'bg-red-50' },
+            { label: 'Leave', value: stats.leave, color: 'text-yellow-600', bg: 'bg-yellow-50' },
+            { label: 'Attendance %', value: `${stats.percentage}%`, color: 'text-blue-600', bg: 'bg-blue-50' },
+          ].map((item, idx) => (
+            <div key={idx} className={`${item.bg} border border-[#E2E8F0] rounded-xl px-5 py-4`}>
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">{item.label}</span>
+                <span className={`text-2xl font-black ${item.color}`}>{loading ? '–' : item.value}</span>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
 
-        {/* Calendar */}
-        <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC]">
-            <button onClick={prevMonth} className="p-1.5 rounded-lg hover:bg-[#E2E8F0] text-[#64748B]"><ChevronLeft size={18} /></button>
-            <h2 className="text-sm font-bold text-[#0F172A]">{MONTH_NAMES[month - 1]} {year}</h2>
-            <button onClick={nextMonth} className="p-1.5 rounded-lg hover:bg-[#E2E8F0] text-[#64748B]"><ChevronRight size={18} /></button>
-          </div>
-
-          <div className="grid grid-cols-7 border-b border-[#E2E8F0]">
-            {DAY_NAMES.map(d => (
-              <div key={d} className="py-2 text-center text-[11px] font-bold text-[#64748B] uppercase">{d}</div>
-            ))}
+        {/* Calendar View */}
+        <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-[16px] font-bold text-[#0F172A] flex items-center gap-2">
+              <CalendarDays size={18} className="text-[#64748B]" /> Monthly Calendar
+            </h2>
+            <div className="flex items-center gap-4">
+              <button onClick={handlePrevMonth} className="p-2 border border-[#E2E8F0] rounded hover:bg-[#F8FAFC] transition-colors">
+                <ChevronLeft size={16} />
+              </button>
+              <span className="font-bold text-[#0F172A] w-32 text-center">
+                {MONTHS[currentMonth - 1]} {currentYear}
+              </span>
+              <button onClick={handleNextMonth} className="p-2 border border-[#E2E8F0] rounded hover:bg-[#F8FAFC] transition-colors">
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
 
           {loading ? (
-            <div className="flex justify-center py-16">
-              <span className="material-symbols-outlined text-[28px] text-[#2563EB] animate-spin">sync</span>
+            <div className="flex justify-center py-12">
+              <span className="material-symbols-outlined text-[32px] text-[#2563EB] animate-spin">sync</span>
             </div>
           ) : (
-            <div className="grid grid-cols-7">
-              {Array.from({ length: firstDay }).map((_, i) => (
-                <div key={`e${i}`} className="min-h-[68px] border-b border-r border-[#F1F5F9]" />
+            <div className="grid grid-cols-7 gap-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-xs font-bold text-[#64748B] uppercase tracking-wider py-2">
+                  {day}
+                </div>
               ))}
-              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
-                const status = dayMap[day];
-                const st     = STATUS_STYLES[status];
-                const isToday = day === now.getDate() && month === now.getMonth() + 1 && year === now.getFullYear();
+              
+              {emptyDays.map((_, i) => (
+                <div key={`empty-${i}`} className="min-h-[80px] p-2 rounded-lg bg-[#F8FAFC] border border-transparent"></div>
+              ))}
+
+              {attendanceList.map((dayData, i) => {
+                const dayNum = i + 1;
+                const statusStr = dayData.status;
+                const label = getDayStatusLabel(statusStr);
+                
                 return (
-                  <div key={day} className={`min-h-[68px] p-2 border-b border-r border-[#F1F5F9] flex flex-col ${st?.bg || ''}`}>
-                    <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1 ${
-                      isToday ? 'bg-[#2563EB] text-white' : 'text-[#64748B]'
-                    }`}>{day}</span>
-                    {status && (
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md self-start ${st.bg} ${st.text}`}>
-                        {status}
+                  <div 
+                    key={dayNum} 
+                    onClick={() => statusStr && setSelectedDay(dayData)}
+                    className={`min-h-[80px] p-2 rounded-lg border flex flex-col ${getDayColor(statusStr)} ${statusStr ? 'cursor-pointer hover:opacity-80 transition-opacity shadow-sm' : ''}`}
+                  >
+                    <span className="text-sm font-bold mb-1">{dayNum}</span>
+                    {label && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider mt-auto text-center rounded-sm px-1 py-0.5 bg-white/50 mix-blend-multiply">
+                        {label}
                       </span>
                     )}
                   </div>
@@ -116,17 +215,11 @@ export default function EmployeeAttendance() {
             </div>
           )}
         </div>
-
-        {/* Legend */}
-        <div className="flex flex-wrap gap-4">
-          {Object.entries(STATUS_STYLES).map(([label, s]) => (
-            <div key={label} className="flex items-center gap-1.5 text-xs text-[#64748B]">
-              <div className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
-              {label}
-            </div>
-          ))}
-        </div>
       </div>
+
+      {selectedDay && (
+        <DayDetailsModal details={selectedDay} onClose={() => setSelectedDay(null)} />
+      )}
     </PageWrapper>
   );
 }
