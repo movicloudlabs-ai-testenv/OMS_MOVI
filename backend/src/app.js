@@ -21,6 +21,7 @@ import adminReportsRoutes from './routes/admin/reports.routes.js';
 import adminSettingsRoutes from './routes/admin/settings.routes.js';
 import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import logsRoutes from './routes/logs.routes.js';
 
 // Part 2 Route Imports
 import hrEmployeesRoutes from './routes/hr/employees.routes.js';
@@ -55,6 +56,7 @@ import internLeaveRoutes from './routes/intern/leave.routes.js';
 import internLearningRoutes from './routes/intern/learning.routes.js';
 // Middleware
 import { errorHandler } from './middleware/errorHandler.js';
+import { apiLogger } from './middleware/apiLogger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -125,6 +127,9 @@ app.use(express.urlencoded({ extended: true }));
 // ─── Compression ──────────────────────────────────────────────────────────────
 app.use(compression());
 
+// ─── API Request Logger ───────────────────────────────────────────────────────
+app.use(apiLogger);
+
 // ─── Request Logging (dev only) ───────────────────────────────────────────────
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
@@ -188,6 +193,7 @@ app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/logs', logsRoutes);
 
 // HR Module
 app.use('/api/hr/employees', hrEmployeesRoutes);

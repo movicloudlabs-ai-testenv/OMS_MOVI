@@ -10,6 +10,7 @@ import { sendNotification } from '../../utils/sendNotification.js';
 import { sendWelcomeEmail } from '../../utils/sendEmail.js';
 import { syncEmployeeLeaveBalance } from '../../utils/syncLeaveBalance.js';
 import { autoAssignHR } from '../../utils/autoAssignHR.js';
+import { generateEmployeeId } from '../../utils/generateEmployeeId.js';
 
 /**
  * GET /api/admin/users
@@ -105,7 +106,9 @@ export const createUser = async (req, res, next) => {
     const empType = employmentType || (roleDoc.slug === 'intern' ? 'Intern' : 'Full-time');
 
     // Auto-generate employeeId
-    const employeeId = await User.generateEmployeeId(empType);
+    const employeeId = await generateEmployeeId(
+      empType === 'Intern' ? 'Intern' : 'Employee'
+    );
 
     // Always generate a system temp password — admin never sees it, user must change on first login
     const tempPassword = `OWMS@${Math.floor(100000 + Math.random() * 900000)}`;
