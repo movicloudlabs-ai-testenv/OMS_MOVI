@@ -192,28 +192,32 @@ export const createUser = async (req, res, next) => {
       });
     }
 
-    // Send welcome email with credentials
-    let emailWarning = null;
-    try {
-      await sendWelcomeEmail({
-        to: user.email,
-        name: user.name,
-        email: user.email,
-        tempPassword,
-        employeeId,
-      });
-    } catch (emailErr) {
-      console.error('Welcome email failed:', emailErr.message);
-      emailWarning = 'User created but welcome email could not be sent.';
-    }
-
+    // Send response IMMEDIATELY — do not wait for email
+    // User is already created successfully at this point
     sendSuccess(res, {
       ...populatedUser.toJSON(),
       tempPassword,
-      ...(emailWarning  && { warning: emailWarning }),
+      emailSent: 'pending',
       ...(autoAssigned  && { autoAssignedHR: assignedHR?.name }),
       ...(hrCapExceeded && { hrCapWarning: `${assignedHR?.name} has exceeded the onboarding HR cap.` }),
     }, 'User created successfully', 201);
+
+    // Send email AFTER response — completely non-blocking
+    // If this fails, user creation was already successful
+    sendWelcomeEmail({
+      toEmail:      user.email,
+      toName:       user.name,
+      employeeId,
+      tempPassword,
+      role:         roleDoc?.name || 'User',
+      loginUrl:     (process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:5173') + '/login',
+    }).then(result => {
+      if (!result.sent) {
+        console.warn(`Welcome email failed for ${user.email}:`, result.reason);
+      }
+    }).catch(err => {
+      console.error('sendWelcomeEmail unexpected error:', err);
+    });
   } catch (error) {
     next(error);
   }

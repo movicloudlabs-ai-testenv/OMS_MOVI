@@ -187,7 +187,7 @@ export default function BulkImportModal({ isOpen, onClose, onComplete }) {
         const msg = err.response?.data?.message || 'Failed to create user';
         setImportResults(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'failed', error: msg } : r));
       }
-      if (i < validRows.length - 1) await new Promise(res => setTimeout(res, 150));
+      if (i < validRows.length - 1) await new Promise(res => setTimeout(res, 800));
     }
     setStep('done');
   };

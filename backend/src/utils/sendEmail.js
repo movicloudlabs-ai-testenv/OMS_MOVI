@@ -19,6 +19,10 @@ import Settings from '../models/Settings.js';
 
 let _cache = { at: 0, notif: null };
 
+// Welcome-email pooled transporter (reused across calls)
+let _transporter = null;
+let _transporterConfig = null;
+
 async function getNotifSettings() {
   if (_cache.notif && Date.now() - _cache.at < 60_000) return _cache.notif;
   try {
@@ -35,6 +39,9 @@ async function getNotifSettings() {
 // Invalidate the cache when settings change (called from the settings controller)
 export function invalidateMailCache() {
   _cache = { at: 0, notif: null };
+  // Also reset the pooled welcome-email transporter
+  _transporter = null;
+  _transporterConfig = null;
 }
 
 // The .env SMTP is the source of truth for the connection (deployment secret).
@@ -244,62 +251,124 @@ export const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
   });
 };
 
-export const sendWelcomeEmail = async ({ to, name, email, tempPassword, employeeId }) => {
-  const { transporter, from, replyTo } = await mailerFor('onboarding');
-  await transporter.sendMail({
-    from,
-    replyTo,
-    to,
-    subject: 'Welcome to OWMS — Your Account Details',
-    html: `
-      <div style="font-family:sans-serif;max-width:520px;margin:auto;padding:32px;background:#fff;border:1px solid #E2E8F0;border-radius:12px">
-        <div style="background:#2563EB;border-radius:8px;padding:20px 24px;margin-bottom:28px">
-          <h1 style="color:#fff;margin:0;font-size:20px;font-weight:700;letter-spacing:-0.3px">OWMS</h1>
-          <p style="color:#93C5FD;margin:4px 0 0;font-size:13px">Office Workspace Management System</p>
-        </div>
+// ─── Pooled Welcome-Email Transporter ─────────────────────────────────────────
 
-        <h2 style="color:#0F172A;font-size:18px;font-weight:600;margin:0 0 8px">Welcome, ${name}!</h2>
-        <p style="color:#64748B;font-size:14px;margin:0 0 24px;line-height:1.6">
-          Your account has been created by the administrator.
-          Use the details below to log in for the first time.
-        </p>
+const getWelcomeConfigKey = (n) =>
+  `${n?.smtpHost || process.env.EMAIL_HOST}:${n?.smtpPort || process.env.EMAIL_PORT}:${n?.smtpUser || process.env.EMAIL_USER}`;
 
-        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:20px;margin-bottom:24px">
-          <table style="width:100%;border-collapse:collapse">
-            <tr>
-              <td style="padding:8px 0;color:#64748B;font-size:13px;width:140px">Login URL</td>
-              <td style="padding:8px 0;font-size:13px;font-weight:600;color:#2563EB">
-                <a href="${process.env.APP_URL}/login" style="color:#2563EB">${process.env.APP_URL}/login</a>
-              </td>
-            </tr>
-            <tr style="border-top:1px solid #E2E8F0">
-              <td style="padding:8px 0;color:#64748B;font-size:13px">Email</td>
-              <td style="padding:8px 0;font-size:13px;font-weight:600;color:#0F172A">${email}</td>
-            </tr>
-            <tr style="border-top:1px solid #E2E8F0">
-              <td style="padding:8px 0;color:#64748B;font-size:13px">Employee ID</td>
-              <td style="padding:8px 0;font-size:13px;font-weight:600;color:#0F172A;font-family:monospace">${employeeId}</td>
-            </tr>
-            <tr style="border-top:1px solid #E2E8F0">
-              <td style="padding:8px 0;color:#64748B;font-size:13px">Temporary Password</td>
-              <td style="padding:8px 0">
-                <span style="background:#EFF6FF;color:#2563EB;font-family:monospace;font-size:15px;font-weight:700;padding:4px 10px;border-radius:6px;letter-spacing:1px">${tempPassword}</span>
-              </td>
-            </tr>
-          </table>
-        </div>
+const getWelcomeTransporter = async () => {
+  const n = await getNotifSettings();
 
-        <div style="background:#FEF3C7;border:1px solid #F59E0B;border-radius:8px;padding:12px 16px;margin-bottom:24px">
-          <p style="color:#92400E;font-size:13px;margin:0">
-            <strong>Important:</strong> Please change your password after your first login.
-            Do not share your credentials with anyone.
-          </p>
-        </div>
+  const host = n?.smtpHost || process.env.EMAIL_HOST;
+  const user = n?.smtpUser || process.env.EMAIL_USER;
+  const pass = n?.smtpPass || process.env.EMAIL_PASS;
 
-        <p style="color:#94A3B8;font-size:12px;margin:0;text-align:center">
-          This is an automated message from OWMS. Please do not reply to this email.
-        </p>
-      </div>
-    `,
+  if (!host || !pass) {
+    return { transporter: null, settings: n, error: 'SMTP not configured' };
+  }
+
+  const currentKey = getWelcomeConfigKey(n);
+
+  // Reuse existing transporter if settings haven't changed
+  if (_transporter && _transporterConfig === currentKey) {
+    return { transporter: _transporter, settings: n };
+  }
+
+  // Create new pooled transporter (one connection, rate-limited)
+  _transporter = nodemailer.createTransport({
+    host,
+    port:   n?.smtpPort || Number(process.env.EMAIL_PORT) || 587,
+    secure: n?.smtpEncryption === 'SSL' || false,
+    auth:   { user, pass },
+    pool:             true,      // reuse the same SMTP connection
+    maxConnections:   1,         // one connection, no parallel sends
+    maxMessages:      Infinity,
+    rateDelta:        1000,      // 1 second between emails
+    rateLimit:        1,         // max 1 email per rateDelta (Gmail safe)
   });
+
+  _transporterConfig = currentKey;
+
+  try {
+    await _transporter.verify();
+  } catch (err) {
+    console.error('SMTP verify failed:', err.message);
+    _transporter = null;
+    _transporterConfig = null;
+    return { transporter: null, settings: n, error: err.message };
+  }
+
+  return { transporter: _transporter, settings: n };
+};
+
+export const sendWelcomeEmail = async ({
+  toEmail, toName, employeeId,
+  tempPassword, role,
+  loginUrl = 'http://localhost:5173/login',
+}) => {
+  try {
+    const { transporter, settings, error } = await getWelcomeTransporter();
+
+    if (!transporter) {
+      console.warn('Welcome email skipped:', error || 'SMTP not configured');
+      return { sent: false, reason: error || 'SMTP not configured' };
+    }
+
+    const fromName  = settings?.fromName  || 'OWMS Notifications';
+    const fromEmail = settings?.fromEmail || process.env.EMAIL_USER || 'noreply@movicloudlabs.com';
+
+    await transporter.sendMail({
+      from:    `"${fromName}" <${fromEmail}>`,
+      to:      toEmail,
+      subject: 'Welcome to OWMS — Your Account is Ready',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#F8FAFC;padding:32px;">
+          <div style="background:#1E293B;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+            <h1 style="color:white;margin:0;font-size:24px;">OWMS</h1>
+            <p style="color:#94A3B8;margin:4px 0 0;">Office Workspace Management System</p>
+          </div>
+          <div style="background:white;padding:32px;border-radius:0 0 12px 12px;border:1px solid #E2E8F0;">
+            <h2 style="color:#0F172A;">Welcome, ${toName}!</h2>
+            <p style="color:#64748B;">Your account has been created on OWMS by Movi Cloud Labs. Here are your login credentials:</p>
+            <div style="background:#F1F5F9;padding:20px;border-radius:8px;margin:24px 0;border-left:4px solid #2563EB;">
+              <table style="width:100%;border-collapse:collapse;">
+                <tr>
+                  <td style="padding:8px 0;color:#64748B;width:150px;">Employee ID:</td>
+                  <td style="padding:8px 0;font-weight:bold;color:#0F172A;font-family:monospace;">${employeeId}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;color:#64748B;">Email:</td>
+                  <td style="padding:8px 0;font-weight:bold;color:#0F172A;font-family:monospace;">${toEmail}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;color:#64748B;">Role:</td>
+                  <td style="padding:8px 0;font-weight:bold;color:#0F172A;">${role}</td>
+                </tr>
+                <tr>
+                  <td style="padding:8px 0;color:#64748B;">Temp Password:</td>
+                  <td style="padding:8px 0;font-weight:bold;color:#2563EB;font-family:monospace;font-size:18px;">${tempPassword}</td>
+                </tr>
+              </table>
+            </div>
+            <p style="color:#DC2626;font-size:14px;">⚠ Please change your password immediately after your first login.</p>
+            <a href="${loginUrl}" style="display:inline-block;background:#2563EB;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;margin-top:16px;">Login to OWMS →</a>
+          </div>
+        </div>
+      `,
+    });
+
+    return { sent: true };
+  } catch (err) {
+    console.error('Welcome email failed:', err.message);
+    // Reset transporter on error so next call creates a fresh connection
+    _transporter = null;
+    _transporterConfig = null;
+    return { sent: false, reason: err.message };
+  }
+};
+
+// Export for settings changes and test endpoints
+export const resetTransporter = () => {
+  _transporter = null;
+  _transporterConfig = null;
 };
