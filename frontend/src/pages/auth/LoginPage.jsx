@@ -16,7 +16,7 @@ const ROLE_HOME = {
 };
 
 const ACCOUNTS = [
-  { label: 'Admin',    email: 'aswanthksv@gmail.com', pass: 'Admin@123' },
+  { label: 'Admin',    email: 'admin@owms.com', pass: 'Admin@123' },
   { label: 'HR',       email: 'sarah.hr@owms.com', pass: 'HR@123456' },
   { label: 'PMO',      email: 'pmo@owms.com',   pass: 'PMO@12345' },
   { label: 'Employee', email: 'alex.emp@owms.com', pass: 'Emp@12345' },
