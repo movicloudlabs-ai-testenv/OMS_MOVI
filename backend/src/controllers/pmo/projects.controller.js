@@ -197,6 +197,18 @@ export const updateProject = async (req, res, next) => {
     await project.save();
 
     if (hrManager) {
+      // Propagate HR Manager to all existing team members and interns
+      const allUserIds = [
+        ...project.team.map(t => t.user),
+        ...project.interns.map(i => i.user),
+      ].filter(Boolean);
+      if (allUserIds.length > 0) {
+        await User.updateMany(
+          { _id: { $in: allUserIds } },
+          { $set: { hrManager } }
+        );
+      }
+
       const hrUser = await User.findById(hrManager);
       if (hrUser) {
         await sendNotification({
@@ -256,6 +268,7 @@ export const addTeamMembers = async (req, res, next) => {
       // Lock this user to the project and set reporting chain
       user.project = project._id;
       user.manager = req.user._id; // PMO Lead is reporting manager
+      if (project.hrManager) user.hrManager = project.hrManager;
       await user.save({ validateBeforeSave: false });
 
       // In-app notification
@@ -304,7 +317,7 @@ export const removeTeamMember = async (req, res, next) => {
 
     // Free the user from their project lock and clear reporting chain set by this project
     await User.findByIdAndUpdate(userId, {
-      $unset: { project: 1, manager: 1 },
+      $unset: { project: 1, manager: 1, hrManager: 1 },
     });
 
     await sendNotification({
@@ -338,6 +351,7 @@ export const assignInterns = async (req, res, next) => {
         project.interns.push({ user: internId, joinedAt: new Date() });
         intern.project = project._id;
         intern.manager = req.user._id; // PMO Lead is reporting manager
+        if (project.hrManager) intern.hrManager = project.hrManager;
         await intern.save({ validateBeforeSave: false });
 
         await sendNotification({
