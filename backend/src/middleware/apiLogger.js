@@ -48,6 +48,18 @@ export const apiLogger = (req, res, next) => {
     const fullUrl      = req.originalUrl       // e.g. /api/admin/users?page=1
     const baseRoute    = stripQuery(fullUrl)    // e.g. /api/admin/users
 
+    // Do not log noisy background polling endpoints (GET only)
+    const ignoredRoutes = [
+      '/api/notifications',
+      '/api/auth/me',
+      '/api/logs',
+      '/api/admin/audit-logs'
+    ]
+
+    if (req.method === 'GET' && ignoredRoutes.includes(baseRoute)) {
+      return originalJson(body)
+    }
+
     // Save log asynchronously — never blocks the response
     ApiLog.create({
       method:       req.method,
