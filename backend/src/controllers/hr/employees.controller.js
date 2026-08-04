@@ -67,7 +67,7 @@ export const getEmployees = async (req, res, next) => {
 
 export const getEmployeeById = async (req, res, next) => {
   try {
-    const employee = await User.findOne({ _id: req.params.id, ...req.scopeFilter })
+    const employee = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] })
       .populate({
         path: 'role',
         select: 'name slug permissions color',
@@ -121,7 +121,7 @@ export const getEmployeeAttendance = async (req, res, next) => {
       dateQuery.$lte = new Date(y, m + 1, 0);
     }
 
-    const employee = await User.findOne({ _id: req.params.id, ...req.scopeFilter });
+    const employee = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] });
     if (!employee) return sendError(res, 'Employee not found', 404);
 
     const records = await Attendance.find({ user: employee._id, date: dateQuery }).sort({ date: -1 });
@@ -133,7 +133,7 @@ export const getEmployeeAttendance = async (req, res, next) => {
 
 export const getEmployeeLeaves = async (req, res, next) => {
   try {
-    const employee = await User.findOne({ _id: req.params.id, ...req.scopeFilter });
+    const employee = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] });
     if (!employee) return sendError(res, 'Employee not found', 404);
 
     const requests = await LeaveRequest.find({ user: employee._id }).sort({ createdAt: -1 });
@@ -148,7 +148,7 @@ export const addEmployeePerformance = async (req, res, next) => {
     const { week, rating, note } = req.body;
     if (!week || !rating) return sendError(res, 'Week and rating are required', 400);
 
-    const employee = await User.findOne({ _id: req.params.id, ...req.scopeFilter });
+    const employee = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] });
     if (!employee) return sendError(res, 'Employee not found', 404);
 
     if (!employee.performanceRatings) employee.performanceRatings = [];
@@ -183,7 +183,7 @@ export const addEmployeeNote = async (req, res, next) => {
     const { note } = req.body;
     if (!note) return sendError(res, 'Note text is required', 400);
 
-    const employee = await User.findOne({ _id: req.params.id, ...req.scopeFilter });
+    const employee = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] });
     if (!employee) return sendError(res, 'Employee not found', 404);
 
     employee.notes.push({

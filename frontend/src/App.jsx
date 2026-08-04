@@ -12,6 +12,8 @@ import ForceChangePassword from './pages/auth/ForceChangePassword';
 
 // Intern
 import InternDashboard from './pages/intern/Dashboard';
+import InternDailyTracker from './pages/intern/DailyTracker';
+import InternEODReport from './pages/intern/EODReport';
 import InternTasks from './pages/intern/Tasks';
 import InternAttendance from './pages/intern/Attendance';
 import InternLeave from './pages/intern/Leave';
@@ -35,6 +37,13 @@ import HRAddEmployee from './pages/hr/AddEmployee';
 import HREmployeeDetails from './pages/hr/EmployeeDetails';
 import HRInterns from './pages/hr/Interns';
 import HRInternDetails from './pages/hr/InternDetails';
+import HRRecruitment from './pages/hr/Recruitment';
+import HRCandidateDetails from './pages/hr/CandidateDetails';
+import HRDailyTracker from './pages/hr/DailyTracker';
+import HREODReports from './pages/hr/EODReports';
+import HRLeaveApproval from './pages/hr/LeaveApproval';
+import PMODailyTracker from './pages/pmo/DailyTracker';
+import PMOEODReports from './pages/pmo/EODReports';
 import HROnboarding from './pages/hr/Onboarding';
 import HRAttendance from './pages/hr/Attendance';
 import HRDocuments from './pages/hr/Documents';
@@ -110,6 +119,8 @@ export default function App() {
 
       {/* Intern */}
       <Route path="/intern/dashboard" element={<ProtectedRoute allowedRoles={['intern']}><InternDashboard /></ProtectedRoute>} />
+      <Route path="/intern/daily-tracker" element={<ProtectedRoute allowedRoles={['intern']}><InternDailyTracker /></ProtectedRoute>} />
+      <Route path="/intern/eod-report" element={<ProtectedRoute allowedRoles={['intern']}><InternEODReport /></ProtectedRoute>} />
       <Route path="/intern/tasks" element={<ProtectedRoute allowedRoles={['intern']}><InternTasks /></ProtectedRoute>} />
       <Route path="/intern/attendance" element={<ProtectedRoute allowedRoles={['intern']}><InternAttendance /></ProtectedRoute>} />
       <Route path="/intern/leave" element={<ProtectedRoute allowedRoles={['intern']}><InternLeave /></ProtectedRoute>} />
@@ -133,6 +144,13 @@ export default function App() {
       <Route path="/hr/employees/:id" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'read' }}><HREmployeeDetails /></ProtectedRoute>} />
       <Route path="/hr/interns"    element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Interns', action: 'read' }}><HRInterns /></ProtectedRoute>} />
       <Route path="/hr/interns/:id" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Interns', action: 'read' }}><HRInternDetails /></ProtectedRoute>} />
+      <Route path="/hr/recruitment"    element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Recruitment', action: 'read' }}><HRRecruitment /></ProtectedRoute>} />
+      <Route path="/hr/recruitment/:id" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Recruitment', action: 'read' }}><HRCandidateDetails /></ProtectedRoute>} />
+      <Route path="/hr/daily-tracker" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Daily Tracker', action: 'read' }}><HRDailyTracker /></ProtectedRoute>} />
+      <Route path="/hr/eod-reports" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Daily Tracker', action: 'read' }}><HREODReports /></ProtectedRoute>} />
+      <Route path="/hr/leave-approval" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Leave', action: 'read' }}><HRLeaveApproval /></ProtectedRoute>} />
+      <Route path="/pmo/daily-tracker" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Daily Tracker', action: 'read' }}><PMODailyTracker /></ProtectedRoute>} />
+      <Route path="/pmo/eod-reports" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Daily Tracker', action: 'read' }}><PMOEODReports /></ProtectedRoute>} />
       <Route path="/hr/onboarding" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'update' }}><HROnboarding /></ProtectedRoute>} />
       <Route path="/hr/attendance" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Attendance', action: 'read' }}><HRAttendance /></ProtectedRoute>} />
       <Route path="/hr/documents" element={<ProtectedRoute allowedRoles={['hr']}><HRDocuments /></ProtectedRoute>} />

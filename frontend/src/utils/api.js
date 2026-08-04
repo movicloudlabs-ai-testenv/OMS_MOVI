@@ -171,6 +171,37 @@ export const hrAPI = {
   deleteInternLearning: (id, resourceId) => api.delete(`/hr/interns/${id}/learning/${resourceId}`),
   addInternPerformance: (id, data) => api.post(`/hr/interns/${id}/performance`, data),
   assignInternMentor: (id, data) => api.patch(`/hr/interns/${id}/assign-mentor`, data),
+  uploadInternDocument: (id, docType, formData) => api.post(`/hr/interns/${id}/documents/${docType}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  deleteInternDocument: (id, docType) => api.delete(`/hr/interns/${id}/documents/${docType}`),
+
+  // Recruitment / Candidate pipeline
+  getCandidates: (params) => api.get('/hr/recruitment', { params }),
+  getCandidateStats: () => api.get('/hr/recruitment/stats'),
+  getCandidate: (id) => api.get(`/hr/recruitment/${id}`),
+  createCandidate: (data) => api.post('/hr/recruitment', data),
+  updateCandidate: (id, data) => api.patch(`/hr/recruitment/${id}`, data),
+  deleteCandidate: (id) => api.delete(`/hr/recruitment/${id}`),
+  addCandidateNote: (id, text) => api.post(`/hr/recruitment/${id}/notes`, { text }),
+  uploadCandidateDocument: (id, docType, formData) => api.post(`/hr/recruitment/${id}/documents/${docType}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  deleteCandidateDocument: (id, docType) => api.delete(`/hr/recruitment/${id}/documents/${docType}`),
+
+  // Daily Tracker / EOD Reports (HR view + edit)
+  getDailyTrackerEntries: (params) => api.get('/hr/daily-tracker', { params }),
+  getUserTrackerHistory: (userId) => api.get(`/hr/daily-tracker/user/${userId}`),
+  updateTrackerEntry: (id, data) => api.patch(`/hr/daily-tracker/${id}`, data),
+  exportDailyTracker: (params) => api.get('/hr/daily-tracker/export', { params, responseType: 'blob' }),
+
+  // EOD Reports (simple daily message updates — view only)
+  getEODReports: (params) => api.get('/hr/eod', { params }),
+  getUserEODHistory: (userId) => api.get(`/hr/eod/user/${userId}`),
+  exportEODReports: (params) => api.get('/hr/eod/export', { params, responseType: 'blob' }),
+
+  // Performance Analytics (monthly, derived from Daily Tracker + Attendance)
+  getMonthlyPerformance: (params) => api.get('/hr/performance-analytics/monthly', { params }),
 
   getHeadcountReport: () => api.get('/hr/reports/headcount'),
   getAttendanceSummary: (params) => api.get('/hr/reports/attendance-summary', { params }),
@@ -241,6 +272,17 @@ export const pmoAPI = {
   getDashboardStats: () => api.get('/pmo/dashboard'),
   getAttendance: (params) => api.get('/pmo/attendance', { params }),
   reviewApproval: (id, data) => api.put(`/pmo/approvals/${id}`, data),
+
+  // Daily Tracker / EOD Reports (PMO view + edit)
+  getDailyTrackerEntries: (params) => api.get('/pmo/daily-tracker', { params }),
+  getUserTrackerHistory: (userId) => api.get(`/pmo/daily-tracker/user/${userId}`),
+  updateTrackerEntry: (id, data) => api.patch(`/pmo/daily-tracker/${id}`, data),
+  exportDailyTracker: (params) => api.get('/pmo/daily-tracker/export', { params, responseType: 'blob' }),
+
+  // EOD Reports (simple daily message updates — view only)
+  getEODReports: (params) => api.get('/pmo/eod', { params }),
+  getUserEODHistory: (userId) => api.get(`/pmo/eod/user/${userId}`),
+  exportEODReports: (params) => api.get('/pmo/eod/export', { params, responseType: 'blob' }),
 };
 
 // ─── EMPLOYEE API ─────────────────────────────────────────────────────────
@@ -272,6 +314,19 @@ export const employeeAPI = {
 
   // Attendance
   getAttendance: (params) => api.get('/employee/attendance', { params }),
+  getTodayAttendance: () => api.get('/employee/attendance/today'),
+  checkIn: () => api.post('/employee/attendance/check-in'),
+  checkOut: () => api.post('/employee/attendance/check-out'),
+
+  // Daily Tracker / EOD Report
+  getMyTrackerToday: () => api.get('/employee/daily-tracker/today'),
+  getMyTrackerHistory: () => api.get('/employee/daily-tracker'),
+  submitDailyTracker: (data) => api.post('/employee/daily-tracker', data),
+
+  // EOD Report (simple daily message)
+  getMyEODToday: () => api.get('/employee/eod/today'),
+  getMyEODHistory: () => api.get('/employee/eod'),
+  submitEOD: (message) => api.post('/employee/eod', { message }),
 
   // Leave
   getLeaveBalance: () => api.get('/employee/leave/balance'),
@@ -297,6 +352,19 @@ export const internAPI = {
   addTaskComment: (id, data) => api.post(`/intern/tasks/${id}/comments`, data),
 
   getAttendance: (params) => api.get('/intern/attendance', { params }),
+  getTodayAttendance: () => api.get('/intern/attendance/today'),
+  checkIn: () => api.post('/intern/attendance/check-in'),
+  checkOut: () => api.post('/intern/attendance/check-out'),
+
+  // Daily Tracker / EOD Report
+  getMyTrackerToday: () => api.get('/intern/daily-tracker/today'),
+  getMyTrackerHistory: () => api.get('/intern/daily-tracker'),
+  submitDailyTracker: (data) => api.post('/intern/daily-tracker', data),
+
+  // EOD Report (simple daily message)
+  getMyEODToday: () => api.get('/intern/eod/today'),
+  getMyEODHistory: () => api.get('/intern/eod'),
+  submitEOD: (message) => api.post('/intern/eod', { message }),
   
   getLeaves: () => api.get('/intern/leave'),
   getLeaveBalance: () => api.get('/intern/leave/balance'),

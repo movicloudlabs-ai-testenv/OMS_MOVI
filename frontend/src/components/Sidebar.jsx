@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Grid2X2, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase } from 'lucide-react';
+import { Grid2X2, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase, MessageSquare } from 'lucide-react';
 
 // Pages that can be unlocked for any role via the Access Matrix.
 // Shown in "Granted Access" sidebar section when a non-native role has the permission.
@@ -29,6 +29,8 @@ const NAV_CONFIG = {
   intern: [
     { to: '/intern/dashboard', icon: LayoutDashboard, label: 'Dashboard', isLucide: true },
     { to: '/intern/tasks', icon: CheckSquare, label: 'My Tasks', isLucide: true },
+    { to: '/intern/daily-tracker', icon: CalendarDays, label: 'Daily Tracker', isLucide: true },
+    { to: '/intern/eod-report', icon: MessageSquare, label: 'EOD Report', isLucide: true },
 
     { to: '/intern/leave', icon: Clock, label: 'Leave', isLucide: true },
     { to: '/intern/learning', icon: BookOpen, label: 'Learning', isLucide: true },
@@ -54,6 +56,8 @@ const NAV_CONFIG = {
     { to: '/pmo/tasks', icon: 'task_alt', label: 'Task Assignment', permission: { resource: 'Tasks', action: 'read' } },
     { to: '/pmo/team', icon: Users, label: 'Team', isLucide: true, permission: { resource: 'Users', action: 'read' } },
     { to: '/pmo/interns', icon: GraduationCap, label: 'Interns', isLucide: true, permission: { resource: 'Interns', action: 'read' } },
+    { to: '/pmo/daily-tracker', icon: CalendarDays, label: 'Daily Tracker', isLucide: true, permission: { resource: 'Daily Tracker', action: 'read' } },
+    { to: '/pmo/eod-reports', icon: MessageSquare, label: 'EOD Reports', isLucide: true, permission: { resource: 'Daily Tracker', action: 'read' } },
     { to: '/pmo/monitoring', icon: 'monitoring', label: 'Monitoring' },
     { to: '/pmo/timeline', icon: 'timeline', label: 'Timeline' },
     { to: '/pmo/approvals', icon: 'approval', label: 'Approvals', permission: { resource: 'Tasks', action: 'read' } },

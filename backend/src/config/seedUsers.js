@@ -143,11 +143,16 @@ const run = async () => {
       { name: 'Ganesh Babu',      email: 'ganesh.babu@owms.com',     designation: 'Operations Manager',   dept: 'OPS', roleSlug: 'employee',    employmentType: 'Full-time',  employeeId: `EMP-${year}-080` },
 
       // ── Interns ────────────────────────────────────────────────────────────
-      { name: 'Arjun Patel',      email: 'arjun.p@owms.com',         designation: 'Frontend Intern',      dept: 'ENG', roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-010` },
-      { name: 'Preethi Menon',    email: 'preethi.m@owms.com',       designation: 'Backend Intern',       dept: 'ENG', roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-011` },
-      { name: 'Kishore Kumar',    email: 'kishore.k@owms.com',       designation: 'UI/UX Intern',         dept: 'DES', roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-012` },
-      { name: 'Nandini Shah',     email: 'nandini.s@owms.com',       designation: 'Product Intern',       dept: 'PRD', roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-013` },
-      { name: 'Mohammed Ali',     email: 'mohammed.a@owms.com',      designation: 'QA Intern',            dept: 'QA',  roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-014` },
+      { name: 'Arjun Patel',      email: 'arjun.p@owms.com',         designation: 'Frontend Intern',      dept: 'ENG', roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-010`,
+        college: 'IIT Madras',        domain: 'Frontend Development', batch: '2026 Summer Batch', phone: '+91 98765 43210', address: 'Chennai, Tamil Nadu' },
+      { name: 'Preethi Menon',    email: 'preethi.m@owms.com',       designation: 'Backend Intern',       dept: 'ENG', roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-011`,
+        college: 'NIT Trichy',        domain: 'Backend Development',  batch: '2026 Summer Batch', phone: '+91 98765 43211', address: 'Coimbatore, Tamil Nadu' },
+      { name: 'Kishore Kumar',    email: 'kishore.k@owms.com',       designation: 'UI/UX Intern',         dept: 'DES', roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-012`,
+        college: 'Anna University',   domain: 'UI/UX Design',         batch: '2026 Spring Batch', phone: '+91 98765 43212', address: 'Madurai, Tamil Nadu' },
+      { name: 'Nandini Shah',     email: 'nandini.s@owms.com',       designation: 'Product Intern',       dept: 'PRD', roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-013`,
+        college: 'IIM Ahmedabad',     domain: 'Product Management',   batch: '2026 Spring Batch', phone: '+91 98765 43213', address: 'Ahmedabad, Gujarat' },
+      { name: 'Mohammed Ali',     email: 'mohammed.a@owms.com',      designation: 'QA Intern',            dept: 'QA',  roleSlug: 'intern',      employmentType: 'Intern',     employeeId: `INT-${year}-014`,
+        college: 'VIT Vellore',       domain: 'Quality Assurance',    batch: '2026 Summer Batch', phone: '+91 98765 43214', address: 'Vellore, Tamil Nadu' },
     ];
 
     // ── 5. Insert users (skip if email already exists) ──────────────────────

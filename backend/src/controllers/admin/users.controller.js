@@ -77,7 +77,11 @@ export const getUsers = async (req, res, next) => {
  */
 export const createUser = async (req, res, next) => {
   try {
-    const { name, email, role, department, designation, employmentType, password, skills, hrManager: hrManagerInput } = req.body;
+    const {
+      name, email, role, department, designation, employmentType, password, skills,
+      hrManager: hrManagerInput, phone, manager, college, domain, batch, pmoLead,
+      internshipStart, internshipEnd, joinDate,
+    } = req.body;
 
     let roleId = role;
     if (!roleId) {
@@ -124,8 +128,16 @@ export const createUser = async (req, res, next) => {
       employmentType: empType,
       employeeId,
       skills: skills || [],
-      joinDate: new Date(),
+      phone: phone || undefined,
+      manager: manager || undefined,
+      joinDate: empType === 'Intern' ? undefined : (joinDate || new Date()),
       hrManager: hrManagerInput || undefined,
+      college: empType === 'Intern' ? (college || undefined) : undefined,
+      domain: empType === 'Intern' ? (domain || undefined) : undefined,
+      batch: empType === 'Intern' ? (batch || undefined) : undefined,
+      pmoLead: empType === 'Intern' ? (pmoLead || undefined) : undefined,
+      internshipStart: empType === 'Intern' ? (internshipStart || undefined) : undefined,
+      internshipEnd: empType === 'Intern' ? (internshipEnd || undefined) : undefined,
       mustChangePassword: true,
     });
 
@@ -262,7 +274,7 @@ export const getUserById = async (req, res, next) => {
 export const updateUser = async (req, res, next) => {
   try {
     const { name, designation, department, role, employmentType, status,
-      manager, hrManager, skills, college, mentor, pmoLead,
+      manager, hrManager, skills, college, domain, batch, mentor, pmoLead,
       internshipStart, internshipEnd } = req.body;
 
     const user = await User.findById(req.params.id);
@@ -285,6 +297,8 @@ export const updateUser = async (req, res, next) => {
     if (hrManager !== undefined) user.hrManager = hrManager;
     if (skills) user.skills = skills;
     if (college !== undefined) user.college = college;
+    if (domain !== undefined) user.domain = domain;
+    if (batch !== undefined) user.batch = batch;
     if (mentor !== undefined) user.mentor = mentor;
     if (pmoLead !== undefined) user.pmoLead = pmoLead;
     if (internshipStart) user.internshipStart = internshipStart;

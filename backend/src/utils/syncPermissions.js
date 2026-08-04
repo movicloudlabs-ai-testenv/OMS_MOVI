@@ -32,4 +32,31 @@ export const syncPermissions = async () => {
   } catch (err) {
     console.error('Failed to sync roles.read to HR Manager:', err.message);
   }
+
+  // Generic helper: grant all permissions of a resource to a role (by slug)
+  const grantResourceToRole = async (roleSlug, resource) => {
+    try {
+      const role = await Role.findOne({ slug: roleSlug });
+      const perms = await Permission.find({ resource });
+      if (role && perms.length) {
+        let changed = false;
+        for (const perm of perms) {
+          if (!role.permissions.includes(perm._id)) {
+            role.permissions.push(perm._id);
+            changed = true;
+          }
+        }
+        if (changed) {
+          await role.save();
+          console.log(`✅ Granted ${resource} permissions to ${roleSlug}`);
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to sync ${resource} permissions to ${roleSlug}:`, err.message);
+    }
+  };
+
+  await grantResourceToRole('hr-manager', 'Recruitment');
+  await grantResourceToRole('hr-manager', 'Daily Tracker');
+  await grantResourceToRole('pmo-lead', 'Daily Tracker');
 };

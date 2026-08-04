@@ -18,7 +18,8 @@ const PermissionSchema = new Schema({
     enum: [
       'Users', 'Departments', 'Roles', 'Reports',
       'Audit Logs', 'Projects', 'Tasks', 'Attendance',
-      'Leave', 'Interns', 'Settings', 'Permissions',
+      'Leave', 'Interns', 'Settings', 'Permissions', 'Recruitment',
+      'Daily Tracker',
     ],
   },
   action: {

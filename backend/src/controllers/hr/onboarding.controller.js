@@ -43,7 +43,7 @@ export const reassignHR = async (req, res, next) => {
     const { hrManagerId } = req.body;
     if (!hrManagerId) return sendError(res, 'hrManagerId is required', 400);
 
-    const employee = await User.findOne({ _id: req.params.id, ...req.scopeFilter });
+    const employee = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] });
     if (!employee) return sendError(res, 'User not in scope', 404);
 
     const newHR = await User.findById(hrManagerId).select('_id name');
@@ -145,7 +145,7 @@ export const updateChecklist = async (req, res, next) => {
       return sendError(res, 'Invalid checklist item', 400);
     }
 
-    const user = await User.findOne({ _id: req.params.id, ...req.scopeFilter })
+    const user = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] })
       .populate('pmoLead', 'name');
 
     if (!user) return sendError(res, 'User not found or not in scope', 404);

@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import AccessDenied from '../../components/shared/AccessDenied';
+import BulkImportModal from '../../components/shared/BulkImportModal';
 
 const STATUS_COLORS = {
   'Active': 'bg-[#16A34A]/10 text-[#16A34A]',
@@ -19,27 +20,29 @@ export default function HRInterns() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterUniversity, setFilterUniversity] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterDomain, setFilterDomain] = useState('');
   const [interns, setInterns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const loadInterns = async () => {
-      if (!canRead) return;
-      try {
-        setLoading(true);
-        setError('');
-        const response = await hrAPI.getInterns({ page: 1, limit: 500 });
-        setInterns(response.data?.data || []);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load intern records');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadInterns();
-  }, [canRead]);
+  }, [canRead]); // eslint-disable-line
+
+  const loadInterns = async () => {
+    if (!canRead) return;
+    try {
+      setLoading(true);
+      setError('');
+      const response = await hrAPI.getInterns({ page: 1, limit: 500 });
+      setInterns(response.data?.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load intern records');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const initialsFor = (name = '') => name
     .split(' ')
@@ -61,6 +64,7 @@ export default function HRInterns() {
   // Derived unique lists for filters
   const universities = useMemo(() => [...new Set(interns.map(e => e.college).filter(Boolean))], [interns]);
   const statuses = useMemo(() => [...new Set(interns.map(e => e.status).filter(Boolean))], [interns]);
+  const domains = useMemo(() => [...new Set(interns.map(e => e.domain).filter(Boolean))], [interns]);
 
   // Filter logic
   const filteredInterns = useMemo(() => interns.filter(emp => {
@@ -70,9 +74,10 @@ export default function HRInterns() {
                           emp.email?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesUniv = filterUniversity ? emp.college === filterUniversity : true;
     const matchesStatus = filterStatus ? emp.status === filterStatus : true;
+    const matchesDomain = filterDomain ? emp.domain === filterDomain : true;
     
-    return matchesSearch && matchesUniv && matchesStatus;
-  }), [interns, filterUniversity, filterStatus, searchTerm]);
+    return matchesSearch && matchesUniv && matchesStatus && matchesDomain;
+  }), [interns, filterUniversity, filterStatus, filterDomain, searchTerm]);
 
   if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view interns." /></HRLayout>;
 
@@ -124,9 +129,18 @@ export default function HRInterns() {
               {statuses.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
 
-            {(searchTerm || filterUniversity || filterStatus) && (
+            <select
+              value={filterDomain}
+              onChange={(e) => setFilterDomain(e.target.value)}
+              className="border border-[#E2E8F0] rounded-md py-1.5 px-3 text-[13px] text-[#0F172A] focus:outline-none focus:border-[#2563EB] cursor-pointer bg-white hidden lg:block"
+            >
+              <option value="">All Domains</option>
+              {domains.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+
+            {(searchTerm || filterUniversity || filterStatus || filterDomain) && (
               <button 
-                onClick={() => { setSearchTerm(''); setFilterUniversity(''); setFilterStatus(''); }}
+                onClick={() => { setSearchTerm(''); setFilterUniversity(''); setFilterStatus(''); setFilterDomain(''); }}
                 className="text-[13px] text-[#2563EB] hover:underline font-medium px-2"
               >
                 Clear
@@ -139,8 +153,34 @@ export default function HRInterns() {
               <span className="material-symbols-outlined text-[16px]">download</span>
               Export
             </button>
+            {hasPermission('Users', 'create') && (
+              <button
+                onClick={() => setShowBulkImport(true)}
+                className="border border-[#E2E8F0] text-[#0F172A] px-3 py-1.5 rounded-md text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                Bulk Add
+              </button>
+            )}
+            {hasPermission('Users', 'create') && (
+              <button
+                onClick={() => navigate('/admin/users/new?type=intern')}
+                className="bg-[#2563EB] text-white px-3 py-1.5 rounded-md text-[13px] font-medium hover:bg-[#1D4ED8] transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[16px]">person_add</span>
+                Add Intern
+              </button>
+            )}
           </div>
         </div>
+
+        {showBulkImport && (
+          <BulkImportModal
+            isOpen={showBulkImport}
+            onClose={() => setShowBulkImport(false)}
+            onComplete={() => { setShowBulkImport(false); loadInterns(); }}
+          />
+        )}
 
         {/* TABLE VIEW */}
         <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden flex-1">
@@ -161,7 +201,9 @@ export default function HRInterns() {
                 <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Intern</th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">ID</th>
+                  <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Phone</th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Education</th>
+                  <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Domain / Batch</th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Mentor</th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Duration</th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Status</th>
@@ -194,10 +236,21 @@ export default function HRInterns() {
                         {emp.employeeId || '-'}
                       </td>
 
+                      {/* Phone */}
+                      <td className="px-4 py-3 text-[13px] text-[#64748B]">
+                        {emp.phone || '-'}
+                      </td>
+
                       {/* Education */}
                       <td className="px-4 py-3">
                         <div className="text-[13px] font-medium text-[#0F172A]">{emp.college || '-'}</div>
                         <div className="text-[12px] text-[#64748B] mt-0.5">{emp.designation || '-'}</div>
+                      </td>
+
+                      {/* Domain / Batch */}
+                      <td className="px-4 py-3">
+                        <div className="text-[13px] font-medium text-[#0F172A]">{emp.domain || '-'}</div>
+                        <div className="text-[12px] text-[#64748B] mt-0.5">{emp.batch || '-'}</div>
                       </td>
 
                       {/* Mentor */}
@@ -249,7 +302,7 @@ export default function HRInterns() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center">
+                    <td colSpan={9} className="px-4 py-12 text-center">
                       <div className="flex flex-col items-center justify-center text-[#64748B]">
                         <span className="material-symbols-outlined text-[#CBD5E1] text-[32px] mb-3">search_off</span>
                         <p className="text-[14px] font-medium text-[#0F172A]">No interns found</p>

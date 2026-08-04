@@ -37,6 +37,9 @@ export const getInterns = async (req, res, next) => {
         .populate('project', 'name status')
         .populate('mentor', 'name')
         .populate('pmoLead', 'name')
+        .populate('manager', 'name')
+        .populate('hrManager', 'name')
+        .populate('role', 'name')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit),
@@ -57,15 +60,19 @@ export const getInterns = async (req, res, next) => {
 export const getInternById = async (req, res, next) => {
   try {
     const intern = await User.findOne({
-      _id: req.params.id,
-      employmentType: 'Intern',
-      ...req.scopeFilter,
+      $and: [
+        { _id: req.params.id },
+        { employmentType: 'Intern' },
+        req.scopeFilter || {},
+      ],
     })
       .populate('department', 'name code')
       .populate('project', 'name status')
       .populate('mentor', 'name employeeId')
       .populate('pmoLead', 'name employeeId')
-      .populate('hrManager', 'name');
+      .populate('manager', 'name employeeId')
+      .populate('hrManager', 'name')
+      .populate('role', 'name');
 
     if (!intern) return sendError(res, 'Intern not found', 404);
 
@@ -115,9 +122,11 @@ export const addPerformanceRating = async (req, res, next) => {
     if (!week || !rating) return sendError(res, 'Week and rating are required', 400);
 
     const intern = await User.findOne({
-      _id: req.params.id,
-      employmentType: 'Intern',
-      ...req.scopeFilter,
+      $and: [
+        { _id: req.params.id },
+        { employmentType: 'Intern' },
+        req.scopeFilter || {},
+      ],
     });
 
     if (!intern) return sendError(res, 'Intern not found', 404);
@@ -150,14 +159,81 @@ export const addPerformanceRating = async (req, res, next) => {
   }
 };
 
+const ALLOWED_DOC_TYPES = ['resume', 'offerLetter', 'nda', 'idProof', 'educationalCertificate'];
+
+export const uploadInternDocument = async (req, res, next) => {
+  try {
+    const { docType } = req.params;
+
+    if (!ALLOWED_DOC_TYPES.includes(docType)) {
+      return sendError(res, `Invalid document type. Allowed: ${ALLOWED_DOC_TYPES.join(', ')}`, 400);
+    }
+
+    if (!req.file) return sendError(res, 'No file uploaded', 400);
+
+    const intern = await User.findOne({
+      $and: [
+        { _id: req.params.id },
+        { employmentType: 'Intern' },
+        req.scopeFilter || {},
+      ],
+    });
+
+    if (!intern) return sendError(res, 'Intern not found', 404);
+
+    if (!intern.documents) intern.documents = {};
+    intern.documents[docType] = {
+      fileName: req.file.originalname,
+      filePath: `/uploads/documents/${req.file.filename}`,
+      uploadedAt: new Date(),
+      uploadedBy: req.user._id,
+    };
+
+    await intern.save({ validateBeforeSave: false });
+
+    sendSuccess(res, intern.documents, 'Document uploaded successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteInternDocument = async (req, res, next) => {
+  try {
+    const { docType } = req.params;
+
+    if (!ALLOWED_DOC_TYPES.includes(docType)) {
+      return sendError(res, `Invalid document type. Allowed: ${ALLOWED_DOC_TYPES.join(', ')}`, 400);
+    }
+
+    const intern = await User.findOne({
+      $and: [
+        { _id: req.params.id },
+        { employmentType: 'Intern' },
+        req.scopeFilter || {},
+      ],
+    });
+
+    if (!intern) return sendError(res, 'Intern not found', 404);
+
+    if (intern.documents) intern.documents[docType] = undefined;
+    await intern.save({ validateBeforeSave: false });
+
+    sendSuccess(res, intern.documents, 'Document removed successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const assignMentor = async (req, res, next) => {
   try {
     const { mentorId } = req.body;
 
     const intern = await User.findOne({
-      _id: req.params.id,
-      employmentType: 'Intern',
-      ...req.scopeFilter,
+      $and: [
+        { _id: req.params.id },
+        { employmentType: 'Intern' },
+        req.scopeFilter || {},
+      ],
     });
 
     if (!intern) return sendError(res, 'Intern not found', 404);

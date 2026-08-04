@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import DynamicLayout from '../../components/shared/DynamicLayout';
 import AccessDenied from '../../components/shared/AccessDenied';
@@ -43,6 +43,8 @@ const EMP_TYPES = [
 
 export default function AdminCreateUser() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const presetType = searchParams.get('type'); // 'employee' | 'intern' — set by HR "Add Employee"/"Add Intern" buttons
   const { hasPermission } = useAuth();
   const canCreate = hasPermission('Users', 'create');
 
@@ -55,10 +57,13 @@ export default function AdminCreateUser() {
     designation:           '',
     manager:               '',
     hrManager:             '',
-    employmentType:        'Full-time',
+    employmentType:        presetType === 'intern' ? 'Intern' : 'Full-time',
     role:                  '',
     joinDate:              '',
     college:               '',
+    domain:                '',
+    batch:                 '',
+    pmoLead:               '',
     internshipStart:       '',
     internshipEnd:         '',
     generatePassword:      true,
@@ -130,6 +135,9 @@ export default function AdminCreateUser() {
         hrManager:      formData.hrManager || undefined,
         ...(isIntern ? {
           college:         formData.college || undefined,
+          domain:          formData.domain || undefined,
+          batch:           formData.batch || undefined,
+          pmoLead:         formData.pmoLead || undefined,
           internshipStart: formData.internshipStart || undefined,
           internshipEnd:   formData.internshipEnd || undefined,
         } : {
@@ -138,7 +146,8 @@ export default function AdminCreateUser() {
       };
       const res = await adminAPI.createUser(payload);
       if (res.data?.data?.warning) toast?.error?.(res.data.data.warning);
-      navigate('/admin/users');
+      toast.success(isIntern ? 'Intern added successfully' : 'Employee added successfully');
+      navigate(returnPath);
     } catch (err) {
       setSubmitError(err.response?.data?.message || 'Failed to create user. Please try again.');
     } finally {
@@ -148,6 +157,9 @@ export default function AdminCreateUser() {
 
   const inputCls = 'w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[13px] text-[#0F172A] placeholder-[#94A3B8] focus:outline-none focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/10 transition-colors bg-white';
   const selectCls = `${inputCls} appearance-none cursor-pointer`;
+
+  const returnPath  = presetType === 'intern' ? '/hr/interns' : presetType === 'employee' ? '/hr/employees' : '/admin/users';
+  const returnLabel = presetType === 'intern' ? 'Interns' : presetType === 'employee' ? 'Employees' : 'Users';
 
   const selectedRole = roles.find(r => r._id === formData.role);
 
@@ -160,8 +172,8 @@ export default function AdminCreateUser() {
         {/* Header */}
         <div className="border-b border-[#E2E8F0] pb-5">
           <div className="flex items-center gap-1.5 text-[12px] text-[#64748B] mb-3">
-            <button type="button" onClick={() => navigate('/admin/users')} className="hover:text-[#EA580C] transition-colors flex items-center gap-1">
-              <span className="material-symbols-outlined text-[15px]">group</span> Users
+            <button type="button" onClick={() => navigate(returnPath)} className="hover:text-[#EA580C] transition-colors flex items-center gap-1">
+              <span className="material-symbols-outlined text-[15px]">group</span> {returnLabel}
             </button>
             <span className="material-symbols-outlined text-[15px]">chevron_right</span>
             <span className="text-[#0F172A] font-medium">Onboard New User</span>
@@ -286,6 +298,12 @@ export default function AdminCreateUser() {
                     <Field label="College / Institution" hint="University or college name">
                       <input type="text" className={inputCls} placeholder="e.g. IIT Madras" value={formData.college} onChange={set('college')} />
                     </Field>
+                    <Field label="Domain" hint="e.g. Frontend, Backend, Data Science">
+                      <input type="text" className={inputCls} placeholder="e.g. Frontend Development" value={formData.domain} onChange={set('domain')} />
+                    </Field>
+                    <Field label="Batch" hint="e.g. 2026 Summer, Jan-2026">
+                      <input type="text" className={inputCls} placeholder="e.g. 2026 Summer Batch" value={formData.batch} onChange={set('batch')} />
+                    </Field>
                     <div /> {/* spacer */}
                     <Field label="Internship Start Date">
                       <input type="date" className={inputCls} value={formData.internshipStart} onChange={set('internshipStart')} />
@@ -323,6 +341,18 @@ export default function AdminCreateUser() {
                     </select>
                   </SelectWrapper>
                 </Field>
+                {isIntern && (
+                  <Field label="PMO Assigned" hint="The PMO lead overseeing this intern's project work">
+                    <SelectWrapper>
+                      <select className={selectCls} value={formData.pmoLead} onChange={set('pmoLead')}>
+                        <option value="">Select PMO Lead (optional)</option>
+                        {managers.map(m => (
+                          <option key={m._id} value={m._id}>{m.name} — {m.role?.name || ''}</option>
+                        ))}
+                      </select>
+                    </SelectWrapper>
+                  </Field>
+                )}
               </div>
 
             </div>
@@ -401,7 +431,7 @@ export default function AdminCreateUser() {
         <div className="flex items-center justify-between pt-6 border-t border-[#E2E8F0]">
           <button
             type="button"
-            onClick={() => navigate('/admin/users')}
+            onClick={() => navigate(returnPath)}
             className="text-[13px] font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
           >
             ← Cancel
@@ -409,7 +439,7 @@ export default function AdminCreateUser() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate('/admin/users')}
+              onClick={() => navigate(returnPath)}
               className="border border-[#E2E8F0] bg-white text-[#0F172A] px-5 py-2.5 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors shadow-sm"
             >
               Save as Draft

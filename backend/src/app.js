@@ -29,6 +29,7 @@ import hrOnboardingRoutes from './routes/hr/onboarding.routes.js';
 import hrAttendanceRoutes from './routes/hr/attendance.routes.js';
 import hrLeavesRoutes from './routes/hr/leaves.routes.js';
 import hrInternsRoutes from './routes/hr/interns.routes.js';
+import hrCandidatesRoutes from './routes/hr/candidates.routes.js';
 import hrReportsRoutes from './routes/hr/reports.routes.js';
 import hrTasksRoutes from './routes/hr/tasks.routes.js';
 import hrProjectsRoutes from './routes/hr/projects.routes.js';
@@ -42,6 +43,8 @@ import pmoApprovalsRoutes from './routes/pmo/approvals.routes.js';
 import pmoReportsRoutes from './routes/pmo/reports.routes.js';
 import pmoDashboardRoutes from './routes/pmo/dashboard.routes.js';
 import pmoAttendanceRoutes from './routes/pmo/attendance.routes.js';
+import pmoDailyTrackerRoutes from './routes/pmo/dailyTracker.routes.js';
+import pmoEodRoutes from './routes/pmo/eod.routes.js';
 
 import empProfileRoutes from './routes/employee/profile.routes.js';
 import empTasksRoutes from './routes/employee/tasks.routes.js';
@@ -50,12 +53,19 @@ import empTeamRoutes from './routes/employee/team.routes.js';
 import empAttendanceRoutes from './routes/employee/attendance.routes.js';
 import empLeaveRoutes from './routes/employee/leave.routes.js';
 import empNotificationsRoutes from './routes/employee/notifications.routes.js';
+import empDailyTrackerRoutes from './routes/employee/dailyTracker.routes.js';
+import empEodRoutes from './routes/employee/eod.routes.js';
 
 import internProfileRoutes from './routes/intern/profile.routes.js';
 import internTasksRoutes from './routes/intern/tasks.routes.js';
 import internAttendanceRoutes from './routes/intern/attendance.routes.js';
 import internLeaveRoutes from './routes/intern/leave.routes.js';
 import internLearningRoutes from './routes/intern/learning.routes.js';
+import internDailyTrackerRoutes from './routes/intern/dailyTracker.routes.js';
+import internEodRoutes from './routes/intern/eod.routes.js';
+import hrDailyTrackerRoutes from './routes/hr/dailyTracker.routes.js';
+import hrEodRoutes from './routes/hr/eod.routes.js';
+import hrPerformanceRoutes from './routes/hr/performance.routes.js';
 // Middleware
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLogger } from './middleware/apiLogger.js';
@@ -203,6 +213,7 @@ app.use('/api/hr/onboarding', hrOnboardingRoutes);
 app.use('/api/hr/attendance', hrAttendanceRoutes);
 app.use('/api/hr/leaves', hrLeavesRoutes);
 app.use('/api/hr/interns', hrInternsRoutes);
+app.use('/api/hr/recruitment', hrCandidatesRoutes);
 app.use('/api/hr/reports', hrReportsRoutes);
 app.use('/api/hr/tasks', hrTasksRoutes);
 app.use('/api/hr/projects', hrProjectsRoutes);
@@ -217,6 +228,8 @@ app.use('/api/pmo/interns', pmoInternsRoutes);
 app.use('/api/pmo/approvals', pmoApprovalsRoutes);
 app.use('/api/pmo/reports', pmoReportsRoutes);
 app.use('/api/pmo/attendance', pmoAttendanceRoutes);
+app.use('/api/pmo/daily-tracker', pmoDailyTrackerRoutes);
+app.use('/api/pmo/eod', pmoEodRoutes);
 
 // Employee Module
 app.use('/api/employee/profile', empProfileRoutes);
@@ -226,6 +239,8 @@ app.use('/api/employee/team', empTeamRoutes);
 app.use('/api/employee/attendance', empAttendanceRoutes);
 app.use('/api/employee/leave', empLeaveRoutes);
 app.use('/api/employee/notifications', empNotificationsRoutes);
+app.use('/api/employee/daily-tracker', empDailyTrackerRoutes);
+app.use('/api/employee/eod', empEodRoutes);
 
 // Intern Module
 app.use('/api/intern/profile', internProfileRoutes);
@@ -233,6 +248,11 @@ app.use('/api/intern/tasks', internTasksRoutes);
 app.use('/api/intern/attendance', internAttendanceRoutes);
 app.use('/api/intern/leave', internLeaveRoutes);
 app.use('/api/intern/learning', internLearningRoutes);
+app.use('/api/intern/daily-tracker', internDailyTrackerRoutes);
+app.use('/api/intern/eod', internEodRoutes);
+app.use('/api/hr/daily-tracker', hrDailyTrackerRoutes);
+app.use('/api/hr/eod', hrEodRoutes);
+app.use('/api/hr/performance-analytics', hrPerformanceRoutes);
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

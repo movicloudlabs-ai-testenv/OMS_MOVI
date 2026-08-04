@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import AccessDenied from '../../components/shared/AccessDenied';
+import BulkImportModal from '../../components/shared/BulkImportModal';
 
 const TYPE_COLORS = {
   'Full-time': 'bg-blue-100 text-blue-700',
@@ -29,25 +30,26 @@ export default function Employees() {
   const [filterStatus, setFilterStatus] = useState('');
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showBulkImport, setShowBulkImport] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const loadEmployees = async () => {
-      if (!canRead) return;
-      try {
-        setLoading(true);
-        setError('');
-        const response = await hrAPI.getEmployees({ page: 1, limit: 500 });
-        setEmployees(response.data?.data || []);
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load employee records');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadEmployees();
-  }, [canRead]);
+  }, [canRead]); // eslint-disable-line
+
+  const loadEmployees = async () => {
+    if (!canRead) return;
+    try {
+      setLoading(true);
+      setError('');
+      const response = await hrAPI.getEmployees({ page: 1, limit: 500 });
+      setEmployees(response.data?.data || []);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load employee records');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const initialsFor = (name = '') => name
     .split(' ')
@@ -143,8 +145,34 @@ export default function Employees() {
                 Export
               </button>
             )}
+            {hasPermission('Users', 'create') && (
+              <button
+                onClick={() => setShowBulkImport(true)}
+                className="border border-[#E2E8F0] text-[#0F172A] px-3 py-1.5 rounded-md text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                Bulk Add
+              </button>
+            )}
+            {hasPermission('Users', 'create') && (
+              <button
+                onClick={() => navigate('/admin/users/new?type=employee')}
+                className="bg-[#2563EB] text-white px-3 py-1.5 rounded-md text-[13px] font-medium hover:bg-[#1D4ED8] transition-colors flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-[16px]">person_add</span>
+                Add Employee
+              </button>
+            )}
           </div>
         </div>
+
+        {showBulkImport && (
+          <BulkImportModal
+            isOpen={showBulkImport}
+            onClose={() => setShowBulkImport(false)}
+            onComplete={() => { setShowBulkImport(false); loadEmployees(); }}
+          />
+        )}
 
         {/* TABLE VIEW */}
         <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden flex-1">

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
+import AttendanceClock from '../../components/shared/AttendanceClock';
+import EODQuickShare from '../../components/shared/EODQuickShare';
 import { 
   CheckSquare, AlertCircle, CalendarDays, Clock, 
   ExternalLink, GraduationCap, CheckCircle, FileText
@@ -147,6 +149,26 @@ export default function InternDashboard() {
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
             </p>
           </div>
+        </div>
+
+        {/* CLOCK IN/OUT */}
+        <AttendanceClock api={internAPI} />
+
+        {/* EOD UPDATE + DAILY TRACKER */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <EODQuickShare api={internAPI} />
+          </div>
+          <button
+            onClick={() => navigate('/intern/daily-tracker')}
+            className="bg-[#2563EB] text-white rounded-xl shadow-sm p-5 flex items-center justify-between gap-3 hover:bg-[#1D4ED8] transition-colors text-left"
+          >
+            <div>
+              <p className="text-[14px] font-bold">Daily Tracker</p>
+              <p className="text-[12px] text-blue-100 mt-0.5">Fill today's detailed work log</p>
+            </div>
+            <span className="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </button>
         </div>
 
         {/* STATS BAR */}

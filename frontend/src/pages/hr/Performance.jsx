@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Star, ShieldAlert, Plus, X, Award, Users, Search, Filter, RefreshCw, ChevronDown } from 'lucide-react';
+import { Star, ShieldAlert, Plus, X, Award, Users, Search, Filter, RefreshCw, ChevronDown, Trophy, TrendingUp, CalendarDays } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import AccessDenied from '../../components/shared/AccessDenied';
 
@@ -402,11 +402,153 @@ function PeopleTable({ people, selectedId, onSelect, label, activeTab, onTabChan
   );
 }
 
+// ─── Monthly Performance & Top Performers ──────────────────────────────────────
+function LeaderboardCard({ title, icon: Icon, iconColor, people }) {
+  const medals = ['#F59E0B', '#94A3B8', '#B45309'];
+  return (
+    <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <Icon size={18} className={iconColor} />
+        <h3 className="text-[14px] font-bold text-[#0F172A]">{title}</h3>
+      </div>
+      {people.length === 0 ? (
+        <p className="text-[12px] text-[#94A3B8] italic">No data for this period yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {people.slice(0, 3).map((p, idx) => (
+            <div key={p.user._id} className="flex items-center gap-3">
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-[12px] shrink-0"
+                style={{ backgroundColor: medals[idx] || '#CBD5E1' }}
+              >
+                {idx + 1}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-[13px] font-semibold text-[#0F172A] truncate">{p.user.name}</p>
+                <p className="text-[11px] text-[#64748B]">{p.user.designation || p.user.employmentType}</p>
+              </div>
+              <span className="text-[13px] font-bold text-[#2563EB]">{p.avgProductivity ?? '-'}/10</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonthlyPerformancePanel() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const now = new Date();
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await hrAPI.getMonthlyPerformance({ month, year });
+      setData(res.data?.data || null);
+    } catch {
+      toast.error('Failed to load monthly performance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, [month, year]); // eslint-disable-line
+
+  const results = data?.results || [];
+  const interns = results.filter(r => r.user.employmentType === 'Intern');
+  const employees = results.filter(r => r.user.employmentType === 'Full-time');
+
+  const topInterns = [...interns].filter(i => i.avgProductivity != null).sort((a, b) => b.avgProductivity - a.avgProductivity);
+  const topEmployees = [...employees].filter(e => e.avgProductivity != null).sort((a, b) => b.avgProductivity - a.avgProductivity);
+
+  const avgAttendance = (list) => list.length
+    ? Math.round((list.reduce((sum, r) => sum + r.attendancePct, 0) / list.length) * 10) / 10
+    : 0;
+
+  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  return (
+    <div className="flex flex-col gap-5">
+      {/* Month selector */}
+      <div className="flex items-center gap-3">
+        <CalendarDays size={16} className="text-[#64748B]" />
+        <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="border border-[#E2E8F0] rounded-md py-1.5 px-3 text-[13px] bg-white">
+          {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+            <option key={m} value={m}>{new Date(2000, m - 1).toLocaleDateString(undefined, { month: 'long' })}</option>
+          ))}
+        </select>
+        <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="border border-[#E2E8F0] rounded-md py-1.5 px-3 text-[13px] bg-white">
+          {[now.getFullYear(), now.getFullYear() - 1].map(y => <option key={y} value={y}>{y}</option>)}
+        </select>
+        <span className="text-[12px] text-[#94A3B8]">Showing data through {monthLabel}</span>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center py-16">
+          <span className="material-symbols-outlined text-[28px] text-[#2563EB] animate-spin">sync</span>
+        </div>
+      ) : (
+        <>
+          {/* Attendance % summary */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <MetricCard title="Intern Attendance" value={avgAttendance(interns)} suffix="%" subtitle={`Avg across ${interns.length} interns`} icon={Users} iconBg="bg-[#EFF6FF]" iconColor="text-[#3B82F6]" trendColor="#60A5FA" />
+            <MetricCard title="Employee Attendance" value={avgAttendance(employees)} suffix="%" subtitle={`Avg across ${employees.length} employees`} icon={Users} iconBg="bg-[#ECFDF5]" iconColor="text-[#16A34A]" trendColor="#22C55E" />
+          </div>
+
+          {/* Top 3 leaderboards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <LeaderboardCard title="Top 3 Interns" icon={Trophy} iconColor="text-amber-500" people={topInterns} />
+            <LeaderboardCard title="Top 3 Employees" icon={Trophy} iconColor="text-amber-500" people={topEmployees} />
+          </div>
+
+          {/* Full table */}
+          <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                  <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                    <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Name</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Type</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Reports</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Avg Productivity</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Avg KT %</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Total Hours</th>
+                    <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Attendance %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.length > 0 ? results.map(r => (
+                    <tr key={r.user._id} className="border-b border-[#F1F5F9] last:border-0">
+                      <td className="px-4 py-2.5 text-[13px] font-medium text-[#0F172A]">{r.user.name}</td>
+                      <td className="px-4 py-2.5 text-[12px] text-[#64748B]">{r.user.employmentType}</td>
+                      <td className="px-4 py-2.5 text-[12px] text-[#64748B]">{r.reportsSubmitted}</td>
+                      <td className="px-4 py-2.5 text-[12px] text-[#0F172A] font-medium">{r.avgProductivity ?? '-'}</td>
+                      <td className="px-4 py-2.5 text-[12px] text-[#64748B]">{r.avgKtCompletion != null ? `${r.avgKtCompletion}%` : '-'}</td>
+                      <td className="px-4 py-2.5 text-[12px] text-[#64748B]">{r.totalHours}</td>
+                      <td className="px-4 py-2.5 text-[12px] font-medium" style={{ color: r.attendancePct >= 90 ? '#16A34A' : r.attendancePct >= 75 ? '#D97706' : '#DC2626' }}>{r.attendancePct}%</td>
+                    </tr>
+                  )) : (
+                    <tr><td colSpan={7} className="px-4 py-10 text-center text-[13px] text-[#94A3B8]">No data for this period</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function HRPerformance() {
   const { hasPermission } = useAuth();
   const canRead = hasPermission('Interns', 'read');
   const [activeTab, setActiveTab]     = useState('interns');
+  const [viewMode, setViewMode]       = useState('weekly'); // weekly | monthly
   const [interns,   setInterns]       = useState([]);
   const [employees, setEmployees]     = useState([]);
   const [loading,   setLoading]       = useState(true);
@@ -472,6 +614,27 @@ export default function HRPerformance() {
           </button>
         </div>
 
+        {/* Weekly / Monthly toggle */}
+        <div className="flex items-center gap-1 border-b border-[#E2E8F0]">
+          <button
+            onClick={() => setViewMode('weekly')}
+            className={`px-4 py-2.5 text-[13px] font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${viewMode === 'weekly' ? 'border-[#2563EB] text-[#2563EB]' : 'border-transparent text-[#64748B] hover:text-[#0F172A]'}`}
+          >
+            <Star size={14} /> Weekly Reviews
+          </button>
+          <button
+            onClick={() => setViewMode('monthly')}
+            className={`px-4 py-2.5 text-[13px] font-semibold border-b-2 transition-colors flex items-center gap-1.5 ${viewMode === 'monthly' ? 'border-[#2563EB] text-[#2563EB]' : 'border-transparent text-[#64748B] hover:text-[#0F172A]'}`}
+          >
+            <TrendingUp size={14} /> Monthly Performance &amp; Top Performers
+          </button>
+        </div>
+
+        {viewMode === 'monthly' ? (
+          <MonthlyPerformancePanel />
+        ) : (
+          <>
+
         {/* Stats */}
         <div className="grid gap-3 md:grid-cols-3">
           <MetricCard
@@ -530,6 +693,8 @@ export default function HRPerformance() {
               />
             )}
           </div>
+        )}
+          </>
         )}
       </div>
     </HRLayout>

@@ -61,6 +61,9 @@ const validateAndEnrich = (rawRows, roles, departments) => {
     const phone      = row[norm('phone')] || '';
     const desig      = row[norm('designation')] || row[norm('job title')] || row[norm('jobtitle')] || '';
     const empType    = row[norm('employmentType')] || row[norm('employment type')] || '';
+    const college    = row[norm('college')] || '';
+    const domain     = row[norm('domain')] || '';
+    const batch      = row[norm('batch')] || '';
 
     if (!name)  errors.push('Name is required');
     if (!email) errors.push('Email is required');
@@ -83,6 +86,7 @@ const validateAndEnrich = (rawRows, roles, departments) => {
       department:     deptName,
       role:           roleName,
       employmentType: normalizeEmpType(empType),
+      college, domain, batch,
       roleId:         matchedRole?._id || null,
       departmentId:   matchedDept?._id || null,
       errors,
@@ -147,11 +151,13 @@ export default function BulkImportModal({ isOpen, onClose, onComplete }) {
     const roleNames = roles.map(r => r.name).join(' | ');
     const deptNames = departments.map(d => d.name).join(' | ');
     const lines = [
-      'name,email,employeeId,phone,designation,department,role,employmentType',
-      'Jane Doe,jane.doe@company.com,EMP001,+1234567890,Senior Developer,Engineering,Employee,Full-time',
-      'John Smith,john.smith@company.com,EMP002,,HR Specialist,Human Resources,HR Manager,Full-time',
+      'name,email,employeeId,phone,designation,department,role,employmentType,college,domain,batch',
+      'Jane Doe,jane.doe@company.com,EMP001,+1234567890,Senior Developer,Engineering,Employee,Full-time,,,',
+      'John Smith,john.smith@company.com,EMP002,,HR Specialist,Human Resources,HR Manager,Full-time,,,',
+      'Arjun Patel,arjun.patel@company.com,INT001,+919876543210,Frontend Intern,Engineering,Intern,Intern,IIT Madras,Frontend Development,2026 Summer Batch',
       `# Available Roles: ${roleNames}`,
       `# Available Departments: ${deptNames}`,
+      '# college / domain / batch only matter for Intern rows — leave blank for employees.',
       '# Remove comment lines (starting with #) before uploading.',
     ];
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
@@ -181,6 +187,9 @@ export default function BulkImportModal({ isOpen, onClose, onComplete }) {
           phone:          validRows[i].phone || undefined,
           employeeId:     validRows[i].employeeId || undefined,
           employmentType: validRows[i].employmentType,
+          college:        validRows[i].college || undefined,
+          domain:         validRows[i].domain || undefined,
+          batch:          validRows[i].batch || undefined,
         });
         setImportResults(prev => prev.map((r, idx) => idx === i ? { ...r, status: 'success' } : r));
       } catch (err) {

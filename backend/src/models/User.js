@@ -57,6 +57,8 @@ const UserSchema = new Schema({
 
   // Intern-specific fields
   college: String,
+  domain: String, // e.g. Frontend, Backend, Data Science, UI/UX
+  batch: String,  // e.g. "2026 Summer", "Jan-2026"
   internshipStart: Date,
   internshipEnd: Date,
   mentor: { type: Schema.Types.ObjectId, ref: 'User' },
@@ -101,6 +103,30 @@ const UserSchema = new Schema({
     addedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     createdAt: { type: Date, default: Date.now },
   }],
+
+  // Document Management (Resume, Offer Letter, NDA, ID Proof, Educational Certificate)
+  documents: {
+    resume: {
+      fileName: String, filePath: String, uploadedAt: Date,
+      uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    },
+    offerLetter: {
+      fileName: String, filePath: String, uploadedAt: Date,
+      uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    },
+    nda: {
+      fileName: String, filePath: String, uploadedAt: Date,
+      uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    },
+    idProof: {
+      fileName: String, filePath: String, uploadedAt: Date,
+      uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    },
+    educationalCertificate: {
+      fileName: String, filePath: String, uploadedAt: Date,
+      uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    },
+  },
 
   // Auth
   lastLogin: Date,

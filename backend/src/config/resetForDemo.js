@@ -179,7 +179,7 @@ const seedUsers = async (roleMap, deptMap) => {
   // Create one at a time so the pre-save password hash hook fires for each
   const admin = await User.create({
     name: 'Super Admin',
-    email: 'admin@owms.com',
+    email: 'aswanthksv@gmail.com',
     password: 'Admin@123',
     role: roleMap['super-admin'],
     department: deptMap['PMO'],
@@ -289,7 +289,7 @@ const run = async () => {
     console.log('Settings: singleton initialized');
     console.log('');
     console.log('--- Login Credentials ---');
-    console.log('Super Admin : admin@owms.com  / Admin@123');
+    console.log('Super Admin : aswanthksv@gmail.com  / Admin@123');
     console.log('HR Manager  : hr@owms.com     / HR@123456');
     console.log('PMO Lead    : pmo@owms.com    / PMO@12345');
     console.log('Employee    : john@owms.com   / Emp@12345');

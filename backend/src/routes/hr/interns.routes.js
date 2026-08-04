@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getInterns, getInternById,
   addPerformanceRating, assignMentor,
+  uploadInternDocument, deleteInternDocument,
 } from '../../controllers/hr/interns.controller.js';
 import {
   getInternLearning, assignLearning, deleteLearning,
@@ -10,6 +11,7 @@ import { protect } from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rbac.js';
 import { hrScope } from '../../middleware/hrScope.js';
 import { auditLog } from '../../middleware/audit.js';
+import { upload, setUploadType } from '../../middleware/upload.js';
 
 const router = Router();
 router.use(protect);
@@ -19,6 +21,22 @@ router.get('/', requirePermission('Interns', 'read'), getInterns);
 router.get('/:id', requirePermission('Interns', 'read'), getInternById);
 router.post('/:id/performance', requirePermission('Interns', 'manage'), auditLog('Update', 'Interns'), addPerformanceRating);
 router.patch('/:id/assign-mentor', requirePermission('Interns', 'manage'), auditLog('Update', 'Interns'), assignMentor);
+
+// Document management (Resume, Offer Letter, NDA, ID Proof, Educational Certificate)
+router.post(
+  '/:id/documents/:docType',
+  requirePermission('Interns', 'manage'),
+  setUploadType('documents'),
+  upload.single('file'),
+  auditLog('Update', 'Interns'),
+  uploadInternDocument
+);
+router.delete(
+  '/:id/documents/:docType',
+  requirePermission('Interns', 'manage'),
+  auditLog('Update', 'Interns'),
+  deleteInternDocument
+);
 
 // Learning management
 router.get('/:id/learning', requirePermission('Interns', 'read'), getInternLearning);

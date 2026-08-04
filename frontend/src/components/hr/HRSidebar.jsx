@@ -4,7 +4,7 @@ import { useNotifications } from '../../contexts/NotificationContext';
 import {
   Menu, LayoutDashboard, Users, GraduationCap, UserPlus,
   CalendarCheck, CalendarOff, FolderKanban, TrendingUp,
-  ClipboardList, User, LogOut, Building2, Shield, BarChart3,
+  ClipboardList, User, LogOut, Building2, Shield, BarChart3, ClipboardCheck, MessageSquare,
 } from 'lucide-react';
 
 // Primary nav links (always visible)
@@ -12,6 +12,10 @@ const NAV_LINKS = [
   { to: '/hr/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/hr/employees',    icon: Users,           label: 'Employees',   permission: { resource: 'Users', action: 'read' } },
   { to: '/hr/interns',      icon: GraduationCap,   label: 'Interns',     permission: { resource: 'Interns', action: 'read' } },
+  { to: '/hr/recruitment',  icon: ClipboardCheck,  label: 'Recruitment', permission: { resource: 'Recruitment', action: 'read' } },
+  { to: '/hr/daily-tracker', icon: ClipboardList,  label: 'Daily Tracker', permission: { resource: 'Daily Tracker', action: 'read' } },
+  { to: '/hr/eod-reports',  icon: MessageSquare,   label: 'EOD Reports', permission: { resource: 'Daily Tracker', action: 'read' } },
+  { to: '/hr/leave-approval', icon: CalendarOff,   label: 'Leave Approval', permission: { resource: 'Leave', action: 'read' } },
   { to: '/hr/onboarding',   icon: UserPlus,        label: 'Onboarding',  permission: { resource: 'Users', action: 'update' } },
   { to: '/hr/attendance',   icon: CalendarCheck,    label: 'Attendance',  permission: { resource: 'Attendance', action: 'read' } },
   { to: '/hr/projects',     icon: FolderKanban,     label: 'Projects' },

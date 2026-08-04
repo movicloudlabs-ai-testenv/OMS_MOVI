@@ -169,7 +169,10 @@ export default function HRInternDetails() {
     name: intern?.name || 'Intern',
     email: intern?.email || '',
     phone: intern?.phone || '-',
+    address: intern?.address || 'Not Provided',
     university: intern?.college || 'N/A',
+    domain: intern?.domain || 'Not Assigned',
+    batch: intern?.batch || 'Not Assigned',
     major: intern?.designation || '-',
     department: intern?.department?.name || '-',
     designation: intern?.designation || 'Intern',
@@ -179,12 +182,17 @@ export default function HRInternDetails() {
     endDate: intern?.internshipEnd ? new Date(intern.internshipEnd).toLocaleDateString() : '-',
     duration: getDurationString(intern?.internshipStart, intern?.internshipEnd),
     mentor: intern?.mentor?.name || 'Unassigned',
+    reportingManager: intern?.manager?.name || 'Unassigned',
+    pmoAssigned: intern?.pmoLead?.name || 'Unassigned',
+    role: intern?.role?.name || 'Intern',
+    project: intern?.project?.name || 'Unassigned',
     hrRepresentative: intern?.hrManager?.name || 'Unassigned',
     location: intern?.address || 'N/A',
-    stipend: '$5,000 / month',
     leaveBalance: intern?.leaveBalance ? `${intern.leaveBalance.casual?.total - intern.leaveBalance.casual?.used} Days` : '0 Days',
     sickLeave: intern?.leaveBalance ? `${intern.leaveBalance.sick?.total - intern.leaveBalance.sick?.used} Days` : '0 Days'
   };
+
+  const documents = intern?.documents || {};
 
   const activityHistory = [
     { id: 1, action: 'Mid-term evaluation submitted by mentor', time: 'April 15, 2024', icon: 'star_rate', color: 'text-amber-500', bg: 'bg-amber-50' },
@@ -198,6 +206,51 @@ export default function HRInternDetails() {
   const [learningLoading, setLearningLoading] = useState(false);
   const [assignSaving, setAssignSaving]     = useState(false);
   const [deletingId, setDeletingId]         = useState(null);
+  const [uploadingDoc, setUploadingDoc]     = useState(null); // docType currently uploading
+  const [internDocs, setInternDocs]         = useState({});
+
+  useEffect(() => {
+    if (intern?.documents) setInternDocs(intern.documents);
+  }, [intern]);
+
+  const DOC_TYPES = [
+    { key: 'resume', label: 'Resume', icon: 'description' },
+    { key: 'offerLetter', label: 'Offer Letter', icon: 'contract' },
+    { key: 'nda', label: 'NDA', icon: 'gavel' },
+    { key: 'idProof', label: 'ID Proof', icon: 'badge' },
+    { key: 'educationalCertificate', label: 'Educational Certificate', icon: 'school' },
+  ];
+
+  const fileApiOrigin = (import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000');
+
+  const handleDocFileSelect = async (docType, file) => {
+    if (!file) return;
+    setUploadingDoc(docType);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await hrAPI.uploadInternDocument(id, docType, fd);
+      const updatedDocs = res.data?.data || res.data;
+      setInternDocs(updatedDocs);
+      toast.success('Document uploaded');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload document');
+    } finally {
+      setUploadingDoc(null);
+    }
+  };
+
+  const handleDocDelete = async (docType) => {
+    if (!confirm('Remove this document?')) return;
+    try {
+      const res = await hrAPI.deleteInternDocument(id, docType);
+      const updatedDocs = res.data?.data || res.data;
+      setInternDocs(updatedDocs || {});
+      toast.success('Document removed');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove document');
+    }
+  };
 
   const loadLearning = async () => {
     setLearningLoading(true);
@@ -323,6 +376,14 @@ export default function HRInternDetails() {
                       Mentor: <span className="font-medium text-[#2563EB] cursor-pointer hover:underline">{emp.mentor}</span>
                    </div>
                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px]">supervisor_account</span>
+                      Reporting Manager: <span className="font-medium text-[#2563EB] cursor-pointer hover:underline">{emp.reportingManager}</span>
+                   </div>
+                   <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[16px]">engineering</span>
+                      PMO Assigned: <span className="font-medium text-[#2563EB] cursor-pointer hover:underline">{emp.pmoAssigned}</span>
+                   </div>
+                   <div className="flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[16px]">badge</span>
                       Assigned HR: <span className="font-medium text-[#2563EB] cursor-pointer hover:underline">{emp.hrRepresentative}</span>
                    </div>
@@ -361,6 +422,13 @@ export default function HRInternDetails() {
             Learning Management
             {activeTab === 'learning' && <motion.div layoutId="hrInternTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2563EB]" />}
           </button>
+          <button 
+            onClick={() => setActiveTab('documents')}
+            className={`pb-3 text-sm font-bold transition-colors relative ${activeTab === 'documents' ? 'text-[#2563EB]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
+          >
+            Documents
+            {activeTab === 'documents' && <motion.div layoutId="hrInternTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2563EB]" />}
+          </button>
         </div>
 
         {/* TAB CONTENT */}
@@ -385,6 +453,16 @@ export default function HRInternDetails() {
                       <span className="block text-[12px] font-medium text-[#64748B] mb-1">University / College</span>
                       <span className="text-[14px] font-medium text-[#0F172A]">{emp.university}</span>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="block text-[12px] font-medium text-[#64748B] mb-1">Domain</span>
+                        <span className="text-[14px] font-medium text-[#0F172A]">{emp.domain}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[12px] font-medium text-[#64748B] mb-1">Batch</span>
+                        <span className="text-[14px] font-medium text-[#0F172A]">{emp.batch}</span>
+                      </div>
+                    </div>
                     <div>
                       <span className="block text-[12px] font-medium text-[#64748B] mb-1">Major / Degree</span>
                       <span className="text-[14px] font-medium text-[#0F172A]">{emp.major}</span>
@@ -395,6 +473,10 @@ export default function HRInternDetails() {
                         <a href={`mailto:${emp.email}`} className="text-[13px] font-medium text-[#2563EB] hover:underline">{emp.email}</a>
                         <span className="text-[13px] font-medium text-[#0F172A]">{emp.phone}</span>
                       </div>
+                    </div>
+                    <div>
+                      <span className="block text-[12px] font-medium text-[#64748B] mb-1">Address</span>
+                      <span className="text-[14px] font-medium text-[#0F172A]">{emp.address}</span>
                     </div>
                   </div>
                 </div>
@@ -436,9 +518,6 @@ export default function HRInternDetails() {
 
                 {/* Column 3: Internship Details */}
                 <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-6 space-y-6 relative">
-                  <button className="absolute top-6 right-6 text-[12px] font-semibold text-[#2563EB] hover:underline flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[14px]">request_quote</span> Stipend
-                  </button>
                   <h2 className="text-[14px] font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-2 border-b border-[#E2E8F0] pb-3">
                     <span className="material-symbols-outlined text-[#64748B]">work</span>
                     Internship Details
@@ -450,9 +529,23 @@ export default function HRInternDetails() {
                         {emp.duration} ({emp.joined} to {emp.endDate})
                       </span>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <span className="block text-[12px] font-medium text-[#64748B] mb-1">Role</span>
+                        <span className="text-[14px] font-medium text-[#0F172A]">{emp.role}</span>
+                      </div>
+                      <div>
+                        <span className="block text-[12px] font-medium text-[#64748B] mb-1">Project</span>
+                        <span className="text-[14px] font-medium text-[#0F172A]">{emp.project}</span>
+                      </div>
+                    </div>
                     <div>
-                      <span className="block text-[12px] font-medium text-[#64748B] mb-1">Monthly Stipend</span>
-                      <span className="text-[14px] font-medium text-[#0F172A]">{emp.stipend}</span>
+                      <span className="block text-[12px] font-medium text-[#64748B] mb-1">Reporting Manager / Team Lead</span>
+                      <span className="text-[14px] font-medium text-[#0F172A]">{emp.reportingManager}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[12px] font-medium text-[#64748B] mb-1">PMO Assigned</span>
+                      <span className="text-[14px] font-medium text-[#0F172A]">{emp.pmoAssigned}</span>
                     </div>
                     <div>
                       <span className="block text-[12px] font-medium text-[#64748B] mb-1">Annual Leave Balance</span>
@@ -600,6 +693,80 @@ export default function HRInternDetails() {
                 )}
               </div>
 
+            </div>
+          )}
+
+          {activeTab === 'documents' && (
+            <div className="space-y-6">
+              <div className="bg-white border border-[#E2E8F0] p-6 rounded-xl shadow-sm">
+                <h2 className="text-lg font-bold text-[#0F172A]">Intern Documents</h2>
+                <p className="text-sm text-[#64748B] mt-1">
+                  Resume, Offer Letter, NDA, ID Proof &amp; Educational Certificate on file for {emp.name.split(' ')[0]}.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {DOC_TYPES.map(({ key, label, icon }) => {
+                  const doc = internDocs?.[key];
+                  const inputId = `doc-upload-${key}`;
+                  return (
+                    <div key={key} className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-5 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${doc?.filePath ? 'bg-[#ECFDF5] text-[#059669]' : 'bg-slate-100 text-slate-400'}`}>
+                          <span className="material-symbols-outlined">{icon}</span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-[#0F172A]">{label}</p>
+                          {doc?.filePath ? (
+                            <p className="text-xs text-[#64748B] mt-0.5 truncate max-w-[220px]">
+                              {doc.fileName} &middot; {doc.uploadedAt ? formatDate(doc.uploadedAt) : ''}
+                            </p>
+                          ) : (
+                            <p className="text-xs text-[#94A3B8] italic mt-0.5">Not uploaded yet</p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        {doc?.filePath && (
+                          <a
+                            href={`${fileApiOrigin}${doc.filePath}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#64748B] hover:text-[#2563EB] transition-colors"
+                            title="View / Download"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">download</span>
+                          </a>
+                        )}
+                        <label htmlFor={inputId} className="cursor-pointer text-[#64748B] hover:text-[#2563EB] transition-colors" title={doc?.filePath ? 'Replace file' : 'Upload file'}>
+                          {uploadingDoc === key ? (
+                            <span className="material-symbols-outlined text-[20px] animate-spin">sync</span>
+                          ) : (
+                            <UploadCloud size={20} />
+                          )}
+                        </label>
+                        <input
+                          id={inputId}
+                          type="file"
+                          className="hidden"
+                          disabled={uploadingDoc === key}
+                          onChange={(e) => { handleDocFileSelect(key, e.target.files[0]); e.target.value = ''; }}
+                        />
+                        {doc?.filePath && (
+                          <button
+                            onClick={() => handleDocDelete(key)}
+                            className="text-[#64748B] hover:text-red-600 transition-colors"
+                            title="Remove document"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

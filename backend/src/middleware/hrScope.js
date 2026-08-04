@@ -37,8 +37,16 @@ export const hrScope = async (req, res, next) => {
         (p.interns || []).forEach(i => ids.add(i.user.toString()));
       });
 
+      // Unassigned pool: users with no HR Manager set yet are visible to every
+      // HR manager so a newly added intern/employee doesn't disappear until
+      // someone explicitly claims them.
+      const unassignedUsers = await User.find({
+        $or: [{ hrManager: null }, { hrManager: { $exists: false } }],
+      }).select('_id');
+      unassignedUsers.forEach(u => ids.add(u._id.toString()));
+
       const allIds = Array.from(ids);
-      req.scopeFilter = allIds.length ? { _id: { $in: allIds } } : { hrManager: req.user._id };
+      req.scopeFilter = allIds.length ? { _id: { $in: allIds } } : {};
       req.hrUserIds   = null;
       return next();
     }

@@ -13,6 +13,7 @@ export default function AdminEditUser() {
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', department: '',
     designation: '', employmentType: 'Full-time', role: '', status: 'Active',
+    college: '', domain: '', batch: '',
   });
 
   const [roles, setRoles]             = useState([]);
@@ -60,6 +61,9 @@ export default function AdminEditUser() {
           employmentType: u.employmentType || 'Full-time',
           role:           u.role?._id || u.role || '',
           status:         u.status || 'Active',
+          college:        u.college || '',
+          domain:         u.domain || '',
+          batch:          u.batch || '',
         });
         setRoles(rolesData);
         setDepartments(deptsData);
@@ -96,6 +100,11 @@ export default function AdminEditUser() {
         designation:    formData.designation || undefined,
         employmentType: formData.employmentType,
         status:         formData.status,
+        ...(formData.employmentType === 'Intern' ? {
+          college: formData.college || undefined,
+          domain:  formData.domain || undefined,
+          batch:   formData.batch || undefined,
+        } : {}),
       });
       toast.success('User updated successfully');
       navigate(`/admin/users/${id}`);
@@ -230,6 +239,22 @@ export default function AdminEditUser() {
                   <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
                 </div>
               </div>
+              {formData.employmentType === 'Intern' && (
+                <>
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">College / Institution</label>
+                    <input type="text" className={inputCls} placeholder="e.g. IIT Madras" value={formData.college} onChange={handleChange('college')} />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Domain</label>
+                    <input type="text" className={inputCls} placeholder="e.g. Frontend Development" value={formData.domain} onChange={handleChange('domain')} />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Batch</label>
+                    <input type="text" className={inputCls} placeholder="e.g. 2026 Summer Batch" value={formData.batch} onChange={handleChange('batch')} />
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

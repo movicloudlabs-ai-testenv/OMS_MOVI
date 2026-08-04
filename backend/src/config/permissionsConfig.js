@@ -10,6 +10,8 @@ export const RESOURCES_CONFIG = [
   { resource: 'Audit Logs', actions: ['read', 'export'] },
   { resource: 'Settings',   actions: ['read', 'update'] },
   { resource: 'Interns',    actions: ['read', 'update', 'manage'] },
+  { resource: 'Recruitment', actions: ['create', 'read', 'update', 'delete', 'manage'] },
+  { resource: 'Daily Tracker', actions: ['read', 'update'] },
 ];
 
 export const generatePermissionDefinitions = () => {
