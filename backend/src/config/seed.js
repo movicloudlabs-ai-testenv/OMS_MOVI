@@ -101,7 +101,7 @@ const seedData = async () => {
 
     const users = await User.insertMany([
       {
-        name: 'Super Admin', email: 'aswanthksv@gmail.com', password: adminPass,
+        name: 'Super Admin', email: 'admin@owms.com', password: adminPass,
         role: roleMap['super-admin'], department: getDept('MGT'), employmentType: 'Full-time',
         employeeId: `EMP-${year}-001`, status: 'Active',
       },
