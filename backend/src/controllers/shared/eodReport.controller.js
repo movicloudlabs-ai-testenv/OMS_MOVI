@@ -1,4 +1,5 @@
 import XLSX from 'xlsx';
+import User from '../../models/User.js';
 import EODReport from '../../models/EODReport.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 
@@ -84,6 +85,42 @@ export const getAllEODs = async (req, res, next) => {
     }
 
     sendSuccess(res, entries);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /day-status?date=&employmentType=&college=
+// Every intern/employee for a given date, with whether they submitted an EOD or not.
+export const getDayStatus = async (req, res, next) => {
+  try {
+    const { date, employmentType, college } = req.query;
+    const targetDate = startOfDay(date);
+
+    const userFilter = { employmentType: { $in: ['Intern', 'Full-time'] } };
+    if (employmentType) userFilter.employmentType = employmentType;
+    if (college) userFilter.college = college;
+
+    const users = await User.find(userFilter)
+      .select('name employeeId employmentType college designation')
+      .sort({ name: 1 });
+
+    const entries = await EODReport.find({
+      date: targetDate,
+      user: { $in: users.map(u => u._id) },
+    });
+    const entryMap = new Map(entries.map(e => [String(e.user), e]));
+
+    const result = users.map((u) => {
+      const entry = entryMap.get(String(u._id));
+      return {
+        user: u,
+        submitted: !!entry,
+        eod: entry || null,
+      };
+    });
+
+    sendSuccess(res, { date: targetDate, results: result });
   } catch (error) {
     next(error);
   }

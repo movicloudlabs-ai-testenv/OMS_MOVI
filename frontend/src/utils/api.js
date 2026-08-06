@@ -194,10 +194,12 @@ export const hrAPI = {
   getUserTrackerHistory: (userId) => api.get(`/hr/daily-tracker/user/${userId}`),
   updateTrackerEntry: (id, data) => api.patch(`/hr/daily-tracker/${id}`, data),
   exportDailyTracker: (params) => api.get('/hr/daily-tracker/export', { params, responseType: 'blob' }),
+  getTrackerDayStatus: (params) => api.get('/hr/daily-tracker/day-status', { params }),
 
   // EOD Reports (simple daily message updates — view only)
   getEODReports: (params) => api.get('/hr/eod', { params }),
   getUserEODHistory: (userId) => api.get(`/hr/eod/user/${userId}`),
+  getEODDayStatus: (params) => api.get('/hr/eod/day-status', { params }),
   exportEODReports: (params) => api.get('/hr/eod/export', { params, responseType: 'blob' }),
 
   // Performance Analytics (monthly, derived from Daily Tracker + Attendance)
@@ -278,10 +280,12 @@ export const pmoAPI = {
   getUserTrackerHistory: (userId) => api.get(`/pmo/daily-tracker/user/${userId}`),
   updateTrackerEntry: (id, data) => api.patch(`/pmo/daily-tracker/${id}`, data),
   exportDailyTracker: (params) => api.get('/pmo/daily-tracker/export', { params, responseType: 'blob' }),
+  getTrackerDayStatus: (params) => api.get('/pmo/daily-tracker/day-status', { params }),
 
   // EOD Reports (simple daily message updates — view only)
   getEODReports: (params) => api.get('/pmo/eod', { params }),
   getUserEODHistory: (userId) => api.get(`/pmo/eod/user/${userId}`),
+  getEODDayStatus: (params) => api.get('/pmo/eod/day-status', { params }),
   exportEODReports: (params) => api.get('/pmo/eod/export', { params, responseType: 'blob' }),
 };
 
