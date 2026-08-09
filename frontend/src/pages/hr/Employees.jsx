@@ -84,7 +84,7 @@ export default function Employees() {
       title="Employee Directory" 
       subtitle="View and manage all employee records assigned to you."
     >
-      <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-5 max-w-[1440px] mx-auto pb-8">
+      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 max-w-[1440px] mx-auto pb-8">
         {/* TOOLBAR */}
         <div className="bg-white border border-[#E2E8F0] rounded-lg p-3 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -175,7 +175,7 @@ export default function Employees() {
         )}
 
         {/* TABLE VIEW */}
-        <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden flex-1">
+        <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden">
           {loading && (
             <div className="px-4 py-12 text-center text-[14px] text-[#64748B]">Loading employee records...</div>
           )}

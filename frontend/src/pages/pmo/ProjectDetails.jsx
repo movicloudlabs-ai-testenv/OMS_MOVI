@@ -1547,10 +1547,11 @@ const INTERN_ROLE_KEYWORDS = {
 
 const matchesInternRole = (intern, roleName) => {
   const desig = (intern.designation || '').toLowerCase();
+  const domain = (intern.domain || '').toLowerCase();
   const keywords = INTERN_ROLE_KEYWORDS[roleName] || [roleName.toLowerCase().split(' ')[0]];
-  // If intern has no designation, show them under any role
-  if (!desig) return true;
-  return keywords.some(kw => desig.includes(kw));
+  // If intern has no designation AND no domain set, show them under any role
+  if (!desig && !domain) return true;
+  return keywords.some(kw => desig.includes(kw) || domain.includes(kw));
 };
 
 const InternWizardModal = ({
@@ -1739,6 +1740,7 @@ const InternWizardModal = ({
                                 <p className="text-[13px] font-bold text-[#0F172A] leading-tight">{intern.name}</p>
                                 <p className="text-[11px] text-[#64748B]">
                                   {intern.designation || 'Intern'}
+                                  {intern.domain ? ` · ${intern.domain}` : ''}
                                   {intern.college ? ` · ${intern.college}` : ''}
                                   {intern.department?.name ? ` · ${intern.department.name}` : ''}
                                 </p>

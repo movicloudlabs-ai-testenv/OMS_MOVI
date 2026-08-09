@@ -149,7 +149,7 @@ export const getAvailableMembers = async (req, res, next) => {
     }
 
     let availableUsers = await User.find(filter)
-      .select('name designation department avatar employmentType role email employeeId')
+      .select('name designation department avatar employmentType role email employeeId domain college batch')
       .populate('role', 'name slug')
       .populate('department', 'name code');
       

@@ -1,4 +1,4 @@
-import XLSX from 'xlsx';
+import PDFDocument from 'pdfkit';
 import User from '../../models/User.js';
 import EODReport from '../../models/EODReport.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
@@ -136,11 +136,12 @@ export const getUserEODs = async (req, res, next) => {
   }
 };
 
-// GET /export?from=&to=&label=&employmentType=&college=
-// Downloads EOD updates for a date range as an .xlsx file.
+// GET /export?from=&to=&label=&title=&employmentType=&college=
+// Downloads EOD updates for a date range as a readable .pdf document (not a spreadsheet —
+// EOD updates are free-text, so a document reads far better than a grid of cells).
 export const exportEODs = async (req, res, next) => {
   try {
-    const { from, to, employmentType, college, label } = req.query;
+    const { from, to, employmentType, college, label, title } = req.query;
 
     const filter = {};
     if (from || to) {
@@ -155,33 +156,136 @@ export const exportEODs = async (req, res, next) => {
 
     let entries = await EODReport.find(filter)
       .populate('user', 'name employeeId employmentType designation college')
-      .sort({ date: 1 });
+      .sort({ date: 1, 'user.name': 1 });
 
     if (employmentType) entries = entries.filter(e => e.user?.employmentType === employmentType);
     if (college) entries = entries.filter(e => e.user?.college === college);
 
-    const header = ['S.No', 'Name', 'Employee ID', 'Type', 'College', 'Date', 'EOD Update'];
-    const rows = entries.map((e, idx) => [
-      idx + 1,
-      e.user?.name || '',
-      e.user?.employeeId || '',
-      e.user?.employmentType || '',
-      e.user?.college || '',
-      e.date ? new Date(e.date).toLocaleDateString() : '',
-      e.message || '',
-    ]);
-
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-    ws['!cols'] = [{ wch: 6 }, { wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 20 }, { wch: 14 }, { wch: 60 }];
-    XLSX.utils.book_append_sheet(wb, ws, 'EOD Reports');
-    const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const buf = await buildEodPdf({
+      title: title || 'EOD Report',
+      entries,
+    });
 
     const safeLabel = (label || 'EOD_Report').replace(/[^a-zA-Z0-9-_]/g, '_');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${safeLabel}.xlsx"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${safeLabel}.pdf"`);
     res.status(200).send(buf);
   } catch (error) {
     next(error);
   }
 };
+
+// ─── PDF builder: renders EOD updates as a readable document, not a spreadsheet ───
+function buildEodPdf({ title, entries }) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({
+      margin: 50,
+      size: 'A4',
+      bufferPages: true,
+      info: {
+        Title: title,
+        Author: 'OWMS — Movi Cloud Labs',
+        Creator: 'OWMS Reporting Engine',
+        Subject: 'EOD Report',
+      },
+    });
+
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+
+    const PW = doc.page.width;
+    const M = 50;
+    const CW = PW - M * 2;
+    const PAGE_BOTTOM = doc.page.height - M;
+
+    const C_BLUE = '#2563EB';
+    const C_DARK = '#0F172A';
+    const C_GRAY = '#64748B';
+    const C_BORD = '#E2E8F0';
+
+    const drawPageHeader = () => {
+      doc.rect(0, 0, PW, 50).fill(C_BLUE);
+      doc.fillColor('white').font('Helvetica-Bold').fontSize(13)
+        .text('OWMS', M, 14, { continued: true })
+        .font('Helvetica').fillColor('#BFDBFE').fontSize(10)
+        .text('  ·  Movi Cloud Labs');
+      doc.fillColor('#93C5FD').font('Helvetica').fontSize(7.5)
+        .text('Confidential · EOD Report', M, 33);
+      const dt = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+      doc.fillColor('white').font('Helvetica').fontSize(7.5)
+        .text(dt, M, 33, { width: CW, align: 'right' });
+    };
+
+    drawPageHeader();
+    doc.y = 68;
+
+    doc.fillColor(C_DARK).font('Helvetica-Bold').fontSize(18).text(title, M);
+    doc.moveDown(0.25);
+    doc.fillColor(C_GRAY).font('Helvetica').fontSize(8.5)
+      .text(`Generated on ${new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}   ·   ${entries.length} update${entries.length !== 1 ? 's' : ''}`, M);
+
+    doc.moveDown(0.8);
+    doc.moveTo(M, doc.y).lineTo(PW - M, doc.y).strokeColor(C_BORD).lineWidth(0.75).stroke();
+    doc.moveDown(1);
+
+    if (entries.length === 0) {
+      doc.fillColor(C_GRAY).font('Helvetica').fontSize(11).text('No EOD updates found for this period.', { align: 'center' });
+      doc.end();
+      return;
+    }
+
+    const ensureSpace = (needed) => {
+      if (doc.y + needed > PAGE_BOTTOM) {
+        doc.addPage();
+        drawPageHeader();
+        doc.y = 68;
+      }
+    };
+
+    let lastDateKey = null;
+
+    entries.forEach((e) => {
+      const dateStr = e.date ? new Date(e.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '';
+      const dateKey = e.date ? new Date(e.date).toDateString() : '';
+
+      // Date section header (only when the date changes — keeps weekly/monthly docs organized)
+      if (dateKey !== lastDateKey) {
+        ensureSpace(30);
+        doc.moveDown(0.3);
+        doc.fillColor(C_BLUE).font('Helvetica-Bold').fontSize(11).text(dateStr, M);
+        doc.moveTo(M, doc.y + 2).lineTo(PW - M, doc.y + 2).strokeColor(C_BORD).lineWidth(0.5).stroke();
+        doc.moveDown(0.6);
+        lastDateKey = dateKey;
+      }
+
+      const name = e.user?.name || 'Unknown';
+      const meta = [e.user?.employeeId, e.user?.employmentType, e.user?.college].filter(Boolean).join('  ·  ');
+      const message = e.message || '';
+
+      doc.font('Helvetica').fontSize(9);
+      const msgHeight = doc.heightOfString(message, { width: CW - 10, lineGap: 2 });
+      ensureSpace(36 + msgHeight);
+
+      doc.fillColor(C_DARK).font('Helvetica-Bold').fontSize(10.5).text(name, M, doc.y);
+      if (meta) {
+        doc.fillColor(C_GRAY).font('Helvetica').fontSize(8).text(meta, M, doc.y + 1);
+      }
+      doc.moveDown(0.35);
+      doc.fillColor(C_DARK).font('Helvetica').fontSize(9)
+        .text(message, M + 10, doc.y, { width: CW - 10, lineGap: 2 });
+      doc.moveDown(0.9);
+    });
+
+    // Footer page numbers
+    const range = doc.bufferedPageRange();
+    for (let i = 0; i < range.count; i++) {
+      doc.switchToPage(range.start + i);
+      doc.fillColor(C_GRAY).font('Helvetica').fontSize(7.5)
+        .text(`Page ${i + 1} of ${range.count}`, M, doc.page.height - 30, { width: CW, align: 'center' });
+    }
+
+    doc.end();
+  });
+}
