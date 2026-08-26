@@ -13,6 +13,7 @@ import Settings from '../models/Settings.js';
 import Project from '../models/Project.js';
 import Task from '../models/Task.js';
 import Attendance from '../models/Attendance.js';
+import { syncEmployeeIdCounters } from '../utils/syncEmployeeIdCounters.js';
 import LeaveRequest from '../models/LeaveRequest.js';
 import LeaveBalance from '../models/LeaveBalance.js';
 import LearningResource from '../models/LearningResource.js';
@@ -205,6 +206,10 @@ const seedData = async () => {
       { recipient: pmo._id, type: 'system_alert', title: 'Project Assigned', message: 'You are PMO Lead', sender: admin._id },
       { recipient: hr._id, type: 'system_alert', title: 'New Employee', message: 'Please review', sender: admin._id },
     ]);
+
+    // Sync employeeId counters so future auto-generated IDs (INT-/EMP-)
+    // never collide with the hard-coded IDs seeded above.
+    await syncEmployeeIdCounters();
 
     console.log(`✅ Seed complete! DB populated with Part 2 data.`);
     process.exit(0);

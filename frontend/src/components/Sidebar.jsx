@@ -58,6 +58,8 @@ const NAV_CONFIG = {
     { to: '/pmo/interns', icon: GraduationCap, label: 'Interns', isLucide: true, permission: { resource: 'Interns', action: 'read' } },
     { to: '/pmo/daily-tracker', icon: CalendarDays, label: 'Daily Tracker', isLucide: true, permission: { resource: 'Daily Tracker', action: 'read' } },
     { to: '/pmo/eod-reports', icon: MessageSquare, label: 'EOD Reports', isLucide: true, permission: { resource: 'Daily Tracker', action: 'read' } },
+    { to: '/pmo/my-daily-tracker', icon: CalendarDays, label: 'My Daily Tracker', isLucide: true },
+    { to: '/pmo/my-eod-report', icon: MessageSquare, label: 'My EOD Report', isLucide: true },
     { to: '/pmo/monitoring', icon: 'monitoring', label: 'Monitoring' },
     { to: '/pmo/timeline', icon: 'timeline', label: 'Timeline' },
     { to: '/pmo/approvals', icon: 'approval', label: 'Approvals', permission: { resource: 'Tasks', action: 'read' } },

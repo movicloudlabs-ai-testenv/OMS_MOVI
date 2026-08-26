@@ -123,7 +123,7 @@ export default function HREODReports() {
       const res = await hrAPI.exportEODReports({ from: card.date, to: card.date, label });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
-      a.href = url; a.download = `${label}.pdf`;
+      a.href = url; a.download = `${label}.xlsx`;
       document.body.appendChild(a); a.click(); a.remove();
       window.URL.revokeObjectURL(url);
       toast.success('Report downloaded');
@@ -282,7 +282,6 @@ export default function HREODReports() {
               reportLabel="EOD Report"
               employmentType={typeFilter}
               college={collegeFilter}
-              fileExt="pdf"
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">

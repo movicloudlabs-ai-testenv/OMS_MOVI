@@ -5,6 +5,15 @@ import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
+// Kept in sync with INTERN_ROLE_OPTIONS in pages/pmo/ProjectDetails.jsx —
+// PMO's "Assign Interns" wizard keyword-matches this exact designation
+// string to a project role, so editing an intern's designation must stay
+// within this list or they can silently stop showing up as assignable.
+const INTERN_DESIGNATION_OPTIONS = [
+  'Full Stack Intern', 'Frontend Intern', 'Backend Intern',
+  'UI/UX Intern', 'QA Intern', 'Data Intern', 'DevOps Intern', 'Mobile Intern',
+];
+
 export default function AdminEditUser() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -213,8 +222,18 @@ export default function AdminEditUser() {
                 </div>
               </div>
               <div>
-                <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Job Title</label>
-                <input type="text" className={inputCls} placeholder="e.g. Senior Developer" value={formData.designation} onChange={handleChange('designation')} />
+                <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Job Title{formData.employmentType === 'Intern' ? ' / Track' : ''}</label>
+                {formData.employmentType === 'Intern' ? (
+                  <div className="relative">
+                    <select className={selectCls} value={formData.designation} onChange={handleChange('designation')}>
+                      <option value="">Select Intern Track</option>
+                      {INTERN_DESIGNATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
+                  </div>
+                ) : (
+                  <input type="text" className={inputCls} placeholder="e.g. Senior Developer" value={formData.designation} onChange={handleChange('designation')} />
+                )}
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Employment Type</label>

@@ -1,6 +1,21 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, Download, X, CheckCircle, XCircle, Loader, AlertTriangle, Users } from 'lucide-react';
+import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { adminAPI } from '../../utils/api';
+
+// Kept in sync with INTERN_ROLE_OPTIONS in pages/pmo/ProjectDetails.jsx and
+// INTERN_DESIGNATION_OPTIONS in admin/CreateUser.jsx & EditUser.jsx — PMO's
+// "Assign Interns" wizard keyword-matches this exact designation string,
+// so a bulk-imported intern with a free-text designation (e.g. "Full Stack
+// Web Developer") would silently never show up as assignable to PMO.
+const INTERN_DESIGNATION_OPTIONS = [
+  'Full Stack Intern', 'Frontend Intern', 'Backend Intern',
+  'UI/UX Intern', 'QA Intern', 'Data Intern', 'DevOps Intern', 'Mobile Intern',
+];
+
+// Same 4 values accepted by normalizeEmpType() below and by the
+// Employment Type dropdown in admin/CreateUser.jsx.
+const EMPLOYMENT_TYPE_OPTIONS = ['Full-time', 'Part-time', 'Contract', 'Intern'];
 
 // ─── CSV Parsing ──────────────────────────────────────────────────────────────
 
@@ -57,7 +72,6 @@ const validateAndEnrich = (rawRows, roles, departments) => {
     const email      = row[norm('email')] || '';
     const roleName   = row[norm('role')] || '';
     const deptName   = row[norm('department')] || '';
-    const empId      = row[norm('employeeId')] || row[norm('employee id')] || '';
     const phone      = row[norm('phone')] || '';
     const desig      = row[norm('designation')] || row[norm('job title')] || row[norm('jobtitle')] || '';
     const empType    = row[norm('employmentType')] || row[norm('employment type')] || '';
@@ -71,6 +85,12 @@ const validateAndEnrich = (rawRows, roles, departments) => {
     if (!roleName) errors.push('Role is required');
     if (!deptName) errors.push('Department is required');
 
+    const normalizedEmpType = normalizeEmpType(empType);
+    if (normalizedEmpType === 'Intern' && desig &&
+        !INTERN_DESIGNATION_OPTIONS.some(opt => opt.toLowerCase() === desig.toLowerCase())) {
+      errors.push(`Designation must be one of: ${INTERN_DESIGNATION_OPTIONS.join(', ')}`);
+    }
+
     const matchedRole = roles.find(r => r.name.toLowerCase() === roleName.toLowerCase());
     const matchedDept = departments.find(d => d.name.toLowerCase() === deptName.toLowerCase());
 
@@ -80,12 +100,11 @@ const validateAndEnrich = (rawRows, roles, departments) => {
     return {
       _rowNum: i + 2,
       name, email,
-      employeeId:     empId,
       phone,
       designation:    desig,
       department:     deptName,
       role:           roleName,
-      employmentType: normalizeEmpType(empType),
+      employmentType: normalizedEmpType,
       college, domain, batch,
       roleId:         matchedRole?._id || null,
       departmentId:   matchedDept?._id || null,
@@ -128,43 +147,165 @@ export default function BulkImportModal({ isOpen, onClose, onComplete }) {
 
   const handleFile = useCallback((file) => {
     if (!file) return;
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setParseError('Please upload a .csv file.'); return;
+    const lower = file.name.toLowerCase();
+    const isXlsx = lower.endsWith('.xlsx');
+    const isCsv = lower.endsWith('.csv');
+    if (!isXlsx && !isCsv) {
+      setParseError('Please upload a .xlsx or .csv file.'); return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const raw = parseCSV(e.target.result);
-        if (raw.length === 0) { setParseError('CSV has no data rows.'); return; }
-        if (raw.length > 200) { setParseError('Maximum 200 rows allowed per import.'); return; }
-        setRows(validateAndEnrich(raw, roles, departments));
-        setParseError('');
-        setStep('preview');
-      } catch {
-        setParseError('Failed to parse CSV. Check the file format and try again.');
-      }
+
+    const finish = (raw) => {
+      if (raw.length === 0) { setParseError('File has no data rows.'); return; }
+      if (raw.length > 200) { setParseError('Maximum 200 rows allowed per import.'); return; }
+      setRows(validateAndEnrich(raw, roles, departments));
+      setParseError('');
+      setStep('preview');
     };
-    reader.readAsText(file);
+
+    if (isXlsx) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const workbook = new ExcelJS.Workbook();
+          await workbook.xlsx.load(e.target.result);
+          const sheet = workbook.getWorksheet('Users') || workbook.worksheets.find(ws => ws.state !== 'hidden') || workbook.worksheets[0];
+          if (!sheet) { setParseError('No sheet found in the Excel file.'); return; }
+          const headerRow = sheet.getRow(1);
+          const headers = [];
+          headerRow.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+            headers[colNumber] = norm(String(cell.value ?? ''));
+          });
+          const raw = [];
+          sheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return;
+            const obj = {};
+            let hasValue = false;
+            row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+              const key = headers[colNumber];
+              if (!key) return;
+              const val = cell.value == null ? '' : String(cell.value).trim();
+              obj[key] = val;
+              if (val) hasValue = true;
+            });
+            if (hasValue) raw.push(obj);
+          });
+          finish(raw);
+        } catch {
+          setParseError('Failed to parse the Excel file. Make sure it matches the downloaded template.');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          finish(parseCSV(e.target.result));
+        } catch {
+          setParseError('Failed to parse CSV. Check the file format and try again.');
+        }
+      };
+      reader.readAsText(file);
+    }
   }, [roles, departments]);
 
-  const downloadTemplate = () => {
-    const roleNames = roles.map(r => r.name).join(' | ');
-    const deptNames = departments.map(d => d.name).join(' | ');
-    const lines = [
-      'name,email,employeeId,phone,designation,department,role,employmentType,college,domain,batch',
-      'Jane Doe,jane.doe@company.com,EMP001,+1234567890,Senior Developer,Engineering,Employee,Full-time,,,',
-      'John Smith,john.smith@company.com,EMP002,,HR Specialist,Human Resources,HR Manager,Full-time,,,',
-      'Arjun Patel,arjun.patel@company.com,INT001,+919876543210,Frontend Intern,Engineering,Intern,Intern,IIT Madras,Frontend Development,2026 Summer Batch',
-      `# Available Roles: ${roleNames}`,
-      `# Available Departments: ${deptNames}`,
-      '# college / domain / batch only matter for Intern rows — leave blank for employees.',
-      '# Remove comment lines (starting with #) before uploading.',
+  const downloadTemplate = async () => {
+    const roleNames = roles.map(r => r.name);
+    const deptNames = departments.map(d => d.name);
+
+    const workbook = new ExcelJS.Workbook();
+
+    // Hidden helper sheet holding the dropdown option lists. Data
+    // validation formulae reference ranges on this sheet instead of
+    // inline comma lists, since role/department names are dynamic and
+    // may contain commas.
+    const listSheet = workbook.addWorksheet('Lists', { state: 'hidden' });
+    listSheet.getCell('A1').value = 'Roles';
+    listSheet.getCell('B1').value = 'Departments';
+    listSheet.getCell('C1').value = 'EmploymentTypes';
+    listSheet.getCell('D1').value = 'InternDesignations';
+    roleNames.forEach((v, i) => { listSheet.getCell(`A${i + 2}`).value = v; });
+    deptNames.forEach((v, i) => { listSheet.getCell(`B${i + 2}`).value = v; });
+    EMPLOYMENT_TYPE_OPTIONS.forEach((v, i) => { listSheet.getCell(`C${i + 2}`).value = v; });
+    INTERN_DESIGNATION_OPTIONS.forEach((v, i) => { listSheet.getCell(`D${i + 2}`).value = v; });
+
+    const sheet = workbook.addWorksheet('Users');
+    const columns = [
+      { header: 'name', key: 'name', width: 20 },
+      { header: 'email', key: 'email', width: 26 },
+      { header: 'phone', key: 'phone', width: 16 },
+      { header: 'designation', key: 'designation', width: 22 },
+      { header: 'department', key: 'department', width: 18 },
+      { header: 'role', key: 'role', width: 16 },
+      { header: 'employmentType', key: 'employmentType', width: 16 },
+      { header: 'college', key: 'college', width: 20 },
+      { header: 'domain', key: 'domain', width: 20 },
+      { header: 'batch', key: 'batch', width: 18 },
     ];
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    sheet.columns = columns;
+    sheet.getRow(1).font = { bold: true };
+
+    sheet.addRow({
+      name: 'Jane Doe', email: 'jane.doe@company.com', phone: '+1234567890',
+      designation: 'Senior Developer', department: deptNames[0] || 'Engineering',
+      role: roleNames.find(r => /employee/i.test(r)) || roleNames[0] || 'Employee',
+      employmentType: 'Full-time', college: '', domain: '', batch: '',
+    });
+    sheet.addRow({
+      name: 'John Smith', email: 'john.smith@company.com', phone: '',
+      designation: 'HR Specialist', department: deptNames[0] || 'Human Resources',
+      role: roleNames.find(r => /hr/i.test(r)) || roleNames[0] || 'HR Manager',
+      employmentType: 'Full-time', college: '', domain: '', batch: '',
+    });
+    sheet.addRow({
+      name: 'Arjun Patel', email: 'arjun.patel@company.com', phone: '+919876543210',
+      designation: 'Frontend Intern', department: deptNames[0] || 'Engineering',
+      role: roleNames.find(r => /intern/i.test(r)) || roleNames[0] || 'Intern',
+      employmentType: 'Intern', college: 'IIT Madras', domain: 'Frontend Development', batch: '2026 Summer Batch',
+    });
+
+    // Apply the same dropdown constraints the manual "Add User" form uses,
+    // for every row up to 201, so bulk-added rows can't drift from what the
+    // system actually accepts (this is exactly the mismatch that caused
+    // interns to silently disappear from PMO's assignment lists before).
+    const lastRow = 201;
+    for (let r = 2; r <= lastRow; r++) {
+      if (deptNames.length) {
+        sheet.getCell(`E${r}`).dataValidation = {
+          type: 'list', allowBlank: false, showErrorMessage: true,
+          formulae: [`Lists!$B$2:$B$${deptNames.length + 1}`],
+          errorTitle: 'Invalid Department', error: 'Pick a department from the dropdown list.',
+        };
+      }
+      if (roleNames.length) {
+        sheet.getCell(`F${r}`).dataValidation = {
+          type: 'list', allowBlank: false, showErrorMessage: true,
+          formulae: [`Lists!$A$2:$A$${roleNames.length + 1}`],
+          errorTitle: 'Invalid Role', error: 'Pick a role from the dropdown list.',
+        };
+      }
+      sheet.getCell(`G${r}`).dataValidation = {
+        type: 'list', allowBlank: false, showErrorMessage: true,
+        formulae: [`Lists!$C$2:$C$${EMPLOYMENT_TYPE_OPTIONS.length + 1}`],
+        errorTitle: 'Invalid Employment Type', error: 'Pick an employment type from the dropdown list.',
+      };
+      // Designation stays a soft suggestion (showErrorMessage: false) since
+      // it's free text for Employee rows — only Intern rows must match one
+      // of these exactly, which the "Designation must be one of…" preview
+      // check enforces after upload.
+      sheet.getCell(`D${r}`).dataValidation = {
+        type: 'list', allowBlank: true, showErrorMessage: false,
+        formulae: [`Lists!$D$2:$D$${INTERN_DESIGNATION_OPTIONS.length + 1}`],
+        promptTitle: 'Designation', showInputMessage: true,
+        prompt: 'For Intern rows, pick one of the dropdown values exactly. Employee rows can type any job title.',
+      };
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'owms_user_import_template.csv';
+    a.download = 'owms_user_import_template.xlsx';
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -185,7 +326,6 @@ export default function BulkImportModal({ isOpen, onClose, onComplete }) {
           department:     validRows[i].departmentId,
           designation:    validRows[i].designation || undefined,
           phone:          validRows[i].phone || undefined,
-          employeeId:     validRows[i].employeeId || undefined,
           employmentType: validRows[i].employmentType,
           college:        validRows[i].college || undefined,
           domain:         validRows[i].domain || undefined,
@@ -245,7 +385,7 @@ export default function BulkImportModal({ isOpen, onClose, onComplete }) {
           {/* Upload Step */}
           {step === 'upload' && (
             <div className="p-6 space-y-5">
-              <input ref={fileInputRef} type="file" accept=".csv" className="hidden"
+              <input ref={fileInputRef} type="file" accept=".xlsx,.csv" className="hidden"
                 onChange={(e) => handleFile(e.target.files[0])} />
 
               <div
@@ -261,11 +401,11 @@ export default function BulkImportModal({ isOpen, onClose, onComplete }) {
               >
                 <Upload size={30} className="mx-auto mb-3 text-[#94A3B8]" />
                 <p className="text-[15px] font-semibold text-[#0F172A]">
-                  {metaLoading ? 'Loading roles & departments…' : 'Drag & drop your CSV file here'}
+                  {metaLoading ? 'Loading roles & departments…' : 'Drag & drop your Excel or CSV file here'}
                 </p>
                 {!metaLoading && (
                   <p className="text-[13px] text-[#64748B] mt-1.5">
-                    or <span className="text-[#2563EB] font-medium">click to browse</span> · .csv files only · max 200 rows
+                    or <span className="text-[#2563EB] font-medium">click to browse</span> · .xlsx or .csv · max 200 rows
                   </p>
                 )}
               </div>
@@ -281,10 +421,11 @@ export default function BulkImportModal({ isOpen, onClose, onComplete }) {
               <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
-                    <p className="text-[13px] font-semibold text-[#0F172A]">Download CSV Template</p>
+                    <p className="text-[13px] font-semibold text-[#0F172A]">Download Excel Template</p>
                     <p className="text-[12px] text-[#64748B] mt-0.5">
                       Required: <span className="font-medium text-[#0F172A]">name, email, role, department</span>
-                      {' · '}Optional: employeeId, phone, designation, employmentType
+                      {' · '}Optional: phone, designation, employmentType (Employee ID is always auto-generated)
+                      {' · '}Role, Department, Employment Type &amp; Designation columns have built-in dropdowns, same as the Add User form.
                     </p>
                   </div>
                   <button

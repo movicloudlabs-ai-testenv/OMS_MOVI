@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import PageWrapper from '../../components/PageWrapper';
-import { internAPI } from '../../utils/api';
+import { pmoAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const YESTERDAY_STATUS = ['Completed', 'Partially Completed', 'Not Started', 'Blocked'];
@@ -22,7 +22,7 @@ const emptyForm = {
   projectAssignment: '',
 };
 
-export default function InternDailyTracker() {
+export default function PMOMyDailyTracker() {
   const [form, setForm] = useState(emptyForm);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -33,8 +33,8 @@ export default function InternDailyTracker() {
     try {
       setLoading(true);
       const [todayRes, historyRes] = await Promise.all([
-        internAPI.getMyTrackerToday(),
-        internAPI.getMyTrackerHistory(),
+        pmoAPI.getMyTrackerToday(),
+        pmoAPI.getMyTrackerHistory(),
       ]);
       const today = todayRes.data?.data;
       if (today) {
@@ -75,7 +75,7 @@ export default function InternDailyTracker() {
     }
     setSaving(true);
     try {
-      await internAPI.submitDailyTracker({
+      await pmoAPI.submitDailyTracker({
         ...form,
         hours: form.hours === '' ? undefined : Number(form.hours),
         ktCompletion: form.ktCompletion === '' ? undefined : Number(form.ktCompletion),
@@ -83,7 +83,7 @@ export default function InternDailyTracker() {
         aiCredits: form.aiCredits === '' ? undefined : form.aiCredits,
         expectedCompletion: form.expectedCompletion || undefined,
       });
-      toast.success(submittedToday ? 'Report updated' : 'EOD report submitted!');
+      toast.success(submittedToday ? 'Report updated' : 'Daily report submitted!');
       setSubmittedToday(true);
       load();
     } catch (err) {
@@ -108,7 +108,7 @@ export default function InternDailyTracker() {
       <div className="w-full flex flex-col gap-6 max-w-[900px] mx-auto pb-10 font-sans text-left">
 
         <div className="mt-6">
-          <h1 className="text-2xl font-bold text-[#0F172A]">Daily Report / EOD Tracker</h1>
+          <h1 className="text-2xl font-bold text-[#0F172A]">My Daily Report / Tracker</h1>
           <p className="text-sm text-[#64748B] mt-1">
             {submittedToday ? "You've submitted today's report — you can still update it below." : "Fill this out before you clock out today."}
           </p>
@@ -199,7 +199,7 @@ export default function InternDailyTracker() {
               disabled={saving}
               className="bg-[#2563EB] text-white px-6 py-2.5 rounded-md text-[13px] font-semibold hover:bg-[#1D4ED8] transition-colors disabled:opacity-60"
             >
-              {saving ? 'Submitting...' : submittedToday ? 'Update Report' : 'Submit EOD Report'}
+              {saving ? 'Submitting...' : submittedToday ? 'Update Report' : 'Submit Daily Report'}
             </button>
           </div>
         </form>

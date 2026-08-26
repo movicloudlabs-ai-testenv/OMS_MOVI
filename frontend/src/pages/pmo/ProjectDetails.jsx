@@ -1551,7 +1551,17 @@ const matchesInternRole = (intern, roleName) => {
   const keywords = INTERN_ROLE_KEYWORDS[roleName] || [roleName.toLowerCase().split(' ')[0]];
   // If intern has no designation AND no domain set, show them under any role
   if (!desig && !domain) return true;
-  return keywords.some(kw => desig.includes(kw) || domain.includes(kw));
+  if (keywords.some(kw => desig.includes(kw) || domain.includes(kw))) return true;
+  // Bug fix: an intern whose designation/domain (e.g. "Product Intern",
+  // "Marketing Intern") doesn't fall into ANY of the known keyword
+  // categories was being hidden from every single role's match list —
+  // making them impossible to select no matter what requirement was
+  // chosen. Fall back to showing such "uncategorized" interns everywhere,
+  // same as interns with no designation set at all.
+  const matchesAnyKnownCategory = Object.values(INTERN_ROLE_KEYWORDS).some(
+    (kwList) => kwList.some(kw => desig.includes(kw) || domain.includes(kw))
+  );
+  return !matchesAnyKnownCategory;
 };
 
 const InternWizardModal = ({

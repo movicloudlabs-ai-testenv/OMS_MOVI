@@ -44,6 +44,8 @@ import HREODReports from './pages/hr/EODReports';
 import HRLeaveApproval from './pages/hr/LeaveApproval';
 import PMODailyTracker from './pages/pmo/DailyTracker';
 import PMOEODReports from './pages/pmo/EODReports';
+import PMOMyDailyTracker from './pages/pmo/MyDailyTracker';
+import PMOMyEODReport from './pages/pmo/MyEODReport';
 import HROnboarding from './pages/hr/Onboarding';
 import HRAttendance from './pages/hr/Attendance';
 import HRDocuments from './pages/hr/Documents';
@@ -151,6 +153,8 @@ export default function App() {
       <Route path="/hr/leave-approval" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Leave', action: 'read' }}><HRLeaveApproval /></ProtectedRoute>} />
       <Route path="/pmo/daily-tracker" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Daily Tracker', action: 'read' }}><PMODailyTracker /></ProtectedRoute>} />
       <Route path="/pmo/eod-reports" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Daily Tracker', action: 'read' }}><PMOEODReports /></ProtectedRoute>} />
+      <Route path="/pmo/my-daily-tracker" element={<ProtectedRoute allowedRoles={['pmo']}><PMOMyDailyTracker /></ProtectedRoute>} />
+      <Route path="/pmo/my-eod-report" element={<ProtectedRoute allowedRoles={['pmo']}><PMOMyEODReport /></ProtectedRoute>} />
       <Route path="/hr/onboarding" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'update' }}><HROnboarding /></ProtectedRoute>} />
       <Route path="/hr/attendance" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Attendance', action: 'read' }}><HRAttendance /></ProtectedRoute>} />
       <Route path="/hr/documents" element={<ProtectedRoute allowedRoles={['hr']}><HRDocuments /></ProtectedRoute>} />

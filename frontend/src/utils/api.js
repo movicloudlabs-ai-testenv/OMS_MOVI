@@ -282,11 +282,21 @@ export const pmoAPI = {
   exportDailyTracker: (params) => api.get('/pmo/daily-tracker/export', { params, responseType: 'blob' }),
   getTrackerDayStatus: (params) => api.get('/pmo/daily-tracker/day-status', { params }),
 
+  // Daily Tracker — PMO submitting their OWN entry
+  getMyTrackerToday: () => api.get('/pmo/daily-tracker/my/today'),
+  getMyTrackerHistory: () => api.get('/pmo/daily-tracker/my'),
+  submitDailyTracker: (data) => api.post('/pmo/daily-tracker/my', data),
+
   // EOD Reports (simple daily message updates — view only)
   getEODReports: (params) => api.get('/pmo/eod', { params }),
   getUserEODHistory: (userId) => api.get(`/pmo/eod/user/${userId}`),
   getEODDayStatus: (params) => api.get('/pmo/eod/day-status', { params }),
   exportEODReports: (params) => api.get('/pmo/eod/export', { params, responseType: 'blob' }),
+
+  // EOD Report — PMO submitting their OWN update
+  getMyEODToday: () => api.get('/pmo/eod/my/today'),
+  getMyEODHistory: () => api.get('/pmo/eod/my'),
+  submitEOD: (message) => api.post('/pmo/eod/my', { message }),
 };
 
 // ─── EMPLOYEE API ─────────────────────────────────────────────────────────
