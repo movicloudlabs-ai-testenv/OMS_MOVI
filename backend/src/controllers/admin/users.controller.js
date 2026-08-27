@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../../models/User.js';
 import Role from '../../models/Role.js';
 import Project from '../../models/Project.js';
@@ -35,7 +36,25 @@ export const getUsers = async (req, res, next) => {
     }
 
     if (department) filter.department = department;
-    if (role) filter.role = role;
+
+    if (role) {
+      if (mongoose.Types.ObjectId.isValid(role)) {
+        filter.role = role;
+      } else {
+        const foundRole = await Role.findOne({
+          $or: [
+            { slug: role.toLowerCase() },
+            { name: { $regex: new RegExp(`^${role}$`, 'i') } },
+          ],
+        });
+        if (foundRole) {
+          filter.role = foundRole._id;
+        } else {
+          filter.employmentType = { $regex: new RegExp(`^${role}$`, 'i') };
+        }
+      }
+    }
+
     if (status) filter.status = status;
     if (employmentType) filter.employmentType = employmentType;
 

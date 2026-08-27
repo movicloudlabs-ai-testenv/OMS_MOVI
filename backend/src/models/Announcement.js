@@ -1,13 +1,44 @@
 import mongoose from 'mongoose';
+
 const { Schema } = mongoose;
 
+/**
+ * Announcement Model
+ * Broadcast messages and team communications created by HR / Admin.
+ */
 const AnnouncementSchema = new Schema({
-  title:     { type: String, required: true, trim: true, maxlength: 120 },
-  body:      { type: String, required: true, trim: true, maxlength: 500 },
-  type:      { type: String, enum: ['general', 'maintenance', 'security', 'feature'], default: 'general' },
-  createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
-}, { timestamps: true });
+  title: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 200,
+  },
+  content: {
+    type: String,
+    required: true,
+    trim: true,
+    maxlength: 3000,
+  },
+  targetRoles: [{
+    type: String,
+    trim: true,
+    lowercase: true,
+  }],
+  pinned: {
+    type: Boolean,
+    default: false,
+  },
+  sentBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+}, {
+  timestamps: true,
+});
 
 AnnouncementSchema.index({ createdAt: -1 });
+AnnouncementSchema.index({ pinned: -1, createdAt: -1 });
 
-export default mongoose.model('Announcement', AnnouncementSchema);
+const Announcement = mongoose.model('Announcement', AnnouncementSchema);
+export default Announcement;
