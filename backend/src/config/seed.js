@@ -58,6 +58,8 @@ const seedData = async () => {
       { name: 'Admin', slug: 'admin', isSystem: true, color: '#f97316', permissions: getAllPerms() },
       { name: 'HR Manager', slug: 'hr-manager', isSystem: true, color: '#8b5cf6', permissions: [
           permMap['users.read'], permMap['users.create'], permMap['users.update'],
+          ...getPermsByPrefix('projects.'),
+          ...getPermsByPrefix('tasks.'),
           ...getPermsByPrefix('departments.'), ...getPermsByPrefix('attendance.'),
           ...getPermsByPrefix('leave.'), ...getPermsByPrefix('interns.'),
         ]

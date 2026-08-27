@@ -1,5 +1,6 @@
 import XLSX from 'xlsx';
 import User from '../../models/User.js';
+import Project from '../../models/Project.js';
 import DailyTracker from '../../models/DailyTracker.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 
@@ -49,11 +50,25 @@ export const submitMyEntry = async (req, res, next) => {
       return sendError(res, "Today's task is required", 400);
     }
 
+    let targetProject = project;
+    if (!targetProject && req.user.project) {
+      targetProject = req.user.project;
+    }
+    if (!targetProject) {
+      const proj = await Project.findOne({
+        $or: [
+          { 'interns.user': req.user._id },
+          { 'team.user': req.user._id },
+        ],
+      });
+      if (proj) targetProject = proj._id;
+    }
+
     const date = startOfDay();
     const update = {
       user: req.user._id,
       date,
-      project: project || undefined,
+      project: targetProject || undefined,
       role: role || req.user.designation,
       yesterdayStatus, pendingReason, todayTask, blockers, module,
       workingTime, hours, reportSubmission: reportSubmission || 'Submitted',

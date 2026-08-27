@@ -139,7 +139,7 @@ export default function PMOInternDetails() {
     joined: intern?.internshipStart ? new Date(intern.internshipStart).toLocaleDateString() : '-',
     endDate: intern?.internshipEnd ? new Date(intern.internshipEnd).toLocaleDateString() : '-',
     duration: getDurationString(intern?.internshipStart, intern?.internshipEnd),
-    mentor: intern?.manager?.name || 'Unassigned',
+    mentor: intern?.mentor?.name || intern?.manager?.name || 'Unassigned',
     hrRepresentative: intern?.hrManager?.name || 'Unassigned',
     location: intern?.address || 'N/A',
     stipend: '$5,000 / month',

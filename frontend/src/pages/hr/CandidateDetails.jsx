@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import HRLayout from '../../components/hr/HRLayout';
-import { hrAPI } from '../../utils/api';
+import { hrAPI, adminAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const STATUS_OPTIONS = ['Applied', 'Interview Scheduled', 'Interviewed', 'Selected', 'On Hold', 'Rejected', 'Joined'];
@@ -25,6 +25,7 @@ const DOC_TYPES = [
 
 export default function CandidateDetails() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const [candidate, setCandidate] = useState(null);
@@ -35,12 +36,52 @@ export default function CandidateDetails() {
   const [noteText, setNoteText] = useState('');
   const [addingNote, setAddingNote] = useState(false);
 
+  // Departments & Roles for conversion
+  const [departments, setDepartments] = useState([]);
+  const [roles, setRoles] = useState([]);
+
+  // Onboard Modal State
+  const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
+  const [onboardForm, setOnboardForm] = useState({
+    employmentType: 'Full-time',
+    department: '',
+    role: '',
+    designation: '',
+    joiningDate: '',
+    password: 'Pass@1234',
+  });
+  const [converting, setConverting] = useState(false);
+  const [convertedSuccessUser, setConvertedSuccessUser] = useState(null);
+
   const load = async () => {
     try {
       setLoading(true);
       setError('');
-      const res = await hrAPI.getCandidate(id);
-      setCandidate(res.data?.data || null);
+      const [candRes, deptsRes, rolesRes] = await Promise.all([
+        hrAPI.getCandidate(id),
+        adminAPI.getDepartments().catch(() => ({ data: { data: [] } })),
+        adminAPI.getRoles().catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const cand = candRes.data?.data || null;
+      setCandidate(cand);
+      setDepartments(deptsRes.data?.data || []);
+      setRoles(rolesRes.data?.data || []);
+
+      if (cand) {
+        setOnboardForm({
+          employmentType: cand.appliedRole?.toLowerCase().includes('intern') ? 'Intern' : 'Full-time',
+          department: '',
+          role: '',
+          designation: cand.appliedRole || '',
+          joiningDate: cand.joiningDate ? cand.joiningDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+          password: 'Pass@1234',
+        });
+      }
+
+      if (searchParams.get('onboard') === 'true' && cand && !cand.convertedTo) {
+        setIsOnboardModalOpen(true);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load candidate');
     } finally {
@@ -56,12 +97,48 @@ export default function CandidateDetails() {
     setSaving(true);
     try {
       const res = await hrAPI.updateCandidate(id, payload);
-      setCandidate(res.data?.data || candidate);
+      const updated = res.data?.data || candidate;
+      setCandidate(updated);
       if (successMsg) toast.success(successMsg);
+
+      // If user selected "Joined" and candidate is not yet converted, prompt onboarding modal
+      if (payload.recruitmentStatus === 'Joined' && !updated.convertedTo) {
+        setIsOnboardModalOpen(true);
+      }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to update candidate');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleConvertSubmit = async (e) => {
+    e.preventDefault();
+    setConverting(true);
+    try {
+      const payload = {
+        ...onboardForm,
+        joiningDate: onboardForm.joiningDate || undefined,
+        department: onboardForm.department || undefined,
+        role: onboardForm.role || undefined,
+      };
+
+      const res = await hrAPI.convertCandidateToUser(id, payload);
+      const createdUser = res.data?.data?.user;
+
+      setConvertedSuccessUser(createdUser);
+      setCandidate(prev => ({
+        ...prev,
+        recruitmentStatus: 'Joined',
+        convertedTo: createdUser,
+      }));
+
+      setIsOnboardModalOpen(false);
+      toast.success(`Candidate onboarded as ${createdUser.employeeId}!`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to onboard candidate');
+    } finally {
+      setConverting(false);
     }
   };
 
@@ -138,6 +215,28 @@ export default function CandidateDetails() {
           Back to Recruitment Pipeline
         </button>
 
+        {/* Success Banner if just converted */}
+        {convertedSuccessUser && (
+          <div className="bg-[#ECFDF5] border border-[#A7F3D0] rounded-xl p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#059669] text-[24px]">verified</span>
+              <div>
+                <h3 className="text-[14px] font-bold text-[#065F46]">Candidate Successfully Onboarded!</h3>
+                <p className="text-[12px] text-[#047857]">
+                  Account created for <strong>{convertedSuccessUser.name}</strong> with Employee ID <strong>{convertedSuccessUser.employeeId}</strong>.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/hr/onboarding')}
+              className="bg-[#059669] hover:bg-[#047857] text-white px-4 py-2 rounded-lg text-[13px] font-semibold flex items-center gap-1.5 shadow-sm transition-colors shrink-0"
+            >
+              View in Onboarding Pipeline
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </button>
+          </div>
+        )}
+
         {/* Header card */}
         <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -153,8 +252,25 @@ export default function CandidateDetails() {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-[12px] font-semibold ${STATUS_COLORS[candidate.recruitmentStatus] || 'bg-slate-100 text-slate-700'}`}>
+          <div className="flex items-center gap-3 flex-wrap">
+            {candidate.convertedTo ? (
+              <div className="flex items-center gap-2 bg-[#ECFDF5] border border-[#A7F3D0] px-3 py-1.5 rounded-lg text-[#059669] text-[12px] font-bold">
+                <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                User ID: {candidate.convertedTo.employeeId || 'Active'}
+              </div>
+            ) : (
+              (candidate.recruitmentStatus === 'Joined' || candidate.recruitmentStatus === 'Selected') && (
+                <button
+                  onClick={() => setIsOnboardModalOpen(true)}
+                  className="bg-[#059669] hover:bg-[#047857] text-white px-3.5 py-1.5 rounded-lg text-[13px] font-semibold flex items-center gap-1.5 shadow-sm transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
+                  Onboard as User
+                </button>
+              )
+            )}
+
+            <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-[12px] font-semibold ${STATUS_COLORS[candidate.recruitmentStatus] || 'bg-slate-100 text-slate-700'}`}>
               {candidate.recruitmentStatus}
             </span>
             <button onClick={handleDelete} className="text-[#64748B] hover:text-red-600 transition-colors p-2" title="Remove candidate">
@@ -176,7 +292,16 @@ export default function CandidateDetails() {
             <InfoRow label="Joining Date" value={candidate.joiningDate ? new Date(candidate.joiningDate).toLocaleDateString() : 'Not scheduled'} />
             <InfoRow label="Added By" value={candidate.createdBy?.name || 'Unknown'} />
             {candidate.convertedTo && (
-              <InfoRow label="Converted To User" value={`${candidate.convertedTo.name} (${candidate.convertedTo.employeeId || ''})`} />
+              <div>
+                <span className="block text-[12px] font-medium text-[#64748B] mb-1">Converted To User</span>
+                <button
+                  onClick={() => navigate('/hr/onboarding')}
+                  className="text-[14px] font-bold text-[#2563EB] hover:underline flex items-center gap-1"
+                >
+                  {candidate.convertedTo.name} ({candidate.convertedTo.employeeId || 'View'})
+                  <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                </button>
+              </div>
             )}
           </div>
 
@@ -229,9 +354,20 @@ export default function CandidateDetails() {
                   onBlur={(e) => patchCandidate({ joiningDate: e.target.value || null }, 'Joining date updated')}
                   className="w-full border border-[#E2E8F0] rounded-md py-1.5 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]"
                 />
-                <p className="text-[11px] text-[#94A3B8] mt-1">
-                  Once ready, mark status as "Joined" and create their account from Admin → Add User.
-                </p>
+              </div>
+            )}
+
+            {!candidate.convertedTo && (candidate.recruitmentStatus === 'Joined' || candidate.recruitmentStatus === 'Selected') && (
+              <div className="bg-[#F0FDF4] border border-[#BBF7D0] rounded-lg p-3 text-left">
+                <p className="text-[12px] text-[#15803D] font-semibold">Ready to initialize employee profile?</p>
+                <button
+                  type="button"
+                  onClick={() => setIsOnboardModalOpen(true)}
+                  className="mt-2 w-full bg-[#16A34A] hover:bg-[#15803D] text-white py-1.5 rounded-md text-[12px] font-bold flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
+                  Open Onboarding Modal
+                </button>
               </div>
             )}
           </div>
@@ -323,6 +459,115 @@ export default function CandidateDetails() {
             ))}
           </div>
         </div>
+
+        {/* ONBOARD CANDIDATE MODAL */}
+        {isOnboardModalOpen && (
+          <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[540px] overflow-hidden flex flex-col animate-in fade-in">
+              <div className="px-6 py-4 border-b border-[#E2E8F0] flex justify-between items-center bg-[#F8FAFC]">
+                <div>
+                  <h3 className="font-bold text-[17px] text-[#0F172A]">Onboard Candidate into Organization</h3>
+                  <p className="text-[12px] text-[#64748B]">Auto-provisions user account & starts 8-step onboarding pipeline.</p>
+                </div>
+                <button onClick={() => setIsOnboardModalOpen(false)} className="text-[#94A3B8] hover:text-[#0F172A]">
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+
+              <form onSubmit={handleConvertSubmit} className="p-6 space-y-4 text-left">
+                <div className="bg-[#EFF6FF] border border-[#BFDBFE] rounded-xl p-3.5 text-[12px] text-[#1E40AF] space-y-1">
+                  <p><strong>Candidate:</strong> {candidate.name} ({candidate.email})</p>
+                  <p><strong>College / Domain:</strong> {candidate.college || 'N/A'} • {candidate.domain || 'N/A'}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">Employment Type *</label>
+                    <select
+                      value={onboardForm.employmentType}
+                      onChange={e => setOnboardForm({ ...onboardForm, employmentType: e.target.value })}
+                      className="w-full border border-[#E2E8F0] rounded-lg p-2.5 text-[13px] bg-white focus:outline-none focus:border-[#2563EB]"
+                      required
+                    >
+                      <option value="Full-time">Full-time (Employee)</option>
+                      <option value="Intern">Intern</option>
+                      <option value="Part-time">Part-time</option>
+                      <option value="Contract">Contract</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">Department</label>
+                    <select
+                      value={onboardForm.department}
+                      onChange={e => setOnboardForm({ ...onboardForm, department: e.target.value })}
+                      className="w-full border border-[#E2E8F0] rounded-lg p-2.5 text-[13px] bg-white focus:outline-none focus:border-[#2563EB]"
+                    >
+                      <option value="">Auto / Select Department</option>
+                      {departments.map(d => (
+                        <option key={d._id} value={d._id}>{d.name} ({d.code})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">Designation</label>
+                    <input
+                      type="text"
+                      value={onboardForm.designation}
+                      onChange={e => setOnboardForm({ ...onboardForm, designation: e.target.value })}
+                      placeholder="e.g. Frontend Developer"
+                      className="w-full border border-[#E2E8F0] rounded-lg p-2.5 text-[13px] focus:outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">Joining Date *</label>
+                    <input
+                      type="date"
+                      value={onboardForm.joiningDate}
+                      onChange={e => setOnboardForm({ ...onboardForm, joiningDate: e.target.value })}
+                      className="w-full border border-[#E2E8F0] rounded-lg p-2.5 text-[13px] focus:outline-none focus:border-[#2563EB]"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">Initial Password</label>
+                  <input
+                    type="text"
+                    value={onboardForm.password}
+                    onChange={e => setOnboardForm({ ...onboardForm, password: e.target.value })}
+                    className="w-full border border-[#E2E8F0] rounded-lg p-2.5 text-[13px] focus:outline-none focus:border-[#2563EB]"
+                  />
+                  <span className="text-[11px] text-[#64748B] mt-0.5 block">Default: Pass@1234 (User can reset on first login)</span>
+                </div>
+
+                <div className="pt-3 border-t border-[#E2E8F0] flex justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsOnboardModalOpen(false)}
+                    className="px-4 py-2 text-[13px] font-bold text-[#64748B] hover:bg-[#E2E8F0] rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={converting}
+                    className="px-5 py-2 text-[13px] font-bold bg-[#059669] hover:bg-[#047857] text-white rounded-lg transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    {converting ? 'Provisioning Account...' : 'Complete Onboarding'}
+                    <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
       </div>
     </HRLayout>
   );

@@ -25,7 +25,7 @@ export const getDashboardStats = async (req, res) => {
         User.countDocuments({ lastLogin: { $gte: online15m }, status: 'Active' }),
         User.countDocuments({ lastLogin: { $gte: session1h }, status: 'Active' }),
         Announcement.find().sort({ createdAt: -1 }).limit(5)
-          .populate('createdBy', 'name').lean(),
+          .populate('sentBy', 'name avatar').lean(),
         User.aggregate([
           { $match: { createdAt: { $gte: days30 } } },
           { $group: {
@@ -33,7 +33,7 @@ export const getDashboardStats = async (req, res) => {
               count: { $sum: 1 },
           } },
         ]),
-        mongoose.connection.db.stats(),
+        mongoose.connection.db.command({ dbStats: 1 }).catch(() => ({ dataSize: 0, storageSize: 0 })),
       ]);
 
     const quotaBytes = (Number(process.env.STORAGE_QUOTA_GB) || 1) * 1024 * 1024 * 1024;
@@ -48,8 +48,8 @@ export const getDashboardStats = async (req, res) => {
       usersOnline,
       activeSessions,
       storage: {
-        dataBytes: dbStats.dataSize,
-        storageBytes: dbStats.storageSize,
+        dataBytes: dbStats?.dataSize || 0,
+        storageBytes: dbStats?.storageSize || 0,
         quotaBytes,
       },
       announcements,
@@ -67,10 +67,16 @@ export const getDashboardStats = async (req, res) => {
  */
 export const createAnnouncement = async (req, res) => {
   try {
-    const { title, body, type } = req.body;
-    if (!title || !body) return sendError(res, 'Title and body are required', 400);
+    const { title, body, content, type, targetRoles, pinned } = req.body;
+    const messageContent = content || body;
+    if (!title || !messageContent) return sendError(res, 'Title and content are required', 400);
     const announcement = await Announcement.create({
-      title, body, type: type || 'general', createdBy: req.user._id,
+      title,
+      content: messageContent,
+      type: type || 'general',
+      targetRoles: targetRoles || [],
+      pinned: !!pinned,
+      sentBy: req.user._id,
     });
     sendSuccess(res, announcement, 'Announcement published', 201);
   } catch (err) {

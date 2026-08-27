@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Grid2X2, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase, MessageSquare } from 'lucide-react';
+import { Grid2X2, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase, MessageSquare, CreditCard, FileText } from 'lucide-react';
 
 // Pages that can be unlocked for any role via the Access Matrix.
 // Shown in "Granted Access" sidebar section when a non-native role has the permission.
@@ -31,7 +31,8 @@ const NAV_CONFIG = {
     { to: '/intern/tasks', icon: CheckSquare, label: 'My Tasks', isLucide: true },
     { to: '/intern/daily-tracker', icon: CalendarDays, label: 'Daily Tracker', isLucide: true },
     { to: '/intern/eod-report', icon: MessageSquare, label: 'EOD Report', isLucide: true },
-
+    { to: '/intern/documents', icon: FileText, label: 'Documents', isLucide: true },
+    { to: '/intern/payments', icon: CreditCard, label: 'Payments', isLucide: true },
     { to: '/intern/leave', icon: Clock, label: 'Leave', isLucide: true },
     { to: '/intern/learning', icon: BookOpen, label: 'Learning', isLucide: true },
     { to: '/intern/profile', icon: User, label: 'My Profile', isLucide: true },
@@ -42,6 +43,7 @@ const NAV_CONFIG = {
     { to: '/hr/interns', icon: 'school', label: 'Interns', permission: { resource: 'Interns', action: 'read' } },
     { to: '/hr/onboarding', icon: 'person_add', label: 'Onboarding', permission: { resource: 'Users', action: 'update' } },
     { to: '/hr/attendance', icon: 'event_available', label: 'Attendance', permission: { resource: 'Attendance', action: 'read' } },
+    { to: '/hr/documents', icon: FileText, label: 'Documents', isLucide: true },
     { to: '/hr/leave', icon: 'event_note', label: 'Leave' },
     { to: '/hr/projects', icon: 'folder_open', label: 'Projects' },
     { to: '/hr/performance', icon: 'grade', label: 'Performance' },
@@ -67,12 +69,14 @@ const NAV_CONFIG = {
   admin: [
     { to: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
     { to: '/admin/users', icon: 'group', label: 'Users', permission: { resource: 'Users', action: 'read' } },
+    { to: '/admin/payments', icon: CreditCard, label: 'Payments', isLucide: true },
     { to: '/admin/departments', icon: 'domain', label: 'Departments', permission: { resource: 'Departments', action: 'read' } },
     { to: '/admin/roles', icon: 'badge', label: 'Roles', permission: { resource: 'Roles', action: 'read' } },
     { to: '/admin/access-matrix', icon: Grid2X2, label: 'Access Matrix', isLucide: true, permission: { resource: 'Roles', action: 'update' } },
     { to: '/admin/audit', icon: 'history', label: 'Audit Logs', permission: { resource: 'Audit Logs', action: 'read' } },
     { to: '/admin/reports', icon: 'analytics', label: 'Reports', permission: { resource: 'Reports', action: 'read' } },
     { to: '/admin/settings', icon: 'settings', label: 'Settings', permission: { resource: 'Settings', action: 'read' } },
+    { to: '/admin/profile', icon: User, label: 'My Profile', isLucide: true },
   ],
 };
 

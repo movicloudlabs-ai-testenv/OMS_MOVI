@@ -183,6 +183,7 @@ export const hrAPI = {
   createCandidate: (data) => api.post('/hr/recruitment', data),
   updateCandidate: (id, data) => api.patch(`/hr/recruitment/${id}`, data),
   deleteCandidate: (id) => api.delete(`/hr/recruitment/${id}`),
+  convertCandidateToUser: (id, data) => api.post(`/hr/recruitment/${id}/convert-to-user`, data),
   addCandidateNote: (id, text) => api.post(`/hr/recruitment/${id}/notes`, { text }),
   uploadCandidateDocument: (id, docType, formData) => api.post(`/hr/recruitment/${id}/documents/${docType}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -243,6 +244,7 @@ export const pmoAPI = {
   getTasks: (params) => api.get('/pmo/tasks', { params }),
   getTask: (id) => api.get(`/pmo/tasks/${id}`),
   createTask: (data) => api.post('/pmo/tasks', data),
+  bulkReassignTasks: (data) => api.post('/pmo/tasks/bulk-reassign', data),
   updateTask: (id, data) => api.put(`/pmo/tasks/${id}`, data),
   updateTaskStatus: (id, data) => api.patch(`/pmo/tasks/${id}/status`, data),
   addTaskComment: (id, data) => api.post(`/pmo/tasks/${id}/comments`, data),
@@ -397,4 +399,22 @@ export const notificationAPI = {
   markAllAsRead: () => api.patch('/notifications/read-all'),
   markAsRead: (id) => api.patch(`/notifications/${id}/read`),
   deleteNotification: (id) => api.delete(`/notifications/${id}`),
+};
+
+// ─── PAYMENTS API (Admin & Intern) ────────────────────────────────────────
+export const paymentsAPI = {
+  getAll: (params) => api.get('/admin/payments', { params }),
+  getById: (id) => api.get(`/admin/payments/${id}`),
+  create: (data) => api.post('/admin/payments', data),
+  update: (id, data) => api.put(`/admin/payments/${id}`, data),
+  delete: (id) => api.delete(`/admin/payments/${id}`),
+  getMy: () => api.get('/intern/payments'),
+};
+
+// ─── ANNOUNCEMENTS & COMMUNICATION API ────────────────────────────────────
+export const announcementsAPI = {
+  getAll: (params) => api.get('/announcements', { params }),
+  create: (data) => api.post('/announcements', data),
+  delete: (id) => api.delete(`/announcements/${id}`),
+  togglePin: (id) => api.patch(`/announcements/${id}/pin`),
 };

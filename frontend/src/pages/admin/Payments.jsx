@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { paymentsAPI, usersAPI } from '../../api';
+import { paymentsAPI, adminAPI, hrAPI } from '../../utils/api';
 import PageWrapper from '../../components/PageWrapper';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
@@ -20,18 +20,19 @@ export default function AdminPayments() {
   // Create / Edit modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState(null);
-  const [form, setForm] = useState({ internId: '', amount: '', description: '', status: 'pending', slipUrl: '' });
+  const [form, setForm] = useState({ internId: '', amount: '', description: '', status: 'paid', slipUrl: '', transactionId: '' });
   const [saving, setSaving] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     try {
       const [resPayments, resUsers] = await Promise.all([
-        paymentsAPI.getAll(),
-        usersAPI.getAll({ role: 'intern' })
+        paymentsAPI.getAll().catch(() => ({ data: { data: [] } })),
+        adminAPI.getUsers({ employmentType: 'Intern', limit: 100 }).catch(() => hrAPI.getInterns())
       ]);
       setPayments(resPayments.data?.data || []);
-      setInterns(resUsers.data?.data || []);
+      const internUsers = (resUsers.data?.data || []).map(u => u.user || u);
+      setInterns(internUsers);
     } catch {
       toast.error('Failed to load data');
     } finally {
@@ -49,10 +50,11 @@ export default function AdminPayments() {
         amount: payment.amount || '',
         description: payment.description || '',
         status: payment.status || 'pending',
-        slipUrl: payment.slipUrl || ''
+        slipUrl: payment.slipUrl || '',
+        transactionId: payment.transactionId || ''
       });
     } else {
-      setForm({ internId: '', amount: '', description: '', status: 'pending', slipUrl: '' });
+      setForm({ internId: '', amount: '', description: '', status: 'paid', slipUrl: '', transactionId: '' });
     }
     setIsModalOpen(true);
   };
@@ -197,30 +199,29 @@ export default function AdminPayments() {
               placeholder="Internship Stipend - Jan 2026"
             />
           </div>
-          {editingPayment && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs uppercase tracking-widest font-extrabold text-slate-400 block mb-2">Status</label>
-                <select
-                  value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="paid">Paid</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs uppercase tracking-widest font-extrabold text-slate-400 block mb-2">Slip URL</label>
-                <input
-                  type="url"
-                  value={form.slipUrl} onChange={e => setForm(p => ({ ...p, slipUrl: e.target.value }))}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                  placeholder="https://..."
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs uppercase tracking-widest font-extrabold text-slate-400 block mb-2">Status</label>
+              <select
+                value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}
+                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="pending">Pending</option>
+                <option value="paid">Paid</option>
+                <option value="rejected">Rejected</option>
+              </select>
             </div>
-          )}
+            <div>
+              <label className="text-xs uppercase tracking-widest font-extrabold text-slate-400 block mb-2">Transaction ID / Slip URL</label>
+              <input
+                type="text"
+                value={form.slipUrl || form.transactionId || ''} 
+                onChange={e => setForm(p => ({ ...p, slipUrl: e.target.value, transactionId: e.target.value }))}
+                className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="TXN-20260826 or https://..."
+              />
+            </div>
+          </div>
           <div className="pt-2 flex justify-end gap-3 border-t border-slate-100 mt-4">
             <button type="button" onClick={closeModal} className="px-5 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-50 rounded-xl">Cancel</button>
             <button type="submit" disabled={saving} className="btn-primary px-5 py-2 text-sm">
