@@ -1,6 +1,7 @@
 import Project from '../../models/Project.js';
 import Task from '../../models/Task.js';
 import User from '../../models/User.js';
+import DailyTracker from '../../models/DailyTracker.js';
 import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.js';
 import { getPagination } from '../../utils/paginate.js';
 import { sendNotification } from '../../utils/sendNotification.js';
@@ -167,6 +168,81 @@ export const getProjectById = async (req, res, next) => {
     projObj.timeline = timeline;
     projObj.healthStatus = health;
     projObj.completionPercent = taskStats.total > 0 ? Math.round((taskStats.done / taskStats.total) * 100) : 0;
+
+    // ── Aggregate Intern Knowledge Transfer (KT) & Daily Tracker metrics ──
+    const internUserIds = (project.interns || []).map((i) => i.user?._id || i.user).filter(Boolean);
+    const trackerEntries = await DailyTracker.find({
+      $or: [
+        { project: project._id },
+        { user: { $in: internUserIds } },
+      ],
+    }).sort({ date: -1 });
+
+    const latestKTByUser = new Map();
+    const internKTStats = {};
+    let totalAICredits = 0;
+
+    for (const entry of trackerEntries) {
+      const uId = entry.user.toString();
+      if (entry.ktCompletion != null && !latestKTByUser.has(uId)) {
+        latestKTByUser.set(uId, entry.ktCompletion);
+        internKTStats[uId] = {
+          latestKT: entry.ktCompletion,
+          aiCredits: entry.aiCredits || 0,
+          todayTask: entry.todayTask,
+          lastDate: entry.date,
+        };
+      }
+      if (entry.aiCredits) {
+        totalAICredits += entry.aiCredits;
+      }
+    }
+
+    const ktValues = Array.from(latestKTByUser.values());
+    const averageKTProgress = ktValues.length > 0
+      ? Math.round(ktValues.reduce((a, b) => a + b, 0) / ktValues.length)
+      : 0;
+
+    // Attach enriched KT data to intern roster
+    const enrichedInterns = (projObj.interns || []).map((intern) => {
+      const uId = intern.user?._id?.toString() || intern.user?.toString();
+      const stats = internKTStats[uId] || {};
+      return {
+        ...intern,
+        ktCompletion: stats.latestKT ?? 0,
+        aiCredits: stats.aiCredits ?? 0,
+      };
+    });
+    projObj.interns = enrichedInterns;
+
+    // Enrich milestones with automated progress sync
+    const enrichedMilestones = (project.milestones || []).map((ms) => {
+      const msObj = ms.toObject ? ms.toObject() : { ...ms };
+      const nameLower = (ms.name || '').toLowerCase();
+      const isKTMilestone = nameLower.includes('kt') || nameLower.includes('knowledge') || nameLower.includes('onboarding') || nameLower.includes('ramp') || nameLower.includes('training');
+
+      if (isKTMilestone) {
+        msObj.isKTMilestone = true;
+        msObj.ktProgress = averageKTProgress;
+        msObj.progress = averageKTProgress;
+        if (averageKTProgress >= 100 && msObj.status !== 'completed') {
+          msObj.status = 'completed';
+        } else if (averageKTProgress > 0 && msObj.status === 'upcoming') {
+          msObj.status = 'current';
+        }
+      } else {
+        msObj.progress = msObj.status === 'completed' ? 100 : msObj.status === 'current' ? projObj.completionPercent : (msObj.progress || 0);
+      }
+      return msObj;
+    });
+
+    projObj.milestones = enrichedMilestones;
+    projObj.ktMetrics = {
+      averageKTProgress,
+      totalAICredits,
+      internsReporting: latestKTByUser.size,
+      totalTrackerEntries: trackerEntries.length,
+    };
 
     sendSuccess(res, projObj);
   } catch (error) {

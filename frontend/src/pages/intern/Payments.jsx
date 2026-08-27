@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { paymentsAPI } from '../../api';
+import { paymentsAPI } from '../../utils/api';
 import PageWrapper from '../../components/PageWrapper';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import toast from 'react-hot-toast';

@@ -20,7 +20,10 @@ import adminAuditRoutes from './routes/admin/auditLogs.routes.js';
 import adminReportsRoutes from './routes/admin/reports.routes.js';
 import adminSettingsRoutes from './routes/admin/settings.routes.js';
 import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
+import adminPaymentRoutes from './routes/admin/payments.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import announcementsRoutes from './routes/announcements.routes.js';
+import documentsRoutes from './routes/documents.routes.js';
 import logsRoutes from './routes/logs.routes.js';
 
 // Part 2 Route Imports
@@ -63,6 +66,7 @@ import internLeaveRoutes from './routes/intern/leave.routes.js';
 import internLearningRoutes from './routes/intern/learning.routes.js';
 import internDailyTrackerRoutes from './routes/intern/dailyTracker.routes.js';
 import internEodRoutes from './routes/intern/eod.routes.js';
+import internPaymentRoutes from './routes/intern/payments.routes.js';
 import hrDailyTrackerRoutes from './routes/hr/dailyTracker.routes.js';
 import hrEodRoutes from './routes/hr/eod.routes.js';
 import hrPerformanceRoutes from './routes/hr/performance.routes.js';
@@ -159,7 +163,7 @@ const apiLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === 'development' ? 500 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many login attempts, please try again in 15 minutes.' },
@@ -204,7 +208,11 @@ app.use('/api/admin/audit-logs', adminAuditRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/payments', adminPaymentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/announcements', announcementsRoutes);
+app.use('/api/documents', documentsRoutes);
+app.use('/api/users', adminUserRoutes);
 app.use('/api/logs', logsRoutes);
 
 // HR Module
@@ -250,6 +258,7 @@ app.use('/api/intern/leave', internLeaveRoutes);
 app.use('/api/intern/learning', internLearningRoutes);
 app.use('/api/intern/daily-tracker', internDailyTrackerRoutes);
 app.use('/api/intern/eod', internEodRoutes);
+app.use('/api/intern/payments', internPaymentRoutes);
 app.use('/api/hr/daily-tracker', hrDailyTrackerRoutes);
 app.use('/api/hr/eod', hrEodRoutes);
 app.use('/api/hr/performance-analytics', hrPerformanceRoutes);

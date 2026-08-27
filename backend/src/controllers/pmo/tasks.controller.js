@@ -75,11 +75,22 @@ export const createTask = async (req, res, next) => {
     const assignee = await User.findById(assignedTo);
     if (!assignee) return sendError(res, 'Assignee not found', 404);
 
-    const isMember = proj.team.some(t => t.user.toString() === assignedTo) || 
-                     proj.interns.some(i => i.user.toString() === assignedTo);
+    const isMember = proj.team.some(t => t.user?.toString() === assignedTo.toString()) || 
+                     proj.interns.some(i => i.user?.toString() === assignedTo.toString());
     
     if (!isMember) {
-      return sendError(res, 'Assignee is not a member of this project', 400);
+      if (assignee.employmentType === 'Intern') {
+        proj.interns.push({ user: assignee._id, addedAt: new Date() });
+      } else {
+        proj.team.push({
+          user: assignee._id,
+          role: assignee.designation || 'Developer',
+          addedAt: new Date(),
+        });
+      }
+      await proj.save();
+      assignee.project = proj._id;
+      await assignee.save({ validateBeforeSave: false });
     }
 
     const task = await Task.create({
@@ -162,7 +173,23 @@ export const updateTask = async (req, res, next) => {
       const proj = task.project;
       const isMember = proj.team.some(t => t.user?.toString() === assignedTo.toString()) ||
                        proj.interns.some(i => i.user?.toString() === assignedTo.toString());
-      if (!isMember) return sendError(res, 'Assignee is not a member of this project', 400);
+      if (!isMember) {
+        const newAssignee = await User.findById(assignedTo);
+        if (newAssignee) {
+          if (newAssignee.employmentType === 'Intern') {
+            proj.interns.push({ user: newAssignee._id, addedAt: new Date() });
+          } else {
+            proj.team.push({
+              user: newAssignee._id,
+              role: newAssignee.designation || 'Developer',
+              addedAt: new Date(),
+            });
+          }
+          await proj.save();
+          newAssignee.project = proj._id;
+          await newAssignee.save({ validateBeforeSave: false });
+        }
+      }
       task.assignedTo = assignedTo;
       task.needsReassignment = false;
       reassignedTo = assignedTo;
@@ -332,6 +359,94 @@ export const deleteTask = async (req, res, next) => {
     });
 
     sendSuccess(res, null, 'Task deleted/cancelled successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkReassignTasks = async (req, res, next) => {
+  try {
+    console.log('bulkReassignTasks received body:', req.body);
+    const { taskIds, assignedTo, projectId } = req.body;
+
+    if (!Array.isArray(taskIds) || taskIds.length === 0) {
+      return sendError(res, 'Please provide an array of task IDs to reassign', 400);
+    }
+
+    if (!assignedTo) {
+      return sendError(res, 'Assignee ID is required for reassignment', 400);
+    }
+
+    const assignee = await User.findOne({
+      _id: assignedTo,
+      status: 'Active',
+      deletedAt: { $exists: false },
+    });
+
+    if (!assignee) {
+      return sendError(res, 'Assignee not found or is inactive', 404);
+    }
+
+    const tasks = await Task.find({ _id: { $in: taskIds } }).populate('project');
+    if (tasks.length === 0) {
+      return sendError(res, 'No valid tasks found for reassignment', 404);
+    }
+
+    // Auto-allocate assignee to projects if not already a member
+    const projectMap = new Map();
+    for (const task of tasks) {
+      const proj = task.project;
+      if (!proj) continue;
+      const projId = proj._id.toString();
+
+      if (!projectMap.has(projId)) {
+        projectMap.set(projId, proj);
+        const isMember = (proj.team || []).some(t => t.user?.toString() === assignedTo.toString()) ||
+                         (proj.interns || []).some(i => i.user?.toString() === assignedTo.toString());
+        if (!isMember) {
+          if (assignee.employmentType === 'Intern') {
+            proj.interns.push({ user: assignee._id, addedAt: new Date() });
+          } else {
+            proj.team.push({
+              user: assignee._id,
+              role: assignee.designation || 'Developer',
+              addedAt: new Date(),
+            });
+          }
+          await proj.save();
+          assignee.project = proj._id;
+          await assignee.save({ validateBeforeSave: false });
+        }
+      }
+    }
+
+    // Update all tasks
+    const updatedTasks = [];
+    for (const task of tasks) {
+      task.assignedTo = assignee._id;
+      task.assignedBy = task.assignedBy || req.user._id;
+      task.needsReassignment = false;
+      task.statusHistory.push({
+        status: task.status || 'Todo',
+        changedBy: req.user._id,
+        changedAt: new Date(),
+        note: `Bulk reassigned to ${assignee.name} by PMO`,
+      });
+      await task.save();
+      updatedTasks.push(task);
+    }
+
+    // Dispatch notification
+    await sendNotification({
+      recipient: assignee._id,
+      type: 'task_assigned',
+      title: `${taskIds.length} Task(s) Assigned to You`,
+      message: `You have been assigned ${taskIds.length} task(s) on ${tasks[0]?.project?.name || 'your project'} by PMO.`,
+      link: assignee.employmentType === 'Intern' ? '/intern/tasks' : '/employee/tasks',
+      sender: req.user._id,
+    });
+
+    sendSuccess(res, { count: updatedTasks.length, tasks: updatedTasks }, `Successfully reassigned ${updatedTasks.length} task(s) to ${assignee.name}`);
   } catch (error) {
     next(error);
   }
