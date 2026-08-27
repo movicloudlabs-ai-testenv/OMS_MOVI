@@ -19,4 +19,13 @@ yarn-error.log*
 # Editor configurations
 .vscode/
 .idea/
+# OS generated files
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# Uploads
+backend/uploads/
+uploads/
+scratch/
+

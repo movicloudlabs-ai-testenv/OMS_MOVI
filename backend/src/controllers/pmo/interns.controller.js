@@ -6,31 +6,40 @@ import { sendNotification } from '../../utils/sendNotification.js';
 
 export const getInterns = async (req, res, next) => {
   try {
-    const projects = await Project.find({ ...req.projectFilter })
-      .populate({
-        path: 'interns.user',
-        select: 'name college avatar department email internshipStart internshipEnd performanceRatings',
-        match: { deletedAt: { $exists: false } },
-      });
-      
-    const internsSet = new Map();
-    
-    projects.forEach(project => {
-      project.interns.forEach(intern => {
-        if (intern.user && intern.user.name) {
-          const userId = intern.user._id.toString();
-          if (!internsSet.has(userId)) {
-            internsSet.set(userId, {
-              user: intern.user,
-              project: { _id: project._id, name: project.name },
-              joinedAt: intern.joinedAt,
-            });
-          }
+    const interns = await User.find({
+      employmentType: 'Intern',
+      deletedAt: { $exists: false },
+    })
+      .populate('department', 'name code')
+      .populate('project', 'name code status')
+      .populate('manager', 'name')
+      .populate('hrManager', 'name')
+      .populate('pmoLead', 'name')
+      .populate('mentor', 'name')
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    const projects = await Project.find({}).select('name code interns');
+    const userToProjectMap = new Map();
+    projects.forEach(p => {
+      (p.interns || []).forEach(i => {
+        if (i.user) {
+          userToProjectMap.set(i.user.toString(), { _id: p._id, name: p.name, code: p.code, addedAt: i.addedAt });
         }
       });
     });
 
-    sendSuccess(res, Array.from(internsSet.values()));
+    const result = interns.map(intern => {
+      const proj = intern.project || userToProjectMap.get(intern._id.toString()) || null;
+      const joinedAt = userToProjectMap.get(intern._id.toString())?.addedAt || intern.internshipStart || intern.createdAt;
+      return {
+        user: intern,
+        project: proj ? { _id: proj._id, name: proj.name, code: proj.code } : null,
+        joinedAt,
+      };
+    });
+
+    sendSuccess(res, result);
   } catch (error) {
     next(error);
   }
@@ -76,14 +85,24 @@ export const getInternById = async (req, res, next) => {
     const intern = await User.findOne({
       _id: req.params.id,
       employmentType: 'Intern',
-      status: 'Active',
+      deletedAt: { $exists: false },
     })
       .populate('department', 'name code')
+      .populate('project', 'name code status')
       .populate('manager', 'name')
       .populate('hrManager', 'name')
+      .populate('pmoLead', 'name')
+      .populate('mentor', 'name')
       .select('-password');
 
     if (!intern) return sendError(res, 'Intern not found', 404);
+
+    if (!intern.project) {
+      const proj = await Project.findOne({ 'interns.user': intern._id }).select('name code status');
+      if (proj) {
+        intern.project = proj;
+      }
+    }
 
     sendSuccess(res, intern);
   } catch (error) {

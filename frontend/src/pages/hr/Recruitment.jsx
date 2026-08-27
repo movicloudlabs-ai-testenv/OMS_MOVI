@@ -257,10 +257,27 @@ export default function HRRecruitment() {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                            {c.convertedTo ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-[#ECFDF5] text-[#059669]">
+                                <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                                {c.convertedTo.employeeId || 'Onboarded'}
+                              </span>
+                            ) : (
+                              (c.recruitmentStatus === 'Joined' || c.recruitmentStatus === 'Selected') && (
+                                <button
+                                  onClick={() => navigate(`/hr/recruitment/${c._id}?onboard=true`)}
+                                  className="bg-[#059669]/10 text-[#059669] hover:bg-[#059669] hover:text-white px-2.5 py-1 rounded text-[11px] font-semibold flex items-center gap-1 transition-colors"
+                                  title="Onboard Candidate"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">how_to_reg</span>
+                                  Onboard
+                                </button>
+                              )
+                            )}
                             <button
                               onClick={() => navigate(`/hr/recruitment/${c._id}`)}
-                              className="text-[#64748B] hover:text-[#2563EB] transition-colors"
+                              className="text-[#64748B] hover:text-[#2563EB] transition-colors p-1"
                               title="View Details"
                             >
                               <span className="material-symbols-outlined text-[18px]">visibility</span>

@@ -53,6 +53,14 @@ export default function PMOTaskBoard() {
   const [selectedInternId, setSelectedInternId] = useState('');
   const [reassignTask, setReassignTask] = useState(null);
   const [reassignTo, setReassignTo] = useState('');
+  const [availableOrgInterns, setAvailableOrgInterns] = useState([]);
+  const [availableOrgTeam, setAvailableOrgTeam] = useState([]);
+
+  // Bulk Reassignment State
+  const [isBulkReassignModalOpen, setIsBulkReassignModalOpen] = useState(false);
+  const [bulkSelectedTaskIds, setBulkSelectedTaskIds] = useState([]);
+  const [bulkReassignTo, setBulkReassignTo] = useState('');
+  const [isSubmittingBulk, setIsSubmittingBulk] = useState(false);
 
   // Create Task Modal State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -64,6 +72,19 @@ export default function PMOTaskBoard() {
     dueDate: '',
     effortPoints: 5
   });
+
+  const fetchAllOrgResources = async () => {
+    try {
+      const [internsRes, teamRes] = await Promise.all([
+        pmoAPI.getInterns().catch(() => ({ data: { data: [] } })),
+        pmoAPI.getTeam().catch(() => ({ data: { data: [] } })),
+      ]);
+      setAvailableOrgInterns(internsRes.data?.data || []);
+      setAvailableOrgTeam(teamRes.data?.data || []);
+    } catch (e) {
+      console.warn('Could not load org resources:', e);
+    }
+  };
 
   const fetchProjects = async () => {
     if (!canRead) return;
@@ -120,6 +141,7 @@ export default function PMOTaskBoard() {
 
   useEffect(() => {
     fetchProjects();
+    fetchAllOrgResources();
   }, [canRead]);
 
   useEffect(() => {
@@ -214,17 +236,73 @@ export default function PMOTaskBoard() {
     }
   };
 
-  // Get project resource pool (team + interns)
+  const handleBulkReassignSubmit = async (e) => {
+    e.preventDefault();
+    if (!bulkReassignTo) {
+      toast.error('Please select a team member or intern');
+      return;
+    }
+    if (bulkSelectedTaskIds.length === 0) {
+      toast.error('Please select at least one task to reassign');
+      return;
+    }
+    setIsSubmittingBulk(true);
+    try {
+      await pmoAPI.bulkReassignTasks({
+        taskIds: bulkSelectedTaskIds,
+        assignedTo: bulkReassignTo,
+        projectId: selectedProject,
+      });
+      toast.success(`Successfully reassigned ${bulkSelectedTaskIds.length} task(s)!`);
+      setIsBulkReassignModalOpen(false);
+      setBulkSelectedTaskIds([]);
+      setBulkReassignTo('');
+      await fetchProjectTasksAndDetails();
+      await fetchAllOrgResources();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to bulk reassign tasks');
+    } finally {
+      setIsSubmittingBulk(false);
+    }
+  };
+
+  // Get resource pool (project members + available org interns and staff)
   const getResourcePool = () => {
-    if (!currentProjectDetails) return [];
-    const pool = [];
-    currentProjectDetails.team?.forEach(t => {
-      if (t.user) pool.push({ id: t.user._id, name: `${t.user.name} (${t.role || 'Developer'})` });
+    const projectMemberIds = new Set();
+    const projectMembers = [];
+    const availableInterns = [];
+    const availableStaff = [];
+
+    if (currentProjectDetails) {
+      currentProjectDetails.team?.forEach(t => {
+        if (t.user) {
+          projectMemberIds.add(t.user._id?.toString());
+          projectMembers.push({ id: t.user._id, name: `${t.user.name} (${t.role || 'Developer'})`, isMember: true });
+        }
+      });
+      currentProjectDetails.interns?.forEach(i => {
+        if (i.user) {
+          projectMemberIds.add(i.user._id?.toString());
+          projectMembers.push({ id: i.user._id, name: `${i.user.name} (Intern)`, isMember: true });
+        }
+      });
+    }
+
+    availableOrgInterns.forEach(item => {
+      const u = item.user || item;
+      if (u?._id && !projectMemberIds.has(u._id.toString())) {
+        availableInterns.push({ id: u._id, name: `${u.name} (Intern • ${u.domain || 'General'})`, isMember: false });
+      }
     });
-    currentProjectDetails.interns?.forEach(i => {
-      if (i.user) pool.push({ id: i.user._id, name: `${i.user.name} (Intern)` });
+
+    availableOrgTeam.forEach(item => {
+      const u = item.user || item;
+      if (u?._id && !projectMemberIds.has(u._id.toString())) {
+        availableStaff.push({ id: u._id, name: `${u.name} (${u.designation || 'Staff'})`, isMember: false });
+      }
     });
-    return pool;
+
+    return { projectMembers, availableInterns, availableStaff };
   };
 
   if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view the task board." /></PageWrapper>;
@@ -258,12 +336,13 @@ export default function PMOTaskBoard() {
             {canCreate && (
               <button
                 onClick={() => {
-                  const pool = getResourcePool();
-                  if (pool.length === 0) {
-                    toast.error('No team members assigned to this project yet.');
+                  const { projectMembers = [], availableInterns = [], availableStaff = [] } = getResourcePool() || {};
+                  const all = [...projectMembers, ...availableInterns, ...availableStaff];
+                  if (all.length === 0) {
+                    toast.error('No members or interns found in the organization.');
                     return;
                   }
-                  setNewTaskData(prev => ({ ...prev, assignedTo: pool[0].id }));
+                  setNewTaskData(prev => ({ ...prev, assignedTo: all[0].id }));
                   setIsCreateModalOpen(true);
                 }}
                 className="bg-[#2563EB] text-white px-5 py-2 rounded-lg text-[13px] font-medium hover:bg-[#1D4ED8] transition-colors shadow-sm flex items-center gap-2"
@@ -275,13 +354,30 @@ export default function PMOTaskBoard() {
           </div>
         </div>
 
-        {/* Needs-reassignment alert banner */}
+        {/* Needs-reassignment alert banner with Bulk Reassign action */}
         {!loading && tasks.some(t => t.needsReassignment) && (
-          <div className="shrink-0 flex items-center gap-3 px-4 py-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-xl">
-            <span className="material-symbols-outlined text-[#D97706] text-[20px]">person_alert</span>
-            <p className="text-[13px] text-[#92400E] flex-1">
-              <strong>{tasks.filter(t => t.needsReassignment).length}</strong> task(s) on this project are unassigned after a team member was removed. Reassign them to keep work moving.
-            </p>
+          <div className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3 bg-[#FFFBEB] border border-[#FDE68A] rounded-xl shadow-xs">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#D97706] text-[22px]">person_alert</span>
+              <p className="text-[13px] text-[#92400E]">
+                <strong>{tasks.filter(t => t.needsReassignment).length}</strong> task(s) on this project are unassigned after a team member was removed. Reassign them to keep work moving.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const orphanedIds = tasks.filter(t => t.needsReassignment).map(t => t.id);
+                setBulkSelectedTaskIds(orphanedIds);
+                const { projectMembers = [], availableInterns = [], availableStaff = [] } = getResourcePool() || {};
+                const all = [...projectMembers, ...availableInterns, ...availableStaff];
+                if (all.length > 0) setBulkReassignTo(all[0].id);
+                setIsBulkReassignModalOpen(true);
+              }}
+              className="bg-[#D97706] hover:bg-[#B45309] text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap self-start sm:self-auto cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">group_work</span>
+              ⚡ Bulk Reassign Tasks
+            </button>
           </div>
         )}
 
@@ -434,17 +530,49 @@ export default function PMOTaskBoard() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">Assign To Team Member / Intern</label>
-                  <select 
-                    value={newTaskData.assignedTo} 
-                    onChange={e => setNewTaskData({...newTaskData, assignedTo: e.target.value})}
-                    className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:border-blue-600 outline-none"
-                    required
-                  >
-                    <option value="">Select assignee...</option>
-                    {getResourcePool().map(res => (
-                      <option key={res.id} value={res.id}>{res.name}</option>
-                    ))}
-                  </select>
+                  {(() => {
+                    const { projectMembers = [], availableInterns = [], availableStaff = [] } = getResourcePool() || {};
+                    const isAutoAllocate = newTaskData.assignedTo && !projectMembers.some(m => m.id === newTaskData.assignedTo);
+                    return (
+                      <>
+                        <select 
+                          value={newTaskData.assignedTo} 
+                          onChange={e => setNewTaskData({...newTaskData, assignedTo: e.target.value})}
+                          className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:border-blue-600 outline-none"
+                          required
+                        >
+                          <option value="">Select assignee...</option>
+                          {projectMembers.length > 0 && (
+                            <optgroup label="⭐ Current Project Members">
+                              {projectMembers.map(res => (
+                                <option key={res.id} value={res.id}>{res.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {availableInterns.length > 0 && (
+                            <optgroup label="🎓 Available Interns (Auto-allocate)">
+                              {availableInterns.map(res => (
+                                <option key={res.id} value={res.id}>{res.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {availableStaff.length > 0 && (
+                            <optgroup label="👥 Available Staff & Developers (Auto-allocate)">
+                              {availableStaff.map(res => (
+                                <option key={res.id} value={res.id}>{res.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                        {isAutoAllocate && (
+                          <p className="text-[11px] text-[#2563EB] mt-1.5 flex items-center gap-1 font-medium bg-blue-50 p-2 rounded-md border border-blue-100">
+                            <span className="material-symbols-outlined text-[14px]">info</span>
+                            This member is not in the project team yet. Creating this task will automatically allocate them to the project.
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -505,17 +633,34 @@ export default function PMOTaskBoard() {
             <form onSubmit={handleAssignInternSubmit}>
               <div className="p-5 space-y-3">
                 <p className="text-sm text-slate-600 mb-2">Select an intern to assign to <strong>{internAssignTask.title}</strong>.</p>
-                <select 
-                  value={selectedInternId}
-                  onChange={e => setSelectedInternId(e.target.value)}
-                  className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-600"
-                  required
-                >
-                  <option value="">Select an intern...</option>
-                  {(currentProjectDetails?.interns || []).map(i => i.user && (
-                    <option key={i.user._id} value={i.user._id}>{i.user.name} ({i.user.college || 'Intern'})</option>
-                  ))}
-                </select>
+                {(() => {
+                  const { projectMembers = [], availableInterns = [] } = getResourcePool() || {};
+                  const projectInterns = projectMembers.filter(m => m.name.includes('(Intern)'));
+                  return (
+                    <select 
+                      value={selectedInternId}
+                      onChange={e => setSelectedInternId(e.target.value)}
+                      className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-600"
+                      required
+                    >
+                      <option value="">Select an intern...</option>
+                      {projectInterns.length > 0 && (
+                        <optgroup label="⭐ Project Interns">
+                          {projectInterns.map(i => (
+                            <option key={i.id} value={i.id}>{i.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {availableInterns.length > 0 && (
+                        <optgroup label="🎓 Available Interns (Auto-allocate)">
+                          {availableInterns.map(i => (
+                            <option key={i.id} value={i.id}>{i.name}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
+                  );
+                })()}
               </div>
               <div className="px-5 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">
                 <button type="button" onClick={() => setInternAssignTask(null)} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg">Cancel</button>
@@ -541,24 +686,211 @@ export default function PMOTaskBoard() {
                 <p className="text-sm text-slate-600">
                   <strong>{reassignTask.title}</strong> lost its owner. Choose a team member to take it over.
                 </p>
-                <select
-                  value={reassignTo}
-                  onChange={e => setReassignTo(e.target.value)}
-                  className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-600"
-                  required
-                >
-                  <option value="">Select team member...</option>
-                  {getResourcePool().map(res => (
-                    <option key={res.id} value={res.id}>{res.name}</option>
-                  ))}
-                </select>
-                {getResourcePool().length === 0 && (
-                  <p className="text-[12px] text-amber-600">No active members on this project. Add someone to the team first.</p>
-                )}
+                {(() => {
+                  const { projectMembers = [], availableInterns = [], availableStaff = [] } = getResourcePool() || {};
+                  const allAvailable = [...projectMembers, ...availableInterns, ...availableStaff];
+                  const isAutoAllocate = reassignTo && !projectMembers.some(m => m.id === reassignTo);
+                  return (
+                    <>
+                      <select
+                        value={reassignTo}
+                        onChange={e => setReassignTo(e.target.value)}
+                        className="w-full p-2.5 bg-white border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-600"
+                        required
+                      >
+                        <option value="">Select team member...</option>
+                        {projectMembers.length > 0 && (
+                          <optgroup label="⭐ Current Project Members">
+                            {projectMembers.map(res => (
+                              <option key={res.id} value={res.id}>{res.name}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {availableInterns.length > 0 && (
+                          <optgroup label="🎓 Available Interns (Auto-allocate)">
+                            {availableInterns.map(res => (
+                              <option key={res.id} value={res.id}>{res.name}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {availableStaff.length > 0 && (
+                          <optgroup label="👥 Available Staff & Developers (Auto-allocate)">
+                            {availableStaff.map(res => (
+                              <option key={res.id} value={res.id}>{res.name}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                      </select>
+                      {isAutoAllocate && (
+                        <p className="text-[11px] text-[#2563EB] mt-1 flex items-center gap-1 font-medium">
+                          <span className="material-symbols-outlined text-[14px]">info</span>
+                          Member will be auto-allocated to this project upon reassignment.
+                        </p>
+                      )}
+                      {allAvailable.length === 0 && (
+                        <p className="text-[12px] text-amber-600">No active members found in organization.</p>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
               <div className="px-5 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-2">
                 <button type="button" onClick={() => setReassignTask(null)} className="px-4 py-2 text-sm font-bold text-slate-600 hover:bg-slate-200 rounded-lg">Cancel</button>
                 <button type="submit" className="px-4 py-2 text-sm font-bold bg-[#D97706] text-white hover:bg-[#B45309] rounded-lg">Reassign</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* BULK REASSIGN MODAL */}
+      {isBulkReassignModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col text-left border border-slate-100">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#D97706] text-xl">group_work</span>
+                <h3 className="font-bold text-slate-900 text-base">Bulk Task Reassignment</h3>
+              </div>
+              <button onClick={() => setIsBulkReassignModalOpen(false)} className="text-slate-400 hover:text-slate-700">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleBulkReassignSubmit}>
+              <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs uppercase tracking-widest font-extrabold text-slate-500 block">
+                      Select Tasks ({bulkSelectedTaskIds.length}/{tasks.filter(t => t.needsReassignment).length})
+                    </label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setBulkSelectedTaskIds(tasks.filter(t => t.needsReassignment).map(t => t.id))}
+                        className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                      >
+                        Select All
+                      </button>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        type="button"
+                        onClick={() => setBulkSelectedTaskIds([])}
+                        className="text-[11px] font-bold text-slate-500 hover:underline cursor-pointer"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 border border-slate-200 rounded-xl p-3 bg-slate-50/50 max-h-48 overflow-y-auto custom-scrollbar">
+                    {tasks.filter(t => t.needsReassignment).map(task => {
+                      const isChecked = bulkSelectedTaskIds.includes(task.id);
+                      return (
+                        <label
+                          key={task.id}
+                          className={`flex items-start gap-3 p-2.5 rounded-lg border transition-all cursor-pointer ${
+                            isChecked ? 'bg-white border-blue-500 shadow-xs' : 'bg-white border-slate-200 opacity-70'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setBulkSelectedTaskIds(prev => [...prev, task.id]);
+                              } else {
+                                setBulkSelectedTaskIds(prev => prev.filter(id => id !== task.id));
+                              }
+                            }}
+                            className="mt-0.5 rounded text-blue-600 focus:ring-blue-500/20 cursor-pointer"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-slate-800 truncate">{task.title}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold uppercase">
+                                {task.priority}
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-semibold">{task.effort}</span>
+                              <span className="text-[10px] text-amber-600 font-semibold">● Needs Reassignment</span>
+                            </div>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs uppercase tracking-widest font-extrabold text-slate-500 block mb-1.5">
+                    Assign To
+                  </label>
+                  {(() => {
+                    const { projectMembers = [], availableInterns = [], availableStaff = [] } = getResourcePool() || {};
+                    const allAvailable = [...projectMembers, ...availableInterns, ...availableStaff];
+                    const isAutoAllocate = bulkReassignTo && !projectMembers.some(m => m.id === bulkReassignTo);
+                    return (
+                      <>
+                        <select
+                          value={bulkReassignTo}
+                          onChange={e => setBulkReassignTo(e.target.value)}
+                          className="w-full p-3 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-600 shadow-xs cursor-pointer"
+                          required
+                        >
+                          <option value="">Select team member...</option>
+                          {projectMembers.length > 0 && (
+                            <optgroup label="⭐ Current Project Members">
+                              {projectMembers.map(res => (
+                                <option key={res.id} value={res.id}>{res.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {availableInterns.length > 0 && (
+                            <optgroup label="🎓 Available Interns (Auto-allocate)">
+                              {availableInterns.map(res => (
+                                <option key={res.id} value={res.id}>{res.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                          {availableStaff.length > 0 && (
+                            <optgroup label="👥 Available Staff & Developers (Auto-allocate)">
+                              {availableStaff.map(res => (
+                                <option key={res.id} value={res.id}>{res.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
+                        {isAutoAllocate && (
+                          <p className="text-[11px] text-blue-600 mt-1.5 flex items-center gap-1 font-medium bg-blue-50 p-2 rounded-lg border border-blue-100">
+                            <span className="material-symbols-outlined text-[15px]">info</span>
+                            Member will be auto-allocated to this project upon reassignment.
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-between items-center">
+                <span className="text-xs text-slate-500 font-semibold">
+                  {bulkSelectedTaskIds.length} task(s) selected
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsBulkReassignModalOpen(false)}
+                    className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingBulk || bulkSelectedTaskIds.length === 0}
+                    className="px-5 py-2 text-xs font-bold bg-[#D97706] text-white hover:bg-[#B45309] rounded-lg shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSubmittingBulk ? <><div className="spinner" /> Reassigning...</> : '⚡ Reassign Selected'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

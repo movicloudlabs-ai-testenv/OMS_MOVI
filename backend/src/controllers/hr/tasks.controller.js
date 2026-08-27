@@ -169,11 +169,32 @@ export const assignTask = async (req, res, next) => {
       return sendError(res, 'Title, project, and assignee are required', 400);
     }
 
-    // Verify the assignee is under this HR's scope (explicit or project-shared)
-    const allIds = await getHRScopeUserIds(req.user._id);
-    if (!allIds.includes(assignedTo.toString())) return sendError(res, 'Assignee is not under your team', 403);
     const assignee = await User.findById(assignedTo);
     if (!assignee) return sendError(res, 'Assignee not found', 404);
+
+    const formattedPriority = priority
+      ? priority.charAt(0).toUpperCase() + priority.slice(1).toLowerCase()
+      : 'Medium';
+
+    // Auto-allocate assignee to project team if not already present
+    const project = await Project.findById(projectId);
+    if (project) {
+      if (assignee.employmentType === 'Intern') {
+        const isInternInProject = project.interns?.some(i => i.user?.toString() === assignedTo.toString());
+        if (!isInternInProject) {
+          project.interns = project.interns || [];
+          project.interns.push({ user: assignedTo, allocatedAt: new Date() });
+          await project.save();
+        }
+      } else {
+        const isEmpInProject = project.team?.some(t => t.user?.toString() === assignedTo.toString());
+        if (!isEmpInProject) {
+          project.team = project.team || [];
+          project.team.push({ user: assignedTo, role: assignee.designation || 'Member', joinedAt: new Date() });
+          await project.save();
+        }
+      }
+    }
 
     const task = await Task.create({
       title,
@@ -181,9 +202,9 @@ export const assignTask = async (req, res, next) => {
       project: projectId,
       assignedBy: req.user._id,
       assignedTo,
-      priority: priority || 'Medium',
+      priority: formattedPriority,
       dueDate,
-      effortPoints,
+      effortPoints: effortPoints || 5,
     });
 
     const link = assignee.employmentType === 'Intern' ? '/intern/tasks' : '/employee/tasks';

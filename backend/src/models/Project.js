@@ -46,6 +46,8 @@ const ProjectSchema = new Schema({
       enum: ['upcoming', 'current', 'completed', 'overdue'],
       default: 'upcoming',
     },
+    progress: { type: Number, min: 0, max: 100, default: 0 },
+    ktProgress: { type: Number, min: 0, max: 100, default: 0 },
   }],
   tags: [String],
   healthStatus: {

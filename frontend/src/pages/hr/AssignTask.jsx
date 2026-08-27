@@ -30,22 +30,32 @@ export default function AssignTask() {
         ]);
         setProjects(projRes.data.data || []);
         
-        const emps = (empRes.data.data || []).map(e => ({
-          id: e._id,
-          name: e.name,
-          role: e.designation || 'Employee',
-          type: 'Employee',
-          initial: e.name[0]?.toUpperCase(),
-          bg: 'bg-[#EFF6FF]', text: 'text-[#1D4ED8]'
-        }));
-        const interns = (internRes.data.data || []).map(e => ({
-          id: e._id,
-          name: e.name,
-          role: e.role || 'Intern',
-          type: 'Intern',
-          initial: e.name[0]?.toUpperCase(),
-          bg: 'bg-[#ECFDF5]', text: 'text-[#059669]'
-        }));
+        const emps = (empRes.data.data || []).map(e => {
+          const roleStr = typeof e.designation === 'string' && e.designation.trim()
+            ? e.designation
+            : (typeof e.role === 'object' ? (e.role?.name || 'Employee') : (e.role || 'Employee'));
+          return {
+            id: e._id,
+            name: e.name || 'Unnamed Employee',
+            role: roleStr,
+            type: 'Employee',
+            initial: (e.name || 'E')[0]?.toUpperCase(),
+            bg: 'bg-[#EFF6FF]', text: 'text-[#1D4ED8]'
+          };
+        });
+        const interns = (internRes.data.data || []).map(e => {
+          const roleStr = typeof e.designation === 'string' && e.designation.trim()
+            ? e.designation
+            : (typeof e.role === 'object' ? (e.role?.name || 'Intern') : (e.role || 'Intern'));
+          return {
+            id: e._id,
+            name: e.name || 'Unnamed Intern',
+            role: roleStr,
+            type: 'Intern',
+            initial: (e.name || 'I')[0]?.toUpperCase(),
+            bg: 'bg-[#ECFDF5]', text: 'text-[#059669]'
+          };
+        });
         setEmployees([...emps, ...interns]);
       } catch (error) {
         toast.error('Failed to load data for task assignment');
@@ -135,10 +145,12 @@ export default function AssignTask() {
     if (errors.assignees) setErrors(prev => ({ ...prev, assignees: null }));
   };
 
-  const filteredEmployees = employees.filter(e => 
-    e.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    e.role.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEmployees = employees.filter(e => {
+    const q = (searchQuery || '').toLowerCase();
+    const nameMatch = (e.name || '').toLowerCase().includes(q);
+    const roleMatch = (String(typeof e.role === 'object' ? (e.role?.name || '') : (e.role || ''))).toLowerCase().includes(q);
+    return nameMatch || roleMatch;
+  });
 
   const selectedPriority = PRIORITIES.find(p => p.id === formData.priority);
   const selectedProjectObj = projects.find(p => p._id === formData.project);
@@ -338,7 +350,7 @@ export default function AssignTask() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="text-[13px] font-bold text-[#0F172A] truncate">{emp.name}</div>
-                          <div className="text-[11px] font-medium text-[#64748B] truncate">{emp.role}</div>
+                          <div className="text-[11px] font-medium text-[#64748B] truncate">{typeof emp.role === 'object' ? (emp.role?.name || 'Personnel') : (emp.role || 'Personnel')}</div>
                         </div>
                         <div className="shrink-0">
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${emp.type === 'Intern' ? 'bg-[#D1FAE5] text-[#065F46]' : 'bg-[#E2E8F0] text-[#475569]'}`}>
@@ -398,7 +410,7 @@ export default function AssignTask() {
                 <div className="flex -space-x-2">
                   {formData.assignees.length > 0 ? (
                     formData.assignees.slice(0, 3).map((id, i) => {
-                      const emp = employees.find(e => e.id === id);
+                      const emp = employees.find(e => e.id === id) || { initial: '?', name: 'Assignee', bg: 'bg-slate-100', text: 'text-slate-700' };
                       return (
                         <div key={id} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-[11px] border-2 border-white relative z-[${10-i}] ${emp.bg} ${emp.text}`} title={emp.name}>
                           {emp.initial}
