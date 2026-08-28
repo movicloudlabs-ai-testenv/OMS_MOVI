@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 7
+    },
+    "auditLog": "C:\\OMS\\owmp-ai-platform-main\\backend\\logs\\.e0c504f13b6bc4a6982e9149aff82f6a2d6d045e-audit.json",
+    "files": [
+        {
+            "date": 1780630791099,
+            "name": "C:\\OMS\\owmp-ai-platform-main\\backend\\logs\\combined-2026-06-05.log",
+            "hash": "f920f6b9a02ab3740715fc6867d033745b4dfd383ff1a4fefda045980e9e6385"
+        }
+    ],
+    "hashType": "sha256"
+}

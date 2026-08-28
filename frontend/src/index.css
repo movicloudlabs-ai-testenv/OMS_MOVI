@@ -1,0 +1,131 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-size: 15px;
+  }
+  @media (min-width: 640px) {
+    html {
+      font-size: 16px;
+    }
+  }
+  @media (min-width: 1024px) {
+    html {
+      font-size: 17.5px;
+    }
+  }
+}
+
+/* ---- Preserve source HTML design ---- */
+
+.bg-grid-pattern {
+  background-image: linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+    linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Nav links */
+.nav-link {
+  @apply flex items-center gap-3 px-4 py-3 rounded-2xl text-slate-500 font-medium transition-all duration-200 hover:bg-slate-50 hover:text-slate-900;
+}
+.nav-link.active {
+  @apply bg-primary/10 text-primary;
+}
+
+/* Bento cards (login page role cards) */
+.bento-card {
+  @apply bg-white rounded-3xl p-8 border border-slate-100 shadow-sm hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 cursor-pointer;
+}
+.bento-card.selected {
+  @apply border-primary ring-2 ring-primary/20 shadow-lg shadow-primary/10;
+}
+
+/* Buttons */
+.btn-primary {
+  @apply bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 hover:bg-primary/90 hover:scale-[1.02] transition-all duration-200 active:scale-100;
+}
+.btn-secondary {
+  @apply bg-slate-100 text-slate-700 rounded-2xl font-semibold hover:bg-slate-200 transition-all duration-200;
+}
+.btn-danger {
+  @apply bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 transition-all duration-200;
+}
+
+/* Profile popup */
+.profile-trigger {
+  @apply cursor-pointer;
+}
+.profile-popup {
+  @apply absolute top-14 right-0 bg-white rounded-3xl shadow-2xl shadow-slate-200/60 border border-slate-100 p-6 w-72 z-50 hidden;
+}
+.profile-popup.active {
+  @apply block;
+}
+
+/* NDA Badges */
+.nda-badge.nda-signed {
+  @apply bg-emerald-100 text-emerald-700;
+}
+.nda-badge.nda-pending {
+  @apply bg-amber-100 text-amber-700;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full;
+}
+
+/* Hide scrollbar */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Status badges */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide;
+}
+.badge-pending    { @apply bg-slate-100 text-slate-600; }
+.badge-in_progress { @apply bg-blue-100 text-blue-700; }
+.badge-review     { @apply bg-orange-100 text-orange-700; }
+.badge-done       { @apply bg-emerald-100 text-emerald-700; }
+.badge-overdue    { @apply bg-rose-100 text-rose-700; }
+.badge-active     { @apply bg-blue-100 text-blue-700; }
+.badge-admin      { @apply bg-purple-100 text-purple-700; }
+.badge-intern     { @apply bg-indigo-100 text-indigo-700; }
+.badge-hr         { @apply bg-pink-100 text-pink-700; }
+.badge-pmo        { @apply bg-teal-100 text-teal-700; }
+.badge-stable     { @apply bg-emerald-100 text-emerald-700; }
+.badge-at_risk    { @apply bg-amber-100 text-amber-700; }
+.badge-critical   { @apply bg-rose-100 text-rose-700; }
+
+/* Material Symbols default */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  @apply w-5 h-5 border-2 border-white/30 border-t-white rounded-full;
+  animation: spin 0.6s linear infinite;
+}
+
+/* Sidebar nav text (visible only when hovered/expanded) */
+aside:not(:hover) .nav-text {
+  @apply opacity-0;
+  display: none;
+}

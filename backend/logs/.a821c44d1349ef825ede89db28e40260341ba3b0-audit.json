@@ -1,0 +1,25 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 7
+    },
+    "auditLog": "C:\\Users\\samuv\\Downloads\\owms-fullstack\\backend\\logs\\.a821c44d1349ef825ede89db28e40260341ba3b0-audit.json",
+    "files": [
+        {
+            "date": 1776191626433,
+            "name": "C:\\Users\\samuv\\Downloads\\owms-fullstack\\backend\\logs\\combined-2026-04-15.log",
+            "hash": "da3f51aa368d2890ea61fbb30d2cccaf85fbb10f40d0196e77fbf82a6a331582"
+        },
+        {
+            "date": 1776343512721,
+            "name": "C:\\Users\\samuv\\Downloads\\owms-fullstack\\backend\\logs\\combined-2026-04-16.log",
+            "hash": "3275d5227b119a9d4d38c20c6021c8455fa6d0260a31a4056b11bd620e0472e2"
+        },
+        {
+            "date": 1776365614930,
+            "name": "C:\\Users\\samuv\\Downloads\\owms-fullstack\\backend\\logs\\combined-2026-04-17.log",
+            "hash": "c4fb04054da91726869e1d97c15bb80cdb8d4ad71d433c9bcb930cbb700f4b6e"
+        }
+    ],
+    "hashType": "sha256"
+}

@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 7
+    },
+    "auditLog": "G:\\N drive\\INTERN\\OMS\\OMS\\backend\\logs\\.1b152fbca15238c5efaff882434486a6618d46d5-audit.json",
+    "files": [
+        {
+            "date": 1780721121792,
+            "name": "G:\\N drive\\INTERN\\OMS\\OMS\\backend\\logs\\combined-2026-06-06.log",
+            "hash": "8c16b61dd12f9f80f9bff3e02ff43de3eace6005a902244359a5da3452595098"
+        }
+    ],
+    "hashType": "sha256"
+}
