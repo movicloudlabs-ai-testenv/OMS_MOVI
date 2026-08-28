@@ -1010,6 +1010,54 @@ const OverviewTab = ({ project, team, onAddMilestoneClick, onAddTaskClick, onAdd
           </div>
         </div>
 
+        {/* Intern Knowledge Transfer & AI Usage Metrics */}
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#2563EB] text-[20px]">school</span>
+              Intern KT & Daily Tracker Sync
+            </h3>
+            <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              Live Synced
+            </span>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-xs font-bold mb-1.5">
+                <span className="text-[#64748B]">Knowledge Transfer (KT) Progress</span>
+                <span className="text-[#2563EB] font-black text-sm">
+                  {project.ktMetrics?.averageKTProgress || 0}%
+                </span>
+              </div>
+              <div className="h-2.5 w-full bg-[#F1F5F9] rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500" 
+                  style={{ width: `${project.ktMetrics?.averageKTProgress || 0}%` }} 
+                />
+              </div>
+              <p className="text-[11px] text-[#64748B] mt-1">
+                Aggregated automatically from {project.ktMetrics?.internsReporting || 0} active intern daily trackers.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#F1F5F9]">
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E2E8F0]">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#64748B] block">AI Credits Used</span>
+                <span className="text-base font-bold text-[#0F172A] mt-0.5 block">
+                  {project.ktMetrics?.totalAICredits || 0} <span className="text-xs text-[#64748B] font-normal">credits</span>
+                </span>
+              </div>
+              <div className="bg-[#F8FAFC] p-3 rounded-lg border border-[#E2E8F0]">
+                <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#64748B] block">Daily Reports</span>
+                <span className="text-base font-bold text-[#0F172A] mt-0.5 block">
+                  {project.ktMetrics?.totalTrackerEntries || 0} <span className="text-xs text-[#64748B] font-normal">logged</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Quick Actions */}
         <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 shadow-sm">
           <h3 className="text-base font-bold text-[#0F172A] mb-4">Quick Actions</h3>
@@ -1172,10 +1220,28 @@ const InternsTab = ({ interns, onAssignInternClick, onViewInternClick }) => (
             <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center text-xl font-bold mb-3">{initial}</div>
             <h3 className="text-base font-bold text-[#0F172A]">{name}</h3>
             <p className="text-xs text-[#64748B] mb-4 bg-[#F1F5F9] inline-block px-2 py-1 rounded">{intern.user?.college || 'N/A'}</p>
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-3">
               <InternProgressRing percentage={intern.tasksAssigned > 0 ? Math.round((intern.tasksDone/intern.tasksAssigned)*100) : 0} size={64} />
             </div>
-            <p className="text-xs font-bold text-[#64748B] mb-5">{intern.tasksDone} of {intern.tasksAssigned} tasks done</p>
+            <p className="text-xs font-bold text-[#64748B] mb-3">{intern.tasksDone} of {intern.tasksAssigned} tasks done</p>
+            
+            {/* KT Progress & AI Credits Badge */}
+            <div className="w-full bg-[#F8FAFC] p-3 rounded-lg border border-[#E2E8F0] mb-4 text-left">
+              <div className="flex justify-between items-center text-xs font-bold mb-1">
+                <span className="text-[#64748B]">KT Progress</span>
+                <span className="text-[#2563EB] font-black">{intern.ktCompletion ?? 0}%</span>
+              </div>
+              <div className="h-2 w-full bg-[#E2E8F0] rounded-full overflow-hidden mb-2">
+                <div 
+                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500" 
+                  style={{ width: `${intern.ktCompletion ?? 0}%` }} 
+                />
+              </div>
+              <div className="flex justify-between items-center text-[11px] text-[#64748B] pt-1.5 border-t border-[#E2E8F0]">
+                <span>AI Tool Credits:</span>
+                <span className="font-extrabold text-[#0F172A]">{intern.aiCredits ?? 0}</span>
+              </div>
+            </div>
             <div className="mt-auto flex gap-2 w-full">
               <button onClick={() => onViewInternClick(intern)} className="flex-1 py-2 bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A] text-xs font-bold rounded-lg hover:bg-[#F1F5F9]">View Profile</button>
             </div>
@@ -1545,21 +1611,23 @@ const INTERN_ROLE_KEYWORDS = {
   'Mobile Intern':      ['mobile', 'android', 'ios', 'flutter'],
 };
 
-const normalizeText = (text) => {
-  if (!text) return '';
-  return text.toLowerCase()
-    .replace(/[^a-z0-9]/g, '') // remove non-alphanumeric characters (spaces, hyphens, slashes)
-    .replace('fulstack', 'fullstack')
-    .replace('ful', 'full'); // normalize common typos like ful -> full
-};
-
 const matchesInternRole = (intern, roleName) => {
-  const desig = normalizeText(intern.designation || '');
-  const domain = normalizeText(intern.domain || '');
-  const keywords = (INTERN_ROLE_KEYWORDS[roleName] || [roleName.toLowerCase().split(' ')[0]]).map(normalizeText);
+  const desig = (intern.designation || '').toLowerCase();
+  const domain = (intern.domain || '').toLowerCase();
+  const keywords = INTERN_ROLE_KEYWORDS[roleName] || [roleName.toLowerCase().split(' ')[0]];
   // If intern has no designation AND no domain set, show them under any role
   if (!desig && !domain) return true;
-  return keywords.some(kw => desig.includes(kw) || domain.includes(kw));
+  if (keywords.some(kw => desig.includes(kw) || domain.includes(kw))) return true;
+  // Bug fix: an intern whose designation/domain (e.g. "Product Intern",
+  // "Marketing Intern") doesn't fall into ANY of the known keyword
+  // categories was being hidden from every single role's match list —
+  // making them impossible to select no matter what requirement was
+  // chosen. Fall back to showing such "uncategorized" interns everywhere,
+  // same as interns with no designation set at all.
+  const matchesAnyKnownCategory = Object.values(INTERN_ROLE_KEYWORDS).some(
+    (kwList) => kwList.some(kw => desig.includes(kw) || domain.includes(kw))
+  );
+  return !matchesAnyKnownCategory;
 };
 
 const InternWizardModal = ({

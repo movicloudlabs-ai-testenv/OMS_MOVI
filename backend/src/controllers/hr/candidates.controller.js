@@ -1,6 +1,12 @@
 import Candidate from '../../models/Candidate.js';
+import User from '../../models/User.js';
+import Role from '../../models/Role.js';
+import AuditLog from '../../models/AuditLog.js';
 import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.js';
 import { getPagination } from '../../utils/paginate.js';
+import { generateEmployeeId } from '../../utils/generateEmployeeId.js';
+import { autoAssignHR } from '../../utils/autoAssignHR.js';
+import { syncEmployeeLeaveBalance } from '../../utils/syncLeaveBalance.js';
 
 const ALLOWED_DOC_TYPES = ['resume', 'offerLetter', 'nda'];
 
@@ -217,6 +223,139 @@ export const deleteCandidateDocument = async (req, res, next) => {
     await candidate.save();
 
     sendSuccess(res, candidate.documents, 'Document removed successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/hr/recruitment/:id/convert-to-user
+export const convertCandidateToUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      department,
+      role: roleInput,
+      employmentType = 'Full-time',
+      designation,
+      joiningDate,
+      password = 'Pass@1234',
+      batch,
+      mentor,
+      pmoLead,
+    } = req.body;
+
+    const candidate = await Candidate.findById(id);
+    if (!candidate) return sendError(res, 'Candidate not found', 404);
+
+    if (candidate.convertedTo) {
+      return sendError(res, 'Candidate has already been converted to a user account', 400);
+    }
+
+    // Check email uniqueness
+    const existingUser = await User.findOne({
+      email: candidate.email.toLowerCase(),
+      deletedAt: { $exists: false },
+    });
+    if (existingUser) {
+      return sendError(res, `A user with email ${candidate.email} already exists`, 409);
+    }
+
+    // Resolve Role
+    let targetRole;
+    if (roleInput) {
+      targetRole = await Role.findById(roleInput);
+    }
+    if (!targetRole) {
+      const defaultSlug = employmentType === 'Intern' ? 'intern' : 'employee';
+      targetRole = await Role.findOne({ slug: defaultSlug });
+    }
+    if (!targetRole) {
+      targetRole = await Role.findOne({});
+    }
+
+    // Generate unique employee ID
+    const employeeId = await generateEmployeeId(employmentType);
+
+    // Build User Data
+    const userData = {
+      employeeId,
+      name: candidate.name,
+      email: candidate.email.toLowerCase(),
+      password, // Mongoose pre-save hook handles hashing
+      role: targetRole._id,
+      department: department || undefined,
+      designation: designation || candidate.appliedRole || (employmentType === 'Intern' ? 'Intern' : 'Associate Developer'),
+      employmentType,
+      status: 'Active',
+      phone: candidate.phone || undefined,
+      college: candidate.college || undefined,
+      domain: candidate.domain || undefined,
+      joinDate: joiningDate || candidate.joiningDate || new Date(),
+      onboardingComplete: false,
+      onboardingChecklist: {
+        welcomeEmail: false,
+        idCardIssued: false,
+        systemAccess: false,
+        deptIntroduction: false,
+        equipmentAssigned: false,
+        hrDocumentation: false,
+        mentorAssigned: false,
+        firstWeekSchedule: false,
+      },
+    };
+
+    if (employmentType === 'Intern') {
+      userData.batch = batch || `${new Date().toLocaleString('default', { month: 'short' })}-${new Date().getFullYear()}`;
+      userData.internshipStart = joiningDate || candidate.joiningDate || new Date();
+      if (mentor) userData.mentor = mentor;
+      if (pmoLead) userData.pmoLead = pmoLead;
+    }
+
+    // Auto-assign HR Manager
+    const { hrUser } = await autoAssignHR(userData);
+    if (hrUser) userData.hrManager = hrUser._id;
+
+    // Create User
+    const newUser = await User.create(userData);
+
+    // Sync initial leave balances
+    try {
+      await syncEmployeeLeaveBalance(newUser._id);
+    } catch (e) {
+      console.warn('Could not sync initial leave balance:', e.message);
+    }
+
+    // Update Candidate
+    candidate.recruitmentStatus = 'Joined';
+    candidate.convertedTo = newUser._id;
+    if (joiningDate) candidate.joiningDate = joiningDate;
+    await candidate.save();
+
+    // Audit Log
+    try {
+      await AuditLog.create({
+        user: req.user._id,
+        action: 'CONVERT_CANDIDATE_TO_USER',
+        module: 'Recruitment',
+        targetId: newUser._id.toString(),
+        targetModel: 'User',
+        details: `Converted candidate ${candidate.name} (${candidate.email}) to user ${newUser.employeeId}`,
+        status: 'SUCCESS',
+      });
+    } catch (e) {
+      console.warn('Failed to write audit log:', e.message);
+    }
+
+    // Return populated user & candidate
+    const populatedUser = await User.findById(newUser._id)
+      .populate('role', 'name slug color')
+      .populate('department', 'name code')
+      .populate('hrManager', 'name employeeId');
+
+    sendSuccess(res, {
+      user: populatedUser,
+      candidate,
+    }, 'Candidate successfully onboarded as user', 201);
   } catch (error) {
     next(error);
   }
