@@ -47,7 +47,11 @@ export default function LoginPage() {
       const slug = user.role?.slug || user.role || '';
       navigate(ROLE_HOME[slug] || '/unauthorized');
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || err.message || 'Invalid credentials.');
+      if (err.message === 'Network Error' || !err.response) {
+        setErrorMsg('Cannot connect to backend server (http://localhost:5000). Please ensure backend and MongoDB are running.');
+      } else {
+        setErrorMsg(err.response?.data?.message || 'Invalid credentials.');
+      }
       setErrorShake(true);
       setTimeout(() => setErrorShake(false), 500);
     } finally {
