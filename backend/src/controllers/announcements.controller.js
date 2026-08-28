@@ -77,14 +77,25 @@ export const createAnnouncement = async (req, res, next) => {
       }).select('_id');
 
       if (targetUsers.length > 0) {
+        const senderName = req.user?.name || 'Sarah Connor';
+        const senderDesignation = req.user?.designation || 'HR Manager';
+
         const notifDocs = targetUsers.map(u => ({
           recipient: u._id,
           type: 'system_alert',
           title: `📢 Announcement: ${title}`,
-          message: content.length > 150 ? content.slice(0, 150) + '...' : content,
-          link: '/hr/communication',
+          message: content,
+          link: '',
           sender: req.user._id,
-          metadata: { announcementId: announcement._id },
+          metadata: {
+            isAnnouncement: true,
+            announcementId: announcement._id,
+            title: title,
+            content: content,
+            senderName: senderName,
+            senderDesignation: senderDesignation,
+            targetRoles: announcement.targetRoles,
+          },
         }));
 
         await Notification.insertMany(notifDocs);

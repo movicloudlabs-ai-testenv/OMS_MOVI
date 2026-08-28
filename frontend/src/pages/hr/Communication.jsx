@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { announcementsAPI } from '../../utils/api';
-import PageWrapper from '../../components/PageWrapper';
+import HRLayout from '../../components/hr/HRLayout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
@@ -10,7 +10,7 @@ const ALL_ROLES = ['employee', 'intern', 'hr', 'pmo', 'admin'];
 export default function HRCommunication() {
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ title: '', content: '', targetRoles: ['employee', 'intern'], pinned: false });
+  const [form, setForm] = useState({ title: '', content: '', targetRoles: [], pinned: false });
   const [sending, setSending] = useState(false);
 
   const loadAnnouncements = async () => {
@@ -54,7 +54,7 @@ export default function HRCommunication() {
     try {
       const res = await announcementsAPI.create(form);
       setAnnouncements(p => [res.data?.data, ...p]);
-      setForm({ title: '', content: '', targetRoles: ['employee', 'intern'], pinned: false });
+      setForm({ title: '', content: '', targetRoles: [], pinned: false });
       toast.success('Announcement broadcasted to team!');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to send announcement');
@@ -86,12 +86,11 @@ export default function HRCommunication() {
   };
 
   return (
-    <PageWrapper>
-      <div className="space-y-8 max-w-5xl mx-auto text-left">
-        <div>
-          <h1 className="font-headline font-bold text-2xl text-slate-900">HR Communication & Broadcasts</h1>
-          <p className="text-slate-500 text-sm mt-1">Broadcast real-time announcements and notifications to company staff & interns</p>
-        </div>
+    <HRLayout
+      title="HR Communication & Broadcasts"
+      subtitle="Broadcast real-time announcements and notifications to company staff & interns"
+    >
+      <div className="space-y-8 max-w-5xl mx-auto text-left py-2">
 
         {/* Compose */}
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8">
@@ -226,7 +225,7 @@ export default function HRCommunication() {
           )}
         </div>
       </div>
-    </PageWrapper>
+    </HRLayout>
   );
 }
 

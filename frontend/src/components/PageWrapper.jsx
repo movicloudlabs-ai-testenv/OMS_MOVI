@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import AnnouncementModal from './shared/AnnouncementModal';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getNotificationTarget } from '../utils/notificationRouter';
@@ -24,19 +25,19 @@ function relTime(date) {
 
 export default function PageWrapper({ children }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { enabled: notifEnabled, unreadCount, notifications, refresh, markRead, markAllRead } = useNotifications();
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('owms_sidebar_collapsed') === 'true'; } catch { return false; }
   });
+  const notifRef = useRef();
 
   const handleSetCollapsed = (val) => {
     setCollapsed(val);
     try { localStorage.setItem('owms_sidebar_collapsed', String(val)); } catch {}
   };
-
-  const { user } = useAuth();
-  const { enabled: notifEnabled, unreadCount, notifications, refresh, markRead, markAllRead } = useNotifications();
-  const [notifOpen, setNotifOpen] = useState(false);
-  const notifRef = useRef();
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -64,6 +65,18 @@ export default function PageWrapper({ children }) {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
+
+    const isAnnouncement =
+      notif.type === 'announcement' ||
+      notif.metadata?.isAnnouncement ||
+      (notif.title || '').toLowerCase().includes('announcement') ||
+      (notif.title || '').startsWith('📢');
+
+    if (isAnnouncement) {
+      setSelectedAnnouncement(notif);
+      return;
+    }
+
     const target = getNotificationTarget(notif, user?.role || user?.employmentType);
     if (target) navigate(target);
   };
@@ -121,6 +134,9 @@ export default function PageWrapper({ children }) {
                       const isUnread = !notif.read;
                       const meta = notifMeta(notif.type);
                       const preview = (notif.message || '').replace(/\s*\n\s*/g, ' · ');
+                      const senderDisp = notif.sender?.name
+                        ? `${notif.sender.name}${notif.sender.designation ? ` (${notif.sender.designation})` : ''}`
+                        : (notif.metadata?.senderName ? `${notif.metadata.senderName}${notif.metadata.senderDesignation ? ` (${notif.metadata.senderDesignation})` : ''}` : '');
                       return (
                         <button
                           key={notif._id}
@@ -138,7 +154,14 @@ export default function PageWrapper({ children }) {
                               {isUnread && <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
                             </div>
                             <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{preview}</p>
-                            <p className="text-[11px] text-slate-400 mt-1">{relTime(notif.createdAt)}</p>
+                            <div className="flex items-center justify-between gap-2 mt-1">
+                              {senderDisp ? (
+                                <p className="text-[11px] text-slate-400 font-medium truncate">
+                                  {senderDisp}
+                                </p>
+                              ) : <span />}
+                              <p className="text-[11px] text-slate-400 shrink-0">{relTime(notif.createdAt)}</p>
+                            </div>
                           </div>
                         </button>
                       );
@@ -154,6 +177,14 @@ export default function PageWrapper({ children }) {
           {children}
         </div>
       </main>
+
+      {/* Announcement Modal Popup */}
+      {selectedAnnouncement && (
+        <AnnouncementModal
+          announcement={selectedAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
     </div>
   );
 }

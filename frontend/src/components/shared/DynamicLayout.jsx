@@ -3,6 +3,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import AdminLayout from '../admin/AdminLayout';
 import HRLayout from '../hr/HRLayout';
 import PageWrapper from '../PageWrapper';
+import { normalizeRoleSlug } from '../../utils/notificationRouter';
 
 /**
  * DynamicLayout — wraps shared pages (like Users, Departments, Roles, etc.)
@@ -15,8 +16,8 @@ import PageWrapper from '../PageWrapper';
 export default function DynamicLayout(props) {
   const { user } = useAuth();
   
-  // Resolve slug robustly based on how ProtectedRoute does it
-  const userSlug = user?.role?.slug || user?.role || '';
+  // Resolve slug robustly using normalizeRoleSlug
+  const userSlug = normalizeRoleSlug(user);
   
   if (userSlug === 'admin' || userSlug === 'super-admin') {
     return <AdminLayout {...props} />;
