@@ -15,7 +15,7 @@ export const hrScope = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 
-    if (req.user.role.slug === 'super-admin') {
+    if (req.user.role.slug === 'super-admin' || req.user.role.slug === 'admin') {
       req.scopeFilter = {};
       req.hrUserIds   = null;
       return next();
@@ -51,6 +51,13 @@ export const hrScope = async (req, res, next) => {
 
       const allIds = Array.from(ids);
       req.scopeFilter = allIds.length ? { _id: { $in: allIds } } : {};
+      req.hrUserIds   = null;
+      return next();
+    }
+
+    // Allow PMO Lead and other roles granted cross-role access via RBAC
+    if (req.user.role.slug === 'pmo-lead' || req.user.role.permissions?.some(p => p.resource === 'Users' || p.resource === 'Interns')) {
+      req.scopeFilter = {};
       req.hrUserIds   = null;
       return next();
     }

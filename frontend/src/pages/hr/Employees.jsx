@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import HRLayout from '../../components/hr/HRLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { hrAPI } from '../../utils/api';
 import AccessDenied from '../../components/shared/AccessDenied';
 import BulkImportModal from '../../components/shared/BulkImportModal';
@@ -77,10 +77,10 @@ export default function Employees() {
     return matchesSearch && matchesDept && matchesType && matchesStatus;
   }), [employees, filterDept, filterStatus, filterType, searchTerm]);
 
-  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view employees." /></HRLayout>;
+  if (!canRead) return <DynamicLayout bare><AccessDenied message="You don't have permission to view employees." /></DynamicLayout>;
 
   return (
-    <HRLayout 
+    <DynamicLayout 
       title="Employee Directory" 
       subtitle="View and manage all employee records assigned to you."
     >
@@ -306,6 +306,6 @@ export default function Employees() {
 
         </div>
       </div>
-    </HRLayout>
+    </DynamicLayout>
   );
 }
