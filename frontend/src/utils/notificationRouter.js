@@ -116,7 +116,21 @@ export const ROLE_PREFIXES = {
  */
 export function normalizeRoleSlug(roleInput) {
   if (!roleInput) return '';
-  let str = (typeof roleInput === 'object' ? (roleInput.slug || roleInput.name || '') : String(roleInput)).toLowerCase().trim();
+  if (typeof roleInput === 'object') {
+    const slugOrName =
+      roleInput.slug ||
+      roleInput.name ||
+      (typeof roleInput.role === 'object' ? (roleInput.role?.slug || roleInput.role?.name) : roleInput.role) ||
+      roleInput.employmentType ||
+      roleInput.designation ||
+      '';
+    if (slugOrName) return normalizeRoleSlug(slugOrName);
+  }
+  let str = String(roleInput).toLowerCase().trim();
+  // If it's a 24-character hex ObjectId, it cannot be a role slug
+  if (/^[0-9a-fA-F]{24}$/.test(str)) {
+    return '';
+  }
   str = str.replace(/_/g, '-').replace(/\s+/g, '-');
 
   if (str.includes('pmo')) return 'pmo-lead';

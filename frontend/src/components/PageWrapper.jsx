@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useAuth } from '../contexts/AuthContext';
+import { getNotificationTarget } from '../utils/notificationRouter';
 import { Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -31,6 +33,7 @@ export default function PageWrapper({ children }) {
     try { localStorage.setItem('owms_sidebar_collapsed', String(val)); } catch {}
   };
 
+  const { user } = useAuth();
   const { enabled: notifEnabled, unreadCount, notifications, refresh, markRead, markAllRead } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef();
@@ -61,9 +64,8 @@ export default function PageWrapper({ children }) {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
-    const link = notif.link || '';
-    const target = (link.startsWith('/pmo') || link.startsWith('/employee') || link.startsWith('/intern')) ? link : '/';
-    navigate(target);
+    const target = getNotificationTarget(notif, user?.role || user?.employmentType);
+    if (target) navigate(target);
   };
 
   return (
