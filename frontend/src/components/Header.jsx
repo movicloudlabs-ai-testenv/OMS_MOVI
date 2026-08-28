@@ -70,7 +70,7 @@ export default function Header({ sidebarCollapsed }) {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
-    const target = getNotificationTarget(notif, roleSlug);
+    const target = getNotificationTarget(notif, user?.role || user?.employmentType || roleSlug);
     if (target) navigate(target);
   };
 

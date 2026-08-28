@@ -6,6 +6,7 @@ import { formatDistanceToNow } from 'date-fns';
 import HRSidebar from './HRSidebar';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { getNotificationTarget } from '../../utils/notificationRouter';
 
 function notifMeta(type) {
   const t = type || '';
@@ -56,9 +57,8 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
-    const link = notif.link || '';
-    const target = (link === '/hr' || link.startsWith('/hr/') || link === '/profile') ? link : '/hr/dashboard';
-    navigate(target);
+    const target = getNotificationTarget(notif, user?.role || user?.employmentType || 'hr-manager');
+    if (target) navigate(target);
   };
 
   const [collapsed, setCollapsed] = useState(() => {

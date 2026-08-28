@@ -40,7 +40,9 @@ const relTime = (d) => {
 // ─── Task Detail Modal ────────────────────────────────────────────────────────
 function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh }) {
   const [task,        setTask]        = useState(initialTask);
-  const [activeTab,   setActiveTab]   = useState('Subtasks');
+  const [activeTab,   setActiveTab]   = useState(
+    initialTask?.initialTab?.toLowerCase() === 'comments' ? 'Comments' : 'Subtasks'
+  );
   const [comment,     setComment]     = useState('');
   const [commenting,  setCommenting]  = useState(false);
   const [togglingId,  setTogglingId]  = useState(null);
