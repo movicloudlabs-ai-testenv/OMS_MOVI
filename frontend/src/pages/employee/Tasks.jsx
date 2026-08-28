@@ -398,12 +398,18 @@ export default function EmployeeTasks() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const [tRes, pRes] = await Promise.all([
+      const [tRes, pRes] = await Promise.allSettled([
         employeeAPI.getTasks(),
         employeeAPI.getProjects(),
       ]);
-      setTasks(tRes.data?.data || []);
-      setProjects(pRes.data?.data || []);
+      if (tRes.status === 'fulfilled') {
+        setTasks(tRes.value.data?.data || tRes.value.data || []);
+      } else {
+        toast.error('Failed to load tasks');
+      }
+      if (pRes.status === 'fulfilled') {
+        setProjects(pRes.value.data?.data || pRes.value.data || []);
+      }
     } catch { toast.error('Failed to load tasks'); }
     finally { setLoading(false); }
   };
