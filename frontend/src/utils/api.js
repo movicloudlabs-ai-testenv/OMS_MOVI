@@ -165,7 +165,6 @@ export const hrAPI = {
   applyMyLeave: (data) => api.post('/hr/leaves/my/apply', data),
 
   getInterns: (params) => api.get('/hr/interns', { params }),
-  exportInterns: (params) => api.get('/hr/interns/export', { params, responseType: 'blob' }),
   getIntern: (id) => api.get(`/hr/interns/${id}`),
   getInternLearning: (id) => api.get(`/hr/interns/${id}/learning`),
   assignInternLearning: (id, data) => api.post(`/hr/interns/${id}/learning`, data),
@@ -184,6 +183,7 @@ export const hrAPI = {
   createCandidate: (data) => api.post('/hr/recruitment', data),
   updateCandidate: (id, data) => api.patch(`/hr/recruitment/${id}`, data),
   deleteCandidate: (id) => api.delete(`/hr/recruitment/${id}`),
+  convertCandidateToUser: (id, data) => api.post(`/hr/recruitment/${id}/convert-to-user`, data),
   addCandidateNote: (id, text) => api.post(`/hr/recruitment/${id}/notes`, { text }),
   uploadCandidateDocument: (id, docType, formData) => api.post(`/hr/recruitment/${id}/documents/${docType}`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
@@ -244,6 +244,7 @@ export const pmoAPI = {
   getTasks: (params) => api.get('/pmo/tasks', { params }),
   getTask: (id) => api.get(`/pmo/tasks/${id}`),
   createTask: (data) => api.post('/pmo/tasks', data),
+  bulkReassignTasks: (data) => api.post('/pmo/tasks/bulk-reassign', data),
   updateTask: (id, data) => api.put(`/pmo/tasks/${id}`, data),
   updateTaskStatus: (id, data) => api.patch(`/pmo/tasks/${id}/status`, data),
   addTaskComment: (id, data) => api.post(`/pmo/tasks/${id}/comments`, data),
@@ -283,11 +284,21 @@ export const pmoAPI = {
   exportDailyTracker: (params) => api.get('/pmo/daily-tracker/export', { params, responseType: 'blob' }),
   getTrackerDayStatus: (params) => api.get('/pmo/daily-tracker/day-status', { params }),
 
+  // Daily Tracker — PMO submitting their OWN entry
+  getMyTrackerToday: () => api.get('/pmo/daily-tracker/my/today'),
+  getMyTrackerHistory: () => api.get('/pmo/daily-tracker/my'),
+  submitDailyTracker: (data) => api.post('/pmo/daily-tracker/my', data),
+
   // EOD Reports (simple daily message updates — view only)
   getEODReports: (params) => api.get('/pmo/eod', { params }),
   getUserEODHistory: (userId) => api.get(`/pmo/eod/user/${userId}`),
   getEODDayStatus: (params) => api.get('/pmo/eod/day-status', { params }),
   exportEODReports: (params) => api.get('/pmo/eod/export', { params, responseType: 'blob' }),
+
+  // EOD Report — PMO submitting their OWN update
+  getMyEODToday: () => api.get('/pmo/eod/my/today'),
+  getMyEODHistory: () => api.get('/pmo/eod/my'),
+  submitEOD: (message) => api.post('/pmo/eod/my', { message }),
 };
 
 // ─── EMPLOYEE API ─────────────────────────────────────────────────────────
@@ -353,7 +364,6 @@ export const internAPI = {
   changePassword: (data) => api.post('/intern/profile/change-password', data),
 
   getTasks: (params) => api.get('/intern/tasks', { params }),
-  getProjects: () => api.get('/intern/projects'),
   updateTaskStatus: (id, data) => api.patch(`/intern/tasks/${id}/status`, data),
   addTaskComment: (id, data) => api.post(`/intern/tasks/${id}/comments`, data),
 
@@ -380,6 +390,8 @@ export const internAPI = {
   updateLearningStatus: (id, data) => api.patch(`/intern/learning/${id}/status`, data),
 
   cancelLeave: (id) => api.delete(`/intern/leave/${id}`),
+  getProjects: () => api.get('/intern/projects'),
+  getProject: (id) => api.get(`/intern/projects/${id}`),
   getTask: (id) => api.get(`/intern/tasks/${id}`),
   toggleSubtask: (taskId, subtaskId) => api.patch(`/intern/tasks/${taskId}/subtasks/${subtaskId}`),
   uploadAttachment: (taskId, formData) =>
@@ -399,4 +411,22 @@ export const notificationAPI = {
   markAllAsRead: () => api.patch('/notifications/read-all'),
   markAsRead: (id) => api.patch(`/notifications/${id}/read`),
   deleteNotification: (id) => api.delete(`/notifications/${id}`),
+};
+
+// ─── PAYMENTS API (Admin & Intern) ────────────────────────────────────────
+export const paymentsAPI = {
+  getAll: (params) => api.get('/admin/payments', { params }),
+  getById: (id) => api.get(`/admin/payments/${id}`),
+  create: (data) => api.post('/admin/payments', data),
+  update: (id, data) => api.put(`/admin/payments/${id}`, data),
+  delete: (id) => api.delete(`/admin/payments/${id}`),
+  getMy: () => api.get('/intern/payments'),
+};
+
+// ─── ANNOUNCEMENTS & COMMUNICATION API ────────────────────────────────────
+export const announcementsAPI = {
+  getAll: (params) => api.get('/announcements', { params }),
+  create: (data) => api.post('/announcements', data),
+  delete: (id) => api.delete(`/announcements/${id}`),
+  togglePin: (id) => api.patch(`/announcements/${id}/pin`),
 };

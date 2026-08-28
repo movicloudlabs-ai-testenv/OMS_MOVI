@@ -1,9 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Grid2X2, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase, MessageSquare } from 'lucide-react';
-import { pmoAPI } from '../utils/api';
+import { Grid2X2, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase, MessageSquare, CreditCard, FileText } from 'lucide-react';
 
 // Pages that can be unlocked for any role via the Access Matrix.
 // Shown in "Granted Access" sidebar section when a non-native role has the permission.
@@ -14,9 +12,7 @@ const CROSS_ROLE_LINKS = [
   { resource: 'Roles',      action: 'read',   to: '/admin/roles',       icon: 'badge',     label: 'Roles'       },
   { resource: 'Audit Logs', action: 'read',   to: '/admin/audit',       icon: 'history',   label: 'Audit Logs'  },
   { resource: 'Reports',    action: 'read',   to: '/admin/reports',     icon: 'analytics', label: 'Reports'     },
-  // BUG-020 FIX: Removed Interns entry (/hr/interns) — PMO and HR already have
-  // native Interns links in their primary nav. Routing PMO to /hr/interns caused
-  // hrScope middleware rejection ("HR access required") and HR sidebar rendering.
+  { resource: 'Interns',    action: 'read',   to: '/hr/interns',        icon: 'school',    label: 'Interns'     },
   { resource: 'Settings',   action: 'update', to: '/admin/settings',    icon: 'settings',  label: 'Settings'    },
 ];
 
@@ -35,7 +31,8 @@ const NAV_CONFIG = {
     { to: '/intern/tasks', icon: CheckSquare, label: 'My Tasks', isLucide: true },
     { to: '/intern/daily-tracker', icon: CalendarDays, label: 'Daily Tracker', isLucide: true },
     { to: '/intern/eod-report', icon: MessageSquare, label: 'EOD Report', isLucide: true },
-
+    { to: '/intern/documents', icon: FileText, label: 'Documents', isLucide: true },
+    { to: '/intern/payments', icon: CreditCard, label: 'Payments', isLucide: true },
     { to: '/intern/leave', icon: Clock, label: 'Leave', isLucide: true },
     { to: '/intern/learning', icon: BookOpen, label: 'Learning', isLucide: true },
     { to: '/intern/profile', icon: User, label: 'My Profile', isLucide: true },
@@ -46,13 +43,12 @@ const NAV_CONFIG = {
     { to: '/hr/interns', icon: 'school', label: 'Interns', permission: { resource: 'Interns', action: 'read' } },
     { to: '/hr/onboarding', icon: 'person_add', label: 'Onboarding', permission: { resource: 'Users', action: 'update' } },
     { to: '/hr/attendance', icon: 'event_available', label: 'Attendance', permission: { resource: 'Attendance', action: 'read' } },
-    { to: '/hr/documents', icon: 'folder_shared', label: 'Documents' },
+    { to: '/hr/documents', icon: FileText, label: 'Documents', isLucide: true },
     { to: '/hr/leave', icon: 'event_note', label: 'Leave' },
     { to: '/hr/projects', icon: 'folder_open', label: 'Projects' },
     { to: '/hr/performance', icon: 'grade', label: 'Performance' },
     { to: '/hr/tasks', icon: 'view_kanban', label: 'Task Board', permission: { resource: 'Tasks', action: 'read' } },
     { to: '/hr/tasks/new', icon: CheckSquare, label: 'Assign Task', isLucide: true, permission: { resource: 'Tasks', action: 'create' } },
-    { to: '/hr/communication', icon: MessageSquare, label: 'Communication', isLucide: true },
     { to: '/hr/profile', icon: User, label: 'My Profile', isLucide: true },
   ],
   pmo: [
@@ -64,6 +60,8 @@ const NAV_CONFIG = {
     { to: '/pmo/interns', icon: GraduationCap, label: 'Interns', isLucide: true, permission: { resource: 'Interns', action: 'read' } },
     { to: '/pmo/daily-tracker', icon: CalendarDays, label: 'Daily Tracker', isLucide: true, permission: { resource: 'Daily Tracker', action: 'read' } },
     { to: '/pmo/eod-reports', icon: MessageSquare, label: 'EOD Reports', isLucide: true, permission: { resource: 'Daily Tracker', action: 'read' } },
+    { to: '/pmo/my-daily-tracker', icon: CalendarDays, label: 'My Daily Tracker', isLucide: true },
+    { to: '/pmo/my-eod-report', icon: MessageSquare, label: 'My EOD Report', isLucide: true },
     { to: '/pmo/monitoring', icon: 'monitoring', label: 'Monitoring' },
     { to: '/pmo/timeline', icon: 'timeline', label: 'Timeline' },
     { to: '/pmo/approvals', icon: 'approval', label: 'Approvals', permission: { resource: 'Tasks', action: 'read' } },
@@ -73,22 +71,21 @@ const NAV_CONFIG = {
   admin: [
     { to: '/admin/dashboard', icon: 'dashboard', label: 'Dashboard' },
     { to: '/admin/users', icon: 'group', label: 'Users', permission: { resource: 'Users', action: 'read' } },
+    { to: '/admin/payments', icon: CreditCard, label: 'Payments', isLucide: true },
     { to: '/admin/departments', icon: 'domain', label: 'Departments', permission: { resource: 'Departments', action: 'read' } },
     { to: '/admin/roles', icon: 'badge', label: 'Roles', permission: { resource: 'Roles', action: 'read' } },
     { to: '/admin/access-matrix', icon: Grid2X2, label: 'Access Matrix', isLucide: true, permission: { resource: 'Roles', action: 'update' } },
     { to: '/admin/audit', icon: 'history', label: 'Audit Logs', permission: { resource: 'Audit Logs', action: 'read' } },
     { to: '/admin/reports', icon: 'analytics', label: 'Reports', permission: { resource: 'Reports', action: 'read' } },
     { to: '/admin/settings', icon: 'settings', label: 'Settings', permission: { resource: 'Settings', action: 'read' } },
+    { to: '/admin/profile', icon: User, label: 'My Profile', isLucide: true },
   ],
 };
 
 export default function Sidebar({ collapsed, setCollapsed }) {
   const { user, hasPermission, logout } = useAuth();
-  const { hasActivity, notifications } = useNotifications();
+  const { hasActivity } = useNotifications();
   const navigate = useNavigate();
-
-  const [pendingApprovalsCount, setPendingApprovalsCount] = useState(0);
-
   // user.role from real backend is a populated object { slug, name, ... }
   // Resolve to the NAV_CONFIG key (legacy short slugs)
   const resolveNavKey = (role) => {
@@ -111,23 +108,6 @@ export default function Sidebar({ collapsed, setCollapsed }) {
   const navKey = resolveNavKey(user?.role);
   // Show all primary links unconditionally; route guards will handle unauthorized access
   const visibleLinks = NAV_CONFIG[navKey] || [];
-
-  const fetchPendingApprovalsCount = useCallback(async () => {
-    if (navKey !== 'pmo') return;
-    try {
-      const res = await pmoAPI.getTasksInReview();
-      const count = res.data?.data?.length || 0;
-      setPendingApprovalsCount(count);
-    } catch (err) {
-      // silent
-    }
-  }, [navKey]);
-
-  useEffect(() => {
-    if (navKey === 'pmo') {
-      fetchPendingApprovalsCount();
-    }
-  }, [navKey, notifications, fetchPendingApprovalsCount]);
 
   const existingPaths = new Set(visibleLinks.map(l => l.to));
   const grantedLinks = (navKey === 'admin') ? [] : CROSS_ROLE_LINKS.filter(
@@ -165,8 +145,7 @@ export default function Sidebar({ collapsed, setCollapsed }) {
       {/* Primary Nav */}
       <nav className={`flex-1 min-h-0 overflow-y-auto hide-scrollbar py-3 space-y-1 ${collapsed ? 'px-3' : 'px-3'}`}>
         {visibleLinks.map(({ to, icon, label, isLucide }) => {
-          const showDot = to === '/pmo/approvals' ? false : hasActivity(to);
-          const showCountBadge = to === '/pmo/approvals' && pendingApprovalsCount > 0;
+          const showDot = hasActivity(to);
           return (
             <NavLink
               key={to}
@@ -188,16 +167,6 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 <span className="material-symbols-outlined text-[19px] flex-shrink-0">{icon}</span>
               )}
               {!collapsed && <span className="text-[13px] whitespace-nowrap">{label}</span>}
-              {showCountBadge && !collapsed && (
-                <span className="ml-auto bg-[#EA580C] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0 animate-in fade-in zoom-in duration-200">
-                  {pendingApprovalsCount}
-                </span>
-              )}
-              {showCountBadge && collapsed && (
-                <span className="absolute top-1.5 right-1.5 min-w-[14px] h-[14px] px-0.5 bg-[#EA580C] text-white text-[9px] font-bold rounded-full flex items-center justify-center leading-none ring-2 ring-[#111111]">
-                  {pendingApprovalsCount}
-                </span>
-              )}
               {showDot && (
                 collapsed ? (
                   <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#EA580C] ring-2 ring-[#111111]" />

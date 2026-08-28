@@ -1,12 +1,13 @@
 import { NavLink } from 'react-router-dom';
 import {
   Menu, LayoutDashboard, Users, Building2, Shield, Grid2X2, FileClock,
-  BarChart3, Settings as SettingsIcon, LogOut, User,
+  BarChart3, Settings as SettingsIcon, LogOut, User, CreditCard,
 } from 'lucide-react';
 
 export const NAV_LINKS = [
   { to: '/admin/dashboard',     icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/admin/users',         icon: Users,           label: 'Users' },
+  { to: '/admin/payments',      icon: CreditCard,      label: 'Payments' },
   { to: '/admin/departments',   icon: Building2,       label: 'Departments' },
   { to: '/admin/roles',         icon: Shield,          label: 'Roles' },
   { to: '/admin/access-matrix', icon: Grid2X2,         label: 'Access Matrix' },

@@ -18,6 +18,8 @@ import InternTasks from './pages/intern/Tasks';
 import InternAttendance from './pages/intern/Attendance';
 import InternLeave from './pages/intern/Leave';
 import InternLearning from './pages/intern/Learning';
+import InternDocuments from './pages/intern/Documents';
+import InternPayments from './pages/intern/Payments';
 import InternProfile from './pages/intern/Profile';
 
 // Employee
@@ -44,6 +46,8 @@ import HREODReports from './pages/hr/EODReports';
 import HRLeaveApproval from './pages/hr/LeaveApproval';
 import PMODailyTracker from './pages/pmo/DailyTracker';
 import PMOEODReports from './pages/pmo/EODReports';
+import PMOMyDailyTracker from './pages/pmo/MyDailyTracker';
+import PMOMyEODReport from './pages/pmo/MyEODReport';
 import HROnboarding from './pages/hr/Onboarding';
 import HRAttendance from './pages/hr/Attendance';
 import HRDocuments from './pages/hr/Documents';
@@ -92,6 +96,7 @@ import AdminAuditLogs from './pages/admin/AuditLogs';
 import AdminReports from './pages/admin/Reports';
 import AdminCreateReport from './pages/admin/CreateReport';
 import AdminSettings from './pages/admin/Settings';
+import AdminPayments from './pages/admin/Payments';
 import AdminProfile from './pages/admin/Profile';
 
 // Profile
@@ -125,6 +130,8 @@ export default function App() {
       <Route path="/intern/attendance" element={<ProtectedRoute allowedRoles={['intern']}><InternAttendance /></ProtectedRoute>} />
       <Route path="/intern/leave" element={<ProtectedRoute allowedRoles={['intern']}><InternLeave /></ProtectedRoute>} />
       <Route path="/intern/learning" element={<ProtectedRoute allowedRoles={['intern']}><InternLearning /></ProtectedRoute>} />
+      <Route path="/intern/documents" element={<ProtectedRoute allowedRoles={['intern']}><InternDocuments /></ProtectedRoute>} />
+      <Route path="/intern/payments" element={<ProtectedRoute allowedRoles={['intern']}><InternPayments /></ProtectedRoute>} />
       <Route path="/intern/profile" element={<ProtectedRoute allowedRoles={['intern']}><InternProfile /></ProtectedRoute>} />
 
       {/* Employee */}
@@ -151,6 +158,8 @@ export default function App() {
       <Route path="/hr/leave-approval" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Leave', action: 'read' }}><HRLeaveApproval /></ProtectedRoute>} />
       <Route path="/pmo/daily-tracker" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Daily Tracker', action: 'read' }}><PMODailyTracker /></ProtectedRoute>} />
       <Route path="/pmo/eod-reports" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Daily Tracker', action: 'read' }}><PMOEODReports /></ProtectedRoute>} />
+      <Route path="/pmo/my-daily-tracker" element={<ProtectedRoute allowedRoles={['pmo']}><PMOMyDailyTracker /></ProtectedRoute>} />
+      <Route path="/pmo/my-eod-report" element={<ProtectedRoute allowedRoles={['pmo']}><PMOMyEODReport /></ProtectedRoute>} />
       <Route path="/hr/onboarding" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'update' }}><HROnboarding /></ProtectedRoute>} />
       <Route path="/hr/attendance" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Attendance', action: 'read' }}><HRAttendance /></ProtectedRoute>} />
       <Route path="/hr/documents" element={<ProtectedRoute allowedRoles={['hr']}><HRDocuments /></ProtectedRoute>} />
@@ -182,6 +191,7 @@ export default function App() {
 
       {/* Admin — strictly admin-only (security-sensitive) */}
       <Route path="/admin/dashboard"    element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/payments"     element={<ProtectedRoute allowedRoles={['admin']}><AdminPayments /></ProtectedRoute>} />
       <Route path="/admin/access-matrix" element={<ProtectedRoute allowedRoles={['admin']}><AdminAccessMatrix /></ProtectedRoute>} />
       <Route path="/admin/settings"     element={<ProtectedRoute allowedRoles={['admin']} permission={{ resource: 'Settings', action: 'update' }}><AdminSettings /></ProtectedRoute>} />
       <Route path="/admin/profile"      element={<ProtectedRoute allowedRoles={['admin']}><AdminProfile /></ProtectedRoute>} />

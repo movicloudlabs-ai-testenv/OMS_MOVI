@@ -25,6 +25,7 @@ export const getDashboardStats = async (req, res) => {
         User.countDocuments({ lastLogin: { $gte: online15m }, status: 'Active' }),
         User.countDocuments({ lastLogin: { $gte: session1h }, status: 'Active' }),
         Announcement.find().sort({ createdAt: -1 }).limit(5)
+          .populate('sentBy', 'name avatar')
           .populate('createdBy', 'name').lean(),
         User.aggregate([
           { $match: { createdAt: { $gte: days30 } } },
@@ -33,7 +34,7 @@ export const getDashboardStats = async (req, res) => {
               count: { $sum: 1 },
           } },
         ]),
-        mongoose.connection.db.stats(),
+        mongoose.connection.db.command({ dbStats: 1 }).catch(() => ({ dataSize: 0, storageSize: 0 })),
       ]);
 
     const quotaBytes = (Number(process.env.STORAGE_QUOTA_GB) || 1) * 1024 * 1024 * 1024;
@@ -48,8 +49,8 @@ export const getDashboardStats = async (req, res) => {
       usersOnline,
       activeSessions,
       storage: {
-        dataBytes: dbStats.dataSize,
-        storageBytes: dbStats.storageSize,
+        dataBytes: dbStats?.dataSize || 0,
+        storageBytes: dbStats?.storageSize || 0,
         quotaBytes,
       },
       announcements,
