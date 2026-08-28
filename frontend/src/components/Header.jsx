@@ -48,6 +48,18 @@ const ROLE_HOME = {
   'intern':      '/intern/dashboard',
 };
 
+// Authorized task page base routes per role
+const ROLE_TASK_ROUTE = {
+  'pmo-lead':   '/pmo/tasks',
+  'pmo':        '/pmo/tasks',
+  'hr-manager': '/hr/tasks',
+  'hr':         '/hr/tasks',
+  'employee':   '/employee/tasks',
+  'intern':     '/intern/tasks',
+  'admin':      '/pmo/tasks',
+  'super-admin':'/pmo/tasks',
+};
+
 // Path prefixes each role is allowed to open from a notification.
 const ROLE_PREFIXES = {
   'hr-manager': ['/hr', '/profile'],
@@ -56,11 +68,39 @@ const ROLE_PREFIXES = {
   'intern':     ['/intern', '/profile'],
 };
 
-// Resolve a notification link to a path the current role can actually open.
-// Admins bypass; anything outside the role's namespace falls back to its dashboard.
-function resolveSafeLink(link, roleSlug) {
-  if (!link) return null;
+// Resolve a notification to a route the current user's role is authorized to open.
+function resolveSafeLink(notif, roleSlug) {
+  if (!notif) return null;
+  const link = typeof notif === 'string' ? notif : (notif.link || '');
+  
+  // Extract taskId from notification metadata or link if available
+  let taskId = typeof notif === 'object' ? (notif.metadata?.taskId || notif.metadata?.id) : null;
+  if (!taskId && link) {
+    const matchParam = link.match(/[?&]taskId=([^&]+)/);
+    if (matchParam) taskId = matchParam[1];
+    else {
+      const matchPath = link.match(/\/tasks\/([a-fA-F0-9]{24})/);
+      if (matchPath) taskId = matchPath[1];
+    }
+  }
+
+  const notifType = typeof notif === 'object' ? notif.type : '';
+  const isTaskNotification =
+    notifType === 'task_comment' ||
+    notifType === 'task_assigned' ||
+    notifType === 'task_approved' ||
+    notifType === 'task_blocked' ||
+    link.includes('/tasks');
+
+  // For task notifications, route to the recipient role's authorized task page
+  if (isTaskNotification) {
+    const baseRoute = ROLE_TASK_ROUTE[roleSlug] || (ROLE_HOME[roleSlug] || '/');
+    return taskId ? `${baseRoute}?taskId=${taskId}` : baseRoute;
+  }
+
+  if (!link) return ROLE_HOME[roleSlug] || '/';
   if (roleSlug === 'super-admin' || roleSlug === 'admin') return link;
+
   const prefixes = ROLE_PREFIXES[roleSlug] || [];
   const allowed = prefixes.some((p) => link === p || link.startsWith(`${p}/`));
   return allowed ? link : (ROLE_HOME[roleSlug] || '/');
@@ -98,7 +138,7 @@ export default function Header({ sidebarCollapsed }) {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
-    const target = resolveSafeLink(notif.link, roleSlug);
+    const target = resolveSafeLink(notif, roleSlug);
     if (target) navigate(target);
   };
 

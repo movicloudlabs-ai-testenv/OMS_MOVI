@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import { TaskDetailModal } from '../../components/pmo/TaskDetailModal';
 import { GraduationCap, X } from 'lucide-react';
@@ -40,6 +40,9 @@ const STATUS_MAP_BE_TO_FE = {
 export default function PMOTaskBoard() {
   const { hasPermission } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlTaskId = searchParams.get('taskId');
+
   const canRead = hasPermission('Tasks', 'read');
   const canCreate = hasPermission('Tasks', 'create');
   const [projects, setProjects] = useState([]);
@@ -92,9 +95,9 @@ export default function PMOTaskBoard() {
       const res = await pmoAPI.getProjects();
       const projectList = res.data.data || [];
       setProjects(projectList);
-      if (projectList.length > 0) {
+      if (projectList.length > 0 && !selectedProject) {
         setSelectedProject(projectList[0]._id);
-      } else {
+      } else if (projectList.length === 0) {
         setLoading(false);
       }
     } catch (error) {
@@ -147,6 +150,24 @@ export default function PMOTaskBoard() {
   useEffect(() => {
     fetchProjectTasksAndDetails();
   }, [selectedProject]);
+
+  // Load and display task directly if URL search parameter taskId is present
+  useEffect(() => {
+    if (!urlTaskId || !canRead) return;
+    (async () => {
+      try {
+        const res = await pmoAPI.getTask(urlTaskId);
+        const taskData = res.data?.data || res.data;
+        if (taskData) {
+          const projId = taskData.project?._id || taskData.project;
+          if (projId) setSelectedProject(projId);
+          setSelectedTask(taskData);
+        }
+      } catch (err) {
+        console.warn('Could not load target task by ID:', err);
+      }
+    })();
+  }, [urlTaskId, canRead]);
 
   // Drag and Drop handlers
   const handleDragStart = (e, task) => {

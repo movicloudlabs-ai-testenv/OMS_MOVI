@@ -190,8 +190,9 @@ export const addTaskComment = async (req, res, next) => {
       type: 'task_comment',
       title: 'New Comment on Task',
       message: `${req.user.name} commented on "${task.title}": "${truncated}"`,
-      link: '/employee/tasks',
+      link: `/tasks?taskId=${task._id}`,
       sender: req.user._id,
+      metadata: { taskId: task._id, projectId: task.project },
     });
 
     await task.populate('comments.author', 'name avatar role');

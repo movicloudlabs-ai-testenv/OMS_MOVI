@@ -263,10 +263,12 @@ export const addTaskComment = async (req, res, next) => {
     if (task.assignedTo.toString() !== req.user._id.toString()) {
       await sendNotification({
         recipient: task.assignedTo,
-        type: 'system_alert',
+        type: 'task_comment',
         title: 'New Comment on Task',
         message: `${req.user.name} commented on task '${task.title}'.`,
+        link: `/tasks?taskId=${task._id}`,
         sender: req.user._id,
+        metadata: { taskId: task._id, projectId: task.project?._id || task.project },
       });
     }
 
