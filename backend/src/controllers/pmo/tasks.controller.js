@@ -100,8 +100,9 @@ export const createTask = async (req, res, next) => {
       type: 'task_assigned',
       title: 'New Task Assigned',
       message: `New task assigned: ${title}\nProject: ${proj.name} | Due: ${new Date(dueDate).toLocaleDateString()}\nPriority: ${priority}`,
-      link: assignee.employmentType === 'Intern' ? `/intern/tasks` : `/employee/tasks`,
+      link: `/tasks?taskId=${task._id}`,
       sender: req.user._id,
+      metadata: { taskId: task._id, projectId: project },
     });
 
     if (assignee.employmentType === 'Intern' && assignee.hrManager) {
@@ -110,7 +111,9 @@ export const createTask = async (req, res, next) => {
         type: 'system_alert',
         title: 'Intern Task Assigned',
         message: `Intern ${assignee.name} has been assigned a new task: ${title}.`,
+        link: `/hr/interns/${assignee._id}`,
         sender: req.user._id,
+        metadata: { taskId: task._id, internId: assignee._id },
       });
     }
 
@@ -179,14 +182,14 @@ export const updateTask = async (req, res, next) => {
     await task.save();
 
     if (reassignedTo) {
-      const assignee = await User.findById(reassignedTo).select('employmentType');
       await sendNotification({
         recipient: reassignedTo,
         type: 'task_assigned',
         title: 'Task Assigned to You',
         message: `You've been assigned the task "${task.title}" on project ${task.project.name}.`,
-        link: assignee?.employmentType === 'Intern' ? '/intern/tasks' : '/employee/tasks',
+        link: `/tasks?taskId=${task._id}`,
         sender: req.user._id,
+        metadata: { taskId: task._id, projectId: task.project._id || task.project },
       });
     }
 
@@ -196,7 +199,9 @@ export const updateTask = async (req, res, next) => {
         type: 'system_alert',
         title: 'Task Deadline Updated',
         message: `Task deadline updated: ${task.title}\nNew due date: ${new Date(dueDate).toLocaleDateString()}`,
+        link: `/tasks?taskId=${task._id}`,
         sender: req.user._id,
+        metadata: { taskId: task._id },
       });
     }
 
