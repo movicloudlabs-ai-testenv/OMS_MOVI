@@ -49,10 +49,10 @@ const STATUS = {
 };
 
 /* ─── component ─── */
-export const TaskDetailModal = ({ task: taskSummary, onClose, onDelete }) => {
+export const TaskDetailModal = ({ task: taskSummary, onClose, onDelete, initialTab }) => {
   const [task,       setTask]       = useState(null);
   const [loading,    setLoading]    = useState(true);
-  const [tab,        setTab]        = useState('subtasks');
+  const [tab,        setTab]        = useState(initialTab || taskSummary?.initialTab || 'subtasks');
   const [comment,    setComment]    = useState('');
   const [posting,    setPosting]    = useState(false);
   const [newSub,     setNewSub]     = useState('');

@@ -422,12 +422,16 @@ export default function InternTasks() {
       try {
         const res = await internAPI.getTask(urlTaskId);
         const taskData = res.data?.data || res.data;
-        if (taskData) setSelectedTask(taskData);
+        if (taskData) {
+          const urlTab = searchParams.get('tab');
+          if (urlTab) taskData.initialTab = urlTab;
+          setSelectedTask(taskData);
+        }
       } catch (err) {
         console.warn('Could not load target task by ID:', err);
       }
     })();
-  }, [urlTaskId]);
+  }, [urlTaskId, searchParams]);
 
   const handleStatusChange = async (taskId, status) => {
     try {

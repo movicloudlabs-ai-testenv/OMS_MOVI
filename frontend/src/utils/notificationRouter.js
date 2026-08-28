@@ -111,6 +111,25 @@ export const ROLE_PREFIXES = {
 };
 
 /**
+ * Normalizes any role input (string or object, with spaces or underscores)
+ * into a standardized role slug (e.g. 'pmo-lead', 'hr-manager', 'employee', 'intern', 'super-admin').
+ */
+export function normalizeRoleSlug(roleInput) {
+  if (!roleInput) return '';
+  let str = (typeof roleInput === 'object' ? (roleInput.slug || roleInput.name || '') : String(roleInput)).toLowerCase().trim();
+  str = str.replace(/_/g, '-').replace(/\s+/g, '-');
+
+  if (str.includes('pmo')) return 'pmo-lead';
+  if (str.includes('hr')) return 'hr-manager';
+  if (str.includes('intern')) return 'intern';
+  if (str.includes('super-admin') || str.includes('superadmin')) return 'super-admin';
+  if (str.includes('admin')) return 'admin';
+  if (str.includes('emp')) return 'employee';
+
+  return str;
+}
+
+/**
  * Main Centralized Notification Routing Function
  * Resolves a notification into an exact authorized URL target.
  *
@@ -119,7 +138,8 @@ export const ROLE_PREFIXES = {
  * @returns {string} Target URL route with query parameters if reference IDs exist
  */
 export function getNotificationTarget(notif, roleSlug) {
-  if (!notif) return ROLE_HOME[roleSlug] || '/';
+  const normRole = normalizeRoleSlug(roleSlug);
+  if (!notif) return ROLE_HOME[normRole] || '/';
 
   const link = typeof notif === 'string' ? notif : (notif.link || '');
   const notifType = typeof notif === 'object' ? (notif.type || '') : '';
@@ -158,7 +178,7 @@ export function getNotificationTarget(notif, roleSlug) {
 
   // ─── 1. Task Review Submissions (task_submitted_for_review) ─────────────
   if (notifType === 'task_submitted_for_review' || notifTitle.includes('review') || notifMsg.includes('review')) {
-    const base = DOMAIN_ROUTES.taskReview[roleSlug] || ROLE_HOME[roleSlug] || '/';
+    const base = DOMAIN_ROUTES.taskReview[normRole] || ROLE_HOME[normRole] || '/';
     return taskId && base.includes('/tasks') ? `${base}?taskId=${taskId}` : base;
   }
 
@@ -174,8 +194,11 @@ export function getNotificationTarget(notif, roleSlug) {
     notifTitle.includes('task') ||
     notifMsg.includes('task')
   ) {
-    const base = DOMAIN_ROUTES.task[roleSlug] || ROLE_HOME[roleSlug] || '/';
-    return taskId ? `${base}?taskId=${taskId}` : base;
+    const base = DOMAIN_ROUTES.task[normRole] || ROLE_HOME[normRole] || '/';
+    if (!taskId) return base;
+
+    const isCommentNotif = notifType === 'task_comment' || notifTitle.includes('comment') || notifMsg.includes('comment');
+    return isCommentNotif ? `${base}?taskId=${taskId}&tab=comments` : `${base}?taskId=${taskId}`;
   }
 
   // ─── 3. Leave Notifications (leave_requested, leave_approved, leave_rejected) ───
@@ -187,7 +210,7 @@ export function getNotificationTarget(notif, roleSlug) {
     notifTitle.includes('leave') ||
     notifMsg.includes('leave')
   ) {
-    const base = DOMAIN_ROUTES.leave[roleSlug] || ROLE_HOME[roleSlug] || '/';
+    const base = DOMAIN_ROUTES.leave[normRole] || ROLE_HOME[normRole] || '/';
     return leaveId ? `${base}?leaveId=${leaveId}` : base;
   }
 
@@ -200,8 +223,8 @@ export function getNotificationTarget(notif, roleSlug) {
     notifTitle.includes('project') ||
     notifMsg.includes('project')
   ) {
-    const base = DOMAIN_ROUTES.project[roleSlug] || ROLE_HOME[roleSlug] || '/';
-    if (projectId && (roleSlug === 'pmo-lead' || roleSlug === 'pmo')) {
+    const base = DOMAIN_ROUTES.project[normRole] || ROLE_HOME[normRole] || '/';
+    if (projectId && (normRole === 'pmo-lead' || normRole === 'pmo')) {
       return `${base}/${projectId}`;
     }
     return projectId ? `${base}?projectId=${projectId}` : base;
@@ -214,7 +237,7 @@ export function getNotificationTarget(notif, roleSlug) {
     notifTitle.includes('attendance') ||
     notifMsg.includes('attendance')
   ) {
-    return DOMAIN_ROUTES.attendance[roleSlug] || ROLE_HOME[roleSlug] || '/';
+    return DOMAIN_ROUTES.attendance[normRole] || ROLE_HOME[normRole] || '/';
   }
 
   // ─── 6. Intern / Onboarding Notifications ────────────────────────────────
@@ -226,20 +249,20 @@ export function getNotificationTarget(notif, roleSlug) {
     notifMsg.includes('intern')
   ) {
     const base = link.includes('/onboarding')
-      ? (DOMAIN_ROUTES.onboarding[roleSlug] || ROLE_HOME[roleSlug] || '/')
-      : (DOMAIN_ROUTES.intern[roleSlug] || ROLE_HOME[roleSlug] || '/');
+      ? (DOMAIN_ROUTES.onboarding[normRole] || ROLE_HOME[normRole] || '/')
+      : (DOMAIN_ROUTES.intern[normRole] || ROLE_HOME[normRole] || '/');
     return internId && base.endsWith('/interns') ? `${base}/${internId}` : base;
   }
 
   // ─── 7. Direct Link Verification with Role Prefix Guard ─────────────────
   if (link) {
-    if (roleSlug === 'super-admin' || roleSlug === 'admin') return link;
+    if (normRole === 'super-admin' || normRole === 'admin') return link;
 
-    const prefixes = ROLE_PREFIXES[roleSlug] || [];
+    const prefixes = ROLE_PREFIXES[normRole] || [];
     const isAllowed = prefixes.some((p) => link === p || link.startsWith(`${p}/`));
     if (isAllowed) return link;
   }
 
   // ─── 8. Final Fallback (only when no target module exists) ──────────────
-  return ROLE_HOME[roleSlug] || '/';
+  return ROLE_HOME[normRole] || '/';
 }

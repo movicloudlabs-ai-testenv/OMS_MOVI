@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, X, Eye, PlayCircle, Send, AlertCircle, CheckCircle,
@@ -121,7 +122,7 @@ function KanbanColumn({ col, tasks, canAct, onSelect }) {
 function MyTaskDetailDrawer({ taskSummary, onClose, onStatusChange }) {
   const [task, setTask]         = useState(null);
   const [loading, setLoading]   = useState(true);
-  const [activeTab, setActiveTab] = useState('subtasks');
+  const [activeTab, setActiveTab] = useState(taskSummary?.initialTab || 'subtasks');
   const [comment, setComment]   = useState('');
   const [posting, setPosting]   = useState(false);
   const [blockerNote, setBlockerNote] = useState('');
@@ -689,7 +690,27 @@ export default function HRTaskBoard() {
     }
   };
 
+  const [searchParams] = useSearchParams();
+  const urlTaskId = searchParams.get('taskId');
+  const urlTab = searchParams.get('tab');
+
   useEffect(() => { fetchAll(); }, []);
+
+  useEffect(() => {
+    if (!urlTaskId || !canRead) return;
+    (async () => {
+      try {
+        const res = await hrAPI.getMyTask(urlTaskId);
+        const taskData = res.data?.data || res.data;
+        if (taskData) {
+          if (urlTab) taskData.initialTab = urlTab;
+          setSelectedTask(taskData);
+        }
+      } catch (err) {
+        console.warn('Could not load target HR task by ID:', err);
+      }
+    })();
+  }, [urlTaskId, searchParams, canRead]);
 
   if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view the task board." /></HRLayout>;
 
