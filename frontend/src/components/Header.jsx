@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
+import { getNotificationTarget, ROLE_HOME } from '../utils/notificationRouter';
 
 // Each role's own (working) profile page.
 const PROFILE_PATH = {
@@ -35,177 +36,6 @@ function notifMeta(type) {
 function relTime(date) {
   try { return formatDistanceToNow(new Date(date), { addSuffix: true }); }
   catch { return ''; }
-}
-
-// Dashboard fallback per role — used when a notification link is outside the
-// user's accessible namespace (prevents landing on an "Access Denied" page).
-const ROLE_HOME = {
-  'super-admin': '/admin/dashboard',
-  'admin':       '/admin/dashboard',
-  'hr-manager':  '/hr/dashboard',
-  'pmo-lead':    '/pmo/dashboard',
-  'employee':    '/employee/dashboard',
-  'intern':      '/intern/dashboard',
-};
-
-// Base route maps per role for every notification domain
-const DOMAIN_ROUTES = {
-  task: {
-    'pmo-lead':   '/pmo/tasks',
-    'pmo':        '/pmo/tasks',
-    'hr-manager': '/hr/tasks',
-    'hr':         '/hr/tasks',
-    'employee':   '/employee/tasks',
-    'intern':     '/intern/tasks',
-    'admin':      '/pmo/tasks',
-    'super-admin':'/pmo/tasks',
-  },
-  taskReview: {
-    'pmo-lead':   '/pmo/approvals',
-    'pmo':        '/pmo/approvals',
-    'admin':      '/pmo/approvals',
-    'super-admin':'/pmo/approvals',
-    'employee':   '/employee/tasks',
-    'intern':     '/intern/tasks',
-  },
-  leave: {
-    'hr-manager': '/hr/leave-approval',
-    'hr':         '/hr/leave-approval',
-    'pmo-lead':   '/pmo/approvals',
-    'pmo':        '/pmo/approvals',
-    'employee':   '/employee/leave',
-    'intern':     '/intern/leave',
-    'admin':      '/hr/leave-approval',
-    'super-admin':'/hr/leave-approval',
-  },
-  project: {
-    'pmo-lead':   '/pmo/projects',
-    'pmo':        '/pmo/projects',
-    'employee':   '/employee/projects',
-    'intern':     '/intern/dashboard',
-    'hr-manager': '/hr/projects',
-    'hr':         '/hr/projects',
-    'admin':      '/pmo/projects',
-    'super-admin':'/pmo/projects',
-  },
-  attendance: {
-    'hr-manager': '/hr/attendance',
-    'hr':         '/hr/attendance',
-    'pmo-lead':   '/pmo/attendance',
-    'pmo':        '/pmo/attendance',
-    'employee':   '/employee/attendance',
-    'intern':     '/intern/attendance',
-    'admin':      '/hr/attendance',
-    'super-admin':'/hr/attendance',
-  },
-  onboarding: {
-    'hr-manager': '/hr/onboarding',
-    'hr':         '/hr/onboarding',
-    'pmo-lead':   '/pmo/interns',
-    'pmo':        '/pmo/interns',
-    'admin':      '/hr/onboarding',
-    'super-admin':'/hr/onboarding',
-  },
-};
-
-// Path prefixes each role is allowed to open directly.
-const ROLE_PREFIXES = {
-  'hr-manager': ['/hr', '/profile'],
-  'pmo-lead':   ['/pmo', '/profile'],
-  'employee':   ['/employee', '/profile'],
-  'intern':     ['/intern', '/profile'],
-};
-
-// Resolve ANY notification to the exact authorized target route for the user's role.
-function resolveSafeLink(notif, roleSlug) {
-  if (!notif) return null;
-  const link = typeof notif === 'string' ? notif : (notif.link || '');
-  const notifType = typeof notif === 'object' ? (notif.type || '') : '';
-  const metadata = typeof notif === 'object' ? (notif.metadata || {}) : {};
-
-  // Extract task ID if present
-  let taskId = metadata.taskId || metadata.id || null;
-  if (!taskId && link) {
-    const matchParam = link.match(/[?&]taskId=([^&]+)/);
-    if (matchParam) taskId = matchParam[1];
-    else {
-      const matchPath = link.match(/\/tasks\/([a-fA-F0-9]{24})/);
-      if (matchPath) taskId = matchPath[1];
-    }
-  }
-
-  // Extract project ID if present
-  let projectId = metadata.projectId || null;
-  if (!projectId && link) {
-    const matchProj = link.match(/\/projects\/([a-fA-F0-9]{24})/);
-    if (matchProj) projectId = matchProj[1];
-  }
-
-  const notifTitle = typeof notif === 'object' ? (notif.title || '').toLowerCase() : '';
-  const notifMsg = typeof notif === 'object' ? (notif.message || '').toLowerCase() : '';
-
-  // 1. Task Review (task_submitted_for_review)
-  if (notifType === 'task_submitted_for_review') {
-    const base = DOMAIN_ROUTES.taskReview[roleSlug] || ROLE_HOME[roleSlug] || '/';
-    return taskId && base.includes('/tasks') ? `${base}?taskId=${taskId}` : base;
-  }
-
-  // 2. Task Notifications (task_assigned, task_approved, task_rejected, task_blocked, task_comment, intern_assigned)
-  if (
-    notifType === 'task_assigned' ||
-    notifType === 'task_approved' ||
-    notifType === 'task_rejected' ||
-    notifType === 'task_blocked' ||
-    notifType === 'task_comment' ||
-    notifType === 'intern_assigned' ||
-    link.includes('/tasks') ||
-    notifTitle.includes('task') ||
-    notifMsg.includes('task assigned')
-  ) {
-    const base = DOMAIN_ROUTES.task[roleSlug] || ROLE_HOME[roleSlug] || '/';
-    return taskId ? `${base}?taskId=${taskId}` : base;
-  }
-
-  // 3. Leave Notifications (leave_requested, leave_approved, leave_rejected)
-  if (
-    notifType === 'leave_requested' ||
-    notifType === 'leave_approved' ||
-    notifType === 'leave_rejected' ||
-    link.includes('/leave')
-  ) {
-    return DOMAIN_ROUTES.leave[roleSlug] || ROLE_HOME[roleSlug] || '/';
-  }
-
-  // 4. Project Notifications (project_assigned, project_updated, milestone_reached)
-  if (
-    notifType === 'project_assigned' ||
-    notifType === 'project_updated' ||
-    notifType === 'milestone_reached' ||
-    link.includes('/projects')
-  ) {
-    const base = DOMAIN_ROUTES.project[roleSlug] || ROLE_HOME[roleSlug] || '/';
-    return (projectId && (roleSlug === 'pmo-lead' || roleSlug === 'pmo'))
-      ? `${base}/${projectId}`
-      : base;
-  }
-
-  // 5. Attendance Notifications (attendance_marked)
-  if (notifType === 'attendance_marked' || link.includes('/attendance')) {
-    return DOMAIN_ROUTES.attendance[roleSlug] || ROLE_HOME[roleSlug] || '/';
-  }
-
-  // 6. User / Onboarding Notifications
-  if (notifType === 'user_created' || link.includes('/onboarding')) {
-    return DOMAIN_ROUTES.onboarding[roleSlug] || ROLE_HOME[roleSlug] || '/';
-  }
-
-  // 7. General fallback: Check if existing link starts with allowed prefix for this role
-  if (!link) return ROLE_HOME[roleSlug] || '/';
-  if (roleSlug === 'super-admin' || roleSlug === 'admin') return link;
-
-  const prefixes = ROLE_PREFIXES[roleSlug] || [];
-  const allowed = prefixes.some((p) => link === p || link.startsWith(`${p}/`));
-  return allowed ? link : (ROLE_HOME[roleSlug] || '/');
 }
 
 export default function Header({ sidebarCollapsed }) {
@@ -240,7 +70,7 @@ export default function Header({ sidebarCollapsed }) {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
-    const target = resolveSafeLink(notif, roleSlug);
+    const target = getNotificationTarget(notif, roleSlug);
     if (target) navigate(target);
   };
 

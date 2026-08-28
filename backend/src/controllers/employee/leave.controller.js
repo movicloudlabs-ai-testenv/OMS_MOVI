@@ -140,8 +140,9 @@ export const applyForLeave = async (req, res, next) => {
         type: 'leave_requested',
         title: 'New Leave Request',
         message: `${employee.name} has requested ${type} leave from ${fromStr} to ${toStr} (${days} working days). Reason: ${reason}`,
-        link: '/hr/leave',
+        link: '/hr/leave-approval',
         sender: req.user._id,
+        metadata: { leaveId: leave._id },
       });
     }
 
@@ -155,6 +156,7 @@ export const applyForLeave = async (req, res, next) => {
         message: `${employee.name} applied for leave: ${fromStr} to ${toStr}. Review project timeline impact.`,
         link: '/pmo/approvals',
         sender: req.user._id,
+        metadata: { leaveId: leave._id },
       });
     }
 
