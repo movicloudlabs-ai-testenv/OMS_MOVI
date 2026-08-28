@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import {
   Columns, List, CalendarDays, X, CheckCircle2, Circle,
@@ -384,6 +385,8 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function EmployeeTasks() {
+  const [searchParams] = useSearchParams();
+  const urlTaskId = searchParams.get('taskId');
   const [view,          setView]          = useState('board');
   const [tasks,         setTasks]         = useState([]);
   const [projects,      setProjects]      = useState([]);
@@ -406,6 +409,19 @@ export default function EmployeeTasks() {
   };
 
   useEffect(() => { fetchTasks(); }, []);
+
+  useEffect(() => {
+    if (!urlTaskId) return;
+    (async () => {
+      try {
+        const res = await employeeAPI.getTask(urlTaskId);
+        const taskData = res.data?.data || res.data;
+        if (taskData) setSelectedTask(taskData);
+      } catch (err) {
+        console.warn('Could not load target task by ID:', err);
+      }
+    })();
+  }, [urlTaskId]);
 
   const handleStatusChange = async (taskId, status) => {
     try {
