@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import HRLayout from '../../components/hr/HRLayout';
 import { hrAPI } from '../../utils/api';
@@ -15,6 +16,8 @@ export default function HRLeaveApproval() {
   const { hasPermission } = useAuth();
   const canRead = hasPermission('Leave', 'read');
   const canApprove = hasPermission('Leave', 'approve');
+  const [searchParams] = useSearchParams();
+  const urlLeaveId = searchParams.get('leaveId');
 
   const [tab, setTab] = useState('pending'); // pending | all
   const [pending, setPending] = useState([]);
@@ -42,6 +45,14 @@ export default function HRLeaveApproval() {
   };
 
   useEffect(() => { load(); }, [canRead]); // eslint-disable-line
+
+  useEffect(() => {
+    if (!urlLeaveId || loading) return;
+    const targetLeave = [...pending, ...allLeaves].find(l => l._id === urlLeaveId);
+    if (targetLeave && targetLeave.status === 'Pending') {
+      setActiveAction({ id: targetLeave._id, status: 'Approved', leave: targetLeave });
+    }
+  }, [urlLeaveId, loading]);
 
   const openReview = (leave, status) => {
     setActiveAction({ id: leave._id, status, leave });
