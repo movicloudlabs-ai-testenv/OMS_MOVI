@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import HRLayout from '../../components/hr/HRLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { hrAPI } from '../../utils/api';
 import AccessDenied from '../../components/shared/AccessDenied';
 import BulkImportModal from '../../components/shared/BulkImportModal';
@@ -112,10 +112,10 @@ export default function HRInterns() {
     return matchesSearch && matchesUniv && matchesStatus && matchesDomain;
   }), [interns, filterUniversity, filterStatus, filterDomain, searchTerm]);
 
-  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view interns." /></HRLayout>;
+  if (!canRead) return <DynamicLayout bare><AccessDenied message="You don't have permission to view interns." /></DynamicLayout>;
 
   return (
-    <HRLayout bare>
+    <DynamicLayout bare>
       <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 max-w-[1440px] mx-auto pb-8">
         
         {/* HEADER */}
@@ -372,6 +372,6 @@ export default function HRInterns() {
 
         </div>
       </div>
-    </HRLayout>
+    </DynamicLayout>
   );
 }

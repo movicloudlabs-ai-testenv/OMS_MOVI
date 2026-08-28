@@ -149,8 +149,8 @@ export default function HRSidebar({ collapsed, setCollapsed, onLogout, user }) {
         </div>
         {!collapsed && (
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-medium truncate">{user?.name || 'HR Manager'}</p>
-            <p className="text-[11px] text-slate-400 truncate">HR Manager</p>
+            <p className="text-[13px] font-medium truncate">{user?.name || 'User'}</p>
+            <p className="text-[11px] text-slate-400 truncate">{user?.role?.name || user?.role?.slug || 'HR Manager'}</p>
           </div>
         )}
         <button
