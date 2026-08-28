@@ -146,6 +146,7 @@ export const reviewLeave = async (req, res, next) => {
         message: `Your ${leave.type} leave request has been approved by ${req.user.name}.`,
         link: '/employee/leave',
         sender: req.user._id,
+        metadata: { leaveId: leave._id },
       });
 
       // Notify PMO if assigned
@@ -157,6 +158,7 @@ export const reviewLeave = async (req, res, next) => {
           message: `${leave.user.name} leave approved: ${leave.fromDate.toDateString()} to ${leave.toDate.toDateString()}. Project impact: review tasks.`,
           link: '/pmo/approvals',
           sender: req.user._id,
+          metadata: { leaveId: leave._id },
         });
       }
     } else {
@@ -168,6 +170,7 @@ export const reviewLeave = async (req, res, next) => {
         message: `Your leave request was not approved. Reason: ${reviewNote || 'No reason provided'}`,
         link: '/employee/leave',
         sender: req.user._id,
+        metadata: { leaveId: leave._id },
       });
     }
 
