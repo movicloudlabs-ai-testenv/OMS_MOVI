@@ -187,8 +187,8 @@ export default function HRDailyTracker() {
             </div>
 
             {!selected ? (
-              <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden h-fit">
-                <div className="px-4 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+              <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden flex flex-col max-h-[600px]">
+                <div className="px-4 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC] shrink-0">
                   <p className="text-[13px] font-bold text-[#0F172A]">
                     {new Date(selectedDate).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                   </p>
@@ -198,10 +198,10 @@ export default function HRDailyTracker() {
                 ) : dayStatus.length === 0 ? (
                   <div className="px-4 py-12 text-center text-[13px] text-[#94A3B8]">No interns/employees found.</div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto overflow-y-auto flex-1">
                     <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-[#E2E8F0]">
+                      <thead className="sticky top-0 bg-[#F8FAFC] border-b border-[#E2E8F0] z-10">
+                        <tr>
                           <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Name</th>
                           <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">College</th>
                           <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Tracker Status</th>
