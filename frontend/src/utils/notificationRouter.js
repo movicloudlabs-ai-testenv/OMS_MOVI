@@ -175,7 +175,10 @@ export function getNotificationTarget(notif, roleSlug) {
     notifMsg.includes('task')
   ) {
     const base = DOMAIN_ROUTES.task[roleSlug] || ROLE_HOME[roleSlug] || '/';
-    return taskId ? `${base}?taskId=${taskId}` : base;
+    if (!taskId) return base;
+
+    const isCommentNotif = notifType === 'task_comment' || notifTitle.includes('comment') || notifMsg.includes('comment');
+    return isCommentNotif ? `${base}?taskId=${taskId}&tab=comments` : `${base}?taskId=${taskId}`;
   }
 
   // ─── 3. Leave Notifications (leave_requested, leave_approved, leave_rejected) ───
