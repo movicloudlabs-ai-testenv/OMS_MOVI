@@ -113,21 +113,13 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
 
-    if (defaultFrontendOrigins.includes(origin)) {
+    // Allow all origins in development mode (prevents local CORS errors across ports)
+    if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        const url = new URL(origin);
-        const isLocalHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-        const port = Number(url.port);
-        if (isLocalHost && port >= 5173 && port <= 5199) {
-          return callback(null, true);
-        }
-      } catch {
-        // Ignore malformed origins and fall through to the denial below.
-      }
+    if (defaultFrontendOrigins.includes(origin)) {
+      return callback(null, true);
     }
 
     return callback(new Error(`Not allowed by CORS: ${origin}`));
