@@ -141,6 +141,9 @@ function resolveSafeLink(notif, roleSlug) {
     if (matchProj) projectId = matchProj[1];
   }
 
+  const notifTitle = typeof notif === 'object' ? (notif.title || '').toLowerCase() : '';
+  const notifMsg = typeof notif === 'object' ? (notif.message || '').toLowerCase() : '';
+
   // 1. Task Review (task_submitted_for_review)
   if (notifType === 'task_submitted_for_review') {
     const base = DOMAIN_ROUTES.taskReview[roleSlug] || ROLE_HOME[roleSlug] || '/';
@@ -155,7 +158,9 @@ function resolveSafeLink(notif, roleSlug) {
     notifType === 'task_blocked' ||
     notifType === 'task_comment' ||
     notifType === 'intern_assigned' ||
-    link.includes('/tasks')
+    link.includes('/tasks') ||
+    notifTitle.includes('task') ||
+    notifMsg.includes('task assigned')
   ) {
     const base = DOMAIN_ROUTES.task[roleSlug] || ROLE_HOME[roleSlug] || '/';
     return taskId ? `${base}?taskId=${taskId}` : base;
