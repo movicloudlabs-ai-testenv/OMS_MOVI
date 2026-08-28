@@ -26,8 +26,11 @@ export const getMyProjects = async (req, res, next) => {
     ]);
 
     const result = projects.map((p) => {
-      const myTeamEntry = p.team.find((t) => t.user?._id?.toString() === userId.toString());
-      const myInternEntry = p.interns?.find((i) => i.user?._id?.toString() === userId.toString());
+      const teamArr = p.team || [];
+      const internsArr = p.interns || [];
+
+      const myTeamEntry = teamArr.find((t) => t.user?._id?.toString() === userId.toString());
+      const myInternEntry = internsArr.find((i) => i.user?._id?.toString() === userId.toString());
       const myRole = myTeamEntry?.role || (myInternEntry ? 'Intern' : null);
 
       const myTaskStats = { total: 0, todo: 0, inProgress: 0, inReview: 0, blocked: 0, done: 0 };
@@ -51,7 +54,7 @@ export const getMyProjects = async (req, res, next) => {
         myRole,
         myTaskStats,
         completionPercent,
-        teamSize: p.team.length,
+        teamSize: teamArr.length,
       };
     });
 
@@ -73,8 +76,10 @@ export const getProjectById = async (req, res, next) => {
 
     if (!project) return sendError(res, 'Project not found', 404);
 
-    const isMember = project.team.some((t) => t.user?._id?.toString() === userId.toString()) ||
-                     project.interns.some((i) => i.user?._id?.toString() === userId.toString());
+    const teamArr = project.team || [];
+    const internsArr = project.interns || [];
+    const isMember = teamArr.some((t) => t.user?._id?.toString() === userId.toString()) ||
+                     internsArr.some((i) => i.user?._id?.toString() === userId.toString());
     if (!isMember) return sendError(res, 'You are not assigned to this project', 403);
 
     const myTasks = await Task.find({ project: project._id, assignedTo: userId })
@@ -109,7 +114,7 @@ export const getMyTeam = async (req, res, next) => {
     const teamMap = new Map();
 
     projects.forEach((p) => {
-      p.team.forEach((m) => {
+      (p.team || []).forEach((m) => {
         if (!m.user || m.user._id.toString() === userId.toString()) return;
         const key = m.user._id.toString();
         if (!teamMap.has(key)) {
@@ -118,7 +123,7 @@ export const getMyTeam = async (req, res, next) => {
           teamMap.get(key).sharedProjects.push(p.name);
         }
       });
-      p.interns.forEach((i) => {
+      (p.interns || []).forEach((i) => {
         if (!i.user || i.user._id.toString() === userId.toString()) return;
         const key = i.user._id.toString();
         if (!teamMap.has(key)) {
