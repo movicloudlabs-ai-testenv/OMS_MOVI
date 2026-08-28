@@ -14,6 +14,7 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts';
 import HRSidebar from '../../components/hr/HRSidebar';
+import AnnouncementModal from '../../components/shared/AnnouncementModal';
 import { hrAPI, notificationAPI } from '../../utils/api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -266,6 +267,7 @@ export default function HRDashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [profileOpen, setProfileOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
   const notifRef = useRef();
   const datePickerRef = useRef();
@@ -317,6 +319,18 @@ export default function HRDashboard() {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
+
+    const isAnnouncement =
+      notif.type === 'announcement' ||
+      notif.metadata?.isAnnouncement ||
+      (notif.title || '').toLowerCase().includes('announcement') ||
+      (notif.title || '').startsWith('📢');
+
+    if (isAnnouncement) {
+      setSelectedAnnouncement(notif);
+      return;
+    }
+
     const link = notif.link || '';
     const target = (link === '/hr' || link.startsWith('/hr/') || link === '/profile') ? link : '/hr/dashboard';
     navigate(target);
@@ -876,6 +890,14 @@ export default function HRDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Announcement Modal Popup */}
+      {selectedAnnouncement && (
+        <AnnouncementModal
+          announcement={selectedAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
     </div>
   );
 }

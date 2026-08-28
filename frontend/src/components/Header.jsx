@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
+import AnnouncementModal from './shared/AnnouncementModal';
 import { getNotificationTarget, ROLE_HOME } from '../utils/notificationRouter';
 
 // Each role's own (working) profile page.
@@ -44,6 +45,7 @@ export default function Header({ sidebarCollapsed }) {
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const popupRef = useRef();
   const notifRef = useRef();
 
@@ -70,6 +72,18 @@ export default function Header({ sidebarCollapsed }) {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
+
+    const isAnnouncement =
+      notif.type === 'announcement' ||
+      notif.metadata?.isAnnouncement ||
+      (notif.title || '').toLowerCase().includes('announcement') ||
+      (notif.title || '').startsWith('📢');
+
+    if (isAnnouncement) {
+      setSelectedAnnouncement(notif);
+      return;
+    }
+
     const target = getNotificationTarget(notif, user?.role || user?.employmentType || roleSlug);
     if (target) navigate(target);
   };
@@ -174,7 +188,14 @@ export default function Header({ sidebarCollapsed }) {
                             {isUnread && <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
                           </div>
                           <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{preview}</p>
-                          <p className="text-[11px] text-slate-400 mt-1">{relTime(notif.createdAt)}</p>
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            {(notif.sender?.name || notif.metadata?.senderName) ? (
+                              <p className="text-[11px] text-slate-400 font-medium truncate">
+                                {notif.sender?.name || notif.metadata?.senderName} {notif.sender?.designation || notif.metadata?.senderDesignation ? `(${notif.sender?.designation || notif.metadata?.senderDesignation})` : ''}
+                              </p>
+                            ) : <span />}
+                            <p className="text-[11px] text-slate-400 shrink-0">{relTime(notif.createdAt)}</p>
+                          </div>
                         </div>
                       </button>
                     );
@@ -231,6 +252,14 @@ export default function Header({ sidebarCollapsed }) {
           )}
         </div>
       </div>
+
+      {/* Announcement Modal Popup */}
+      {selectedAnnouncement && (
+        <AnnouncementModal
+          announcement={selectedAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
     </header>
   );
 }

@@ -117,14 +117,17 @@ export const ROLE_PREFIXES = {
 export function normalizeRoleSlug(roleInput) {
   if (!roleInput) return '';
   if (typeof roleInput === 'object') {
-    const slugOrName =
-      roleInput.slug ||
-      roleInput.name ||
-      (typeof roleInput.role === 'object' ? (roleInput.role?.slug || roleInput.role?.name) : roleInput.role) ||
-      roleInput.employmentType ||
+    if (roleInput.slug) return normalizeRoleSlug(roleInput.slug);
+    if (typeof roleInput.role === 'object' && (roleInput.role?.slug || roleInput.role?.name)) {
+      return normalizeRoleSlug(roleInput.role.slug || roleInput.role.name);
+    }
+    const roleCandidate =
       roleInput.designation ||
+      (typeof roleInput.role === 'string' && !/^[0-9a-fA-F]{24}$/.test(roleInput.role) ? roleInput.role : '') ||
+      (roleInput.employmentType && roleInput.employmentType !== 'Full-time' ? roleInput.employmentType : '') ||
+      (typeof roleInput.name === 'string' && /admin|hr|pmo|intern|employee/i.test(roleInput.name) ? roleInput.name : '') ||
       '';
-    if (slugOrName) return normalizeRoleSlug(slugOrName);
+    if (roleCandidate) return normalizeRoleSlug(roleCandidate);
   }
   let str = String(roleInput).toLowerCase().trim();
   // If it's a 24-character hex ObjectId, it cannot be a role slug
@@ -188,6 +191,16 @@ export function getNotificationTarget(notif, roleSlug) {
   if (!leaveId && link) {
     const matchLeave = link.match(/[?&]leaveId=([^&]+)/);
     if (matchLeave) leaveId = matchLeave[1];
+  }
+
+  // ─── 0. Announcements (Viewed in-place via modal) ───────────────────────
+  if (
+    notifType === 'announcement' ||
+    metadata.isAnnouncement ||
+    notifTitle.includes('announcement') ||
+    notifTitle.startsWith('📢')
+  ) {
+    return null;
   }
 
   // ─── 1. Task Review Submissions (task_submitted_for_review) ─────────────
@@ -259,8 +272,7 @@ export function getNotificationTarget(notif, roleSlug) {
     notifType === 'user_created' ||
     link.includes('/onboarding') ||
     link.includes('/interns') ||
-    notifTitle.includes('intern') ||
-    notifMsg.includes('intern')
+    /\binterns?\b/i.test(notifTitle)
   ) {
     const base = link.includes('/onboarding')
       ? (DOMAIN_ROUTES.onboarding[normRole] || ROLE_HOME[normRole] || '/')
