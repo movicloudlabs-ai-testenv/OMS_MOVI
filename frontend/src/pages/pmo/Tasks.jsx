@@ -159,6 +159,8 @@ export default function PMOTaskBoard() {
         const res = await pmoAPI.getTask(urlTaskId);
         const taskData = res.data?.data || res.data;
         if (taskData) {
+          const urlTab = searchParams.get('tab');
+          if (urlTab) taskData.initialTab = urlTab;
           const projId = taskData.project?._id || taskData.project;
           if (projId) setSelectedProject(projId);
           setSelectedTask(taskData);
@@ -167,7 +169,7 @@ export default function PMOTaskBoard() {
         console.warn('Could not load target task by ID:', err);
       }
     })();
-  }, [urlTaskId, canRead]);
+  }, [urlTaskId, searchParams, canRead]);
 
   // Drag and Drop handlers
   const handleDragStart = (e, task) => {
