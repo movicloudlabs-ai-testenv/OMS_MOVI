@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import toast from 'react-hot-toast';
 import { pmoAPI } from '../../utils/api';
@@ -10,7 +11,12 @@ export default function PMOApprovals() {
   const isPMOLead     = user?.role?.slug === 'pmo-lead' || user?.role?.slug === 'super-admin';
   const canRead       = hasPermission('Tasks', 'read') || isPMOLead;
   const canUpdateTask = hasPermission('Tasks', 'update') || isPMOLead;
-  const [activeTab, setActiveTab] = useState('Tasks');
+  const [searchParams] = useSearchParams();
+  const urlTaskId = searchParams.get('taskId');
+  const urlLeaveId = searchParams.get('leaveId');
+  const urlTab = searchParams.get('tab');
+
+  const [activeTab, setActiveTab] = useState(urlLeaveId || urlTab === 'Leave' ? 'Leave' : 'Tasks');
   const [taskApprovals, setTaskApprovals] = useState([]);
   const [leaveOverview, setLeaveOverview] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +41,14 @@ export default function PMOApprovals() {
   useEffect(() => {
     fetchApprovals();
   }, []);
+
+  useEffect(() => {
+    if (urlLeaveId || urlTab === 'Leave') {
+      setActiveTab('Leave');
+    } else if (urlTaskId || urlTab === 'Tasks') {
+      setActiveTab('Tasks');
+    }
+  }, [urlTaskId, urlLeaveId, urlTab]);
 
   if (!canRead) return <PageWrapper><AccessDenied message="You don't have permission to view approvals." /></PageWrapper>;
 
