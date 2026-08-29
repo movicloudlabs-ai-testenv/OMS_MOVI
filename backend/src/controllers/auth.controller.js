@@ -273,7 +273,7 @@ export const forgotPassword = async (req, res, next) => {
     const rawToken = user.createPasswordResetToken();
     await user.save({ validateBeforeSave: false });
 
-    const appUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:5173';
+    const appUrl = process.env.APP_URL || 'http://localhost:5173';
     const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
 
     try {

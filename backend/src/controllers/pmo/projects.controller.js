@@ -109,7 +109,7 @@ export const createProject = async (req, res, next) => {
           role: 'HR Representative',
           pmoName: req.user.name,
           hrName: null,
-          loginUrl: process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:5173',
+          loginUrl: process.env.APP_URL,
         });
       } catch (_) {}
     }
@@ -277,7 +277,7 @@ export const addTeamMembers = async (req, res, next) => {
           projectCode: project.code,
           role: member.role,
           pmoName: req.user.name,
-          loginUrl: process.env.FRONTEND_URL || process.env.APP_URL || 'http://localhost:5173',
+          loginUrl: process.env.APP_URL,
         });
       } catch (_) {
         // Email failure is non-fatal

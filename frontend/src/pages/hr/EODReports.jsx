@@ -83,7 +83,12 @@ export default function HREODReports() {
         employmentType: typeFilter || undefined,
         college: collegeFilter || undefined,
       });
-      setDayStatus(res.data?.data?.results || []);
+      const raw = res.data?.data?.results || [];
+      const sorted = [...raw].sort((a, b) => {
+        if (a.submitted !== b.submitted) return a.submitted ? -1 : 1;
+        return (a.user?.name || '').localeCompare(b.user?.name || '');
+      });
+      setDayStatus(sorted);
     } catch (err) {
       toast.error('Failed to load EOD status');
     } finally {
