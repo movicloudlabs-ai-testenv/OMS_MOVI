@@ -6,17 +6,6 @@ import AccessDenied from '../../components/shared/AccessDenied';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
-// Kept in sync with INTERN_ROLE_OPTIONS in pages/pmo/ProjectDetails.jsx —
-// PMO's "Assign Interns" wizard matches an intern to a project role by
-// checking keywords inside this exact designation string, so onboarding
-// interns with one of these exact values guarantees a match every time
-// (free-text designations like "Full Stack Web Developer" used to slip
-// through the keyword matcher and never show up as assignable).
-const INTERN_DESIGNATION_OPTIONS = [
-  'Full Stack Intern', 'Frontend Intern', 'Backend Intern',
-  'UI/UX Intern', 'QA Intern', 'Data Intern', 'DevOps Intern', 'Mobile Intern',
-];
-
 const Field = ({ label, required, hint, children }) => (
   <div>
     <label className="block text-[12px] font-semibold text-[#475569] uppercase tracking-wide mb-1.5">
@@ -95,16 +84,9 @@ export default function AdminCreateUser() {
       .then(r => {
         const fetchedRoles = r.data.data || [];
         setRoles(fetchedRoles);
-        // Default the system role sensibly instead of blindly picking
-        // fetchedRoles[0] — for an Intern signup that could land on
-        // Admin/PMO-Lead/etc., which then gets excluded from PMO's
-        // "available interns" list and the intern never shows up anywhere.
+        // Set default role to the first role if not already selected
         if (fetchedRoles.length > 0 && !formData.role) {
-          const isInternPreset = presetType === 'intern';
-          const bestMatch = isInternPreset
-            ? fetchedRoles.find(r => /intern/i.test(r.slug || r.name || ''))
-            : null;
-          setFormData(prev => ({ ...prev, role: (bestMatch || fetchedRoles[0])._id }));
+          setFormData(prev => ({ ...prev, role: fetchedRoles[0]._id }));
         }
       })
       .catch(() => setRoles([]))
@@ -122,23 +104,7 @@ export default function AdminCreateUser() {
 
   const set = (field) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
-    setFormData(prev => {
-      const next = { ...prev, [field]: value };
-      // If the person switches Employment Type to/from Intern after roles
-      // have already loaded, re-point the system role to the matching
-      // "Intern" role rather than leaving whatever was picked before —
-      // same root cause as the initial-load default above.
-      if (field === 'employmentType' && roles.length > 0) {
-        const isInternNow = value === 'Intern';
-        const currentRole = roles.find(r => r._id === prev.role);
-        const currentIsInternRole = currentRole && /intern/i.test(currentRole.slug || currentRole.name || '');
-        if (isInternNow && !currentIsInternRole) {
-          const internRole = roles.find(r => /intern/i.test(r.slug || r.name || ''));
-          if (internRole) next.role = internRole._id;
-        }
-      }
-      return next;
-    });
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const isIntern = formData.employmentType === 'Intern';
@@ -324,17 +290,8 @@ export default function AdminCreateUser() {
                     </select>
                   </SelectWrapper>
                 </Field>
-                <Field label="Job Title / Designation" hint={isIntern ? 'Pick the exact track — this must match for PMO project assignment to work' : undefined}>
-                  {isIntern ? (
-                    <SelectWrapper>
-                      <select className={selectCls} value={formData.designation} onChange={set('designation')}>
-                        <option value="">Select Intern Track</option>
-                        {INTERN_DESIGNATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                      </select>
-                    </SelectWrapper>
-                  ) : (
-                    <input type="text" className={inputCls} placeholder="e.g. Senior Developer" value={formData.designation} onChange={set('designation')} />
-                  )}
+                <Field label="Job Title / Designation">
+                  <input type="text" className={inputCls} placeholder={isIntern ? 'e.g. Engineering Intern' : 'e.g. Senior Developer'} value={formData.designation} onChange={set('designation')} />
                 </Field>
                 {isIntern ? (
                   <>

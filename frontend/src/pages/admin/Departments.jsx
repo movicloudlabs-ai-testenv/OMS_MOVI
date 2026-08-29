@@ -19,6 +19,13 @@ export default function AdminDepartments() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredDepartments = departments.filter(dept => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    return dept.name?.toLowerCase().includes(term);
+  });
 
   const fetchDepartments = async () => {
     setLoading(true);
@@ -40,7 +47,7 @@ export default function AdminDepartments() {
 
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedIds(departments.map(d => d._id));
+      setSelectedIds(filteredDepartments.map(d => d._id));
     } else {
       setSelectedIds([]);
     }
@@ -85,6 +92,8 @@ export default function AdminDepartments() {
                 className="w-full border border-[#E2E8F0] rounded py-1.5 pl-9 pr-3 text-[13px] focus:outline-none focus:border-[#EA580C] transition-colors"
                 placeholder="Search departments..."
                 type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
             <button className="border border-[#E2E8F0] text-[#0F172A] px-3 py-1.5 rounded text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2">
@@ -114,7 +123,7 @@ export default function AdminDepartments() {
               <thead>
                 <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
                   <th className="px-4 py-3 w-10 text-center">
-                    <input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === departments.length && departments.length > 0} className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C] accent-[#EA580C]" />
+                    <input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === filteredDepartments.length && filteredDepartments.length > 0} className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C] accent-[#EA580C]" />
                   </th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Department Name</th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Head</th>
@@ -138,12 +147,12 @@ export default function AdminDepartments() {
                   <tr>
                     <td colSpan="7" className="px-4 py-8 text-center text-[#DC2626]">{error}</td>
                   </tr>
-                ) : departments.length === 0 ? (
+                ) : filteredDepartments.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-4 py-8 text-center text-[#64748B]">No departments found.</td>
                   </tr>
                 ) : (
-                  departments.map((dept) => (
+                  filteredDepartments.map((dept) => (
                     <tr key={dept._id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 group">
                       <td className="px-4 py-3 text-center">
                         <input type="checkbox" checked={selectedIds.includes(dept._id)} onChange={() => handleSelect(dept._id)} className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C] accent-[#EA580C]" />
@@ -203,7 +212,7 @@ export default function AdminDepartments() {
           </div>
           
           <div className="px-4 py-3 border-t border-[#E2E8F0] flex items-center justify-between bg-white">
-            <p className="text-[13px] text-[#64748B]">Showing <span className="font-medium text-[#0F172A]">{departments.length}</span> results</p>
+            <p className="text-[13px] text-[#64748B]">Showing <span className="font-medium text-[#0F172A]">{filteredDepartments.length}</span> results</p>
           </div>
         </div>
 

@@ -28,6 +28,7 @@ export default function HREODReports() {
   const [period, setPeriod] = useState('day'); // day | week | month
   const [typeFilter, setTypeFilter] = useState('');
   const [collegeFilter, setCollegeFilter] = useState('');
+  const [allColleges, setAllColleges] = useState([]);
 
   // Day view state
   const [selectedDate, setSelectedDate] = useState(todayStr());
@@ -46,6 +47,32 @@ export default function HREODReports() {
   const [personLoading, setPersonLoading] = useState(false);
 
   const dateCards = useMemo(() => buildDateCards(30), []);
+
+  // Fetch master list of colleges on mount
+  useEffect(() => {
+    let isMounted = true;
+    const fetchMasterColleges = async () => {
+      try {
+        const res = await hrAPI.getInterns();
+        const interns = res.data?.data?.interns || res.data?.data || [];
+        const cols = interns.map(i => i.college || i.institution).filter(Boolean);
+        if (isMounted && cols.length > 0) {
+          setAllColleges(prev => [...new Set([...prev, ...cols])].sort());
+        }
+      } catch {}
+    };
+    fetchMasterColleges();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Accumulate colleges from dayStatus and periodEntries
+  useEffect(() => {
+    const fromDay = dayStatus.map(r => r.user?.college).filter(Boolean);
+    const fromPeriod = periodEntries.map(e => e.user?.college).filter(Boolean);
+    if (fromDay.length > 0 || fromPeriod.length > 0) {
+      setAllColleges(prev => [...new Set([...prev, ...fromDay, ...fromPeriod])].sort());
+    }
+  }, [dayStatus, periodEntries]);
 
   const loadDayStatus = async () => {
     if (!canRead) return;
@@ -88,8 +115,8 @@ export default function HREODReports() {
   const colleges = useMemo(() => {
     const fromDay = dayStatus.map(r => r.user?.college).filter(Boolean);
     const fromPeriod = periodEntries.map(e => e.user?.college).filter(Boolean);
-    return [...new Set([...fromDay, ...fromPeriod])].sort();
-  }, [dayStatus, periodEntries]);
+    return [...new Set([...allColleges, ...fromDay, ...fromPeriod])].sort();
+  }, [allColleges, dayStatus, periodEntries]);
 
   const grouped = useMemo(() => {
     const byUser = new Map();
@@ -123,7 +150,7 @@ export default function HREODReports() {
       const res = await hrAPI.exportEODReports({ from: card.date, to: card.date, label });
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
-      a.href = url; a.download = `${label}.xlsx`;
+      a.href = url; a.download = `${label}.pdf`;
       document.body.appendChild(a); a.click(); a.remove();
       window.URL.revokeObjectURL(url);
       toast.success('Report downloaded');
@@ -203,8 +230,8 @@ export default function HREODReports() {
               </div>
 
               {/* Intern/Employee status table for selected date */}
-              <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden h-fit">
-                <div className="px-4 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+              <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden flex flex-col max-h-[600px]">
+                <div className="px-4 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC] shrink-0">
                   <p className="text-[13px] font-bold text-[#0F172A]">
                     {new Date(selectedDate).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
                   </p>
@@ -214,10 +241,10 @@ export default function HREODReports() {
                 ) : dayStatus.length === 0 ? (
                   <div className="px-4 py-12 text-center text-[13px] text-[#94A3B8]">No interns/employees found.</div>
                 ) : (
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto overflow-y-auto flex-1">
                     <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="border-b border-[#E2E8F0]">
+                      <thead className="sticky top-0 bg-[#F8FAFC] border-b border-[#E2E8F0] z-10">
+                        <tr>
                           <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">Name</th>
                           <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">College</th>
                           <th className="px-4 py-2.5 text-[11px] font-semibold text-[#64748B] uppercase">EOD Status</th>
@@ -282,6 +309,7 @@ export default function HREODReports() {
               reportLabel="EOD Report"
               employmentType={typeFilter}
               college={collegeFilter}
+              fileExt="pdf"
             />
 
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">

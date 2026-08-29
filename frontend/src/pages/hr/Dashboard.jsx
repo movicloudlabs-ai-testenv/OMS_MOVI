@@ -14,6 +14,7 @@ import {
   ResponsiveContainer, Legend,
 } from 'recharts';
 import HRSidebar from '../../components/hr/HRSidebar';
+import AnnouncementModal from '../../components/shared/AnnouncementModal';
 import { hrAPI, notificationAPI } from '../../utils/api';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -262,11 +263,47 @@ export default function HRDashboard() {
   // ── Render ──────────────────────────────────────────────────────────────────
 
   const [notifOpen, setNotifOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+
   const notifRef = useRef();
+  const datePickerRef = useRef();
+  const profileRef = useRef();
+
+  const handlePrevMonth = (e) => {
+    e.stopPropagation();
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = (e) => {
+    e.stopPropagation();
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const daysInMonth = useMemo(() => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const totalDays = new Date(year, month + 1, 0).getDate();
+    
+    const days = [];
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= totalDays; i++) {
+      days.push(new Date(year, month, i));
+    }
+    return days;
+  }, [currentMonth]);
 
   useEffect(() => {
     const handleClick = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target)) setDatePickerOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target)) setProfileOpen(false);
     };
     window.addEventListener('mousedown', handleClick);
     return () => window.removeEventListener('mousedown', handleClick);
@@ -282,6 +319,18 @@ export default function HRDashboard() {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
+
+    const isAnnouncement =
+      notif.type === 'announcement' ||
+      notif.metadata?.isAnnouncement ||
+      (notif.title || '').toLowerCase().includes('announcement') ||
+      (notif.title || '').startsWith('📢');
+
+    if (isAnnouncement) {
+      setSelectedAnnouncement(notif);
+      return;
+    }
+
     const link = notif.link || '';
     const target = (link === '/hr' || link.startsWith('/hr/') || link === '/profile') ? link : '/hr/dashboard';
     navigate(target);
@@ -317,11 +366,84 @@ export default function HRDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden xl:flex items-center gap-2 bg-white border border-[#F1E8E2] px-3 py-2 rounded-xl text-[12px] font-medium text-[#0F172A] shadow-sm">
-              <CalendarIcon size={14} className="text-[#64748B]" />
-              {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
-              <ChevronDown size={14} className="text-[#94A3B8]" />
+            {/* Date Selector with Dropdown */}
+            <div className="relative" ref={datePickerRef}>
+              <button
+                onClick={() => {
+                  setDatePickerOpen(!datePickerOpen);
+                  setCurrentMonth(selectedDate);
+                }}
+                className="hidden xl:flex items-center gap-2 bg-white border border-[#F1E8E2] hover:border-orange-200 px-3 py-2 rounded-xl text-[12px] font-medium text-[#0F172A] shadow-sm transition-colors cursor-pointer text-left focus:outline-none"
+              >
+                <CalendarIcon size={14} className="text-[#64748B]" />
+                {selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                <ChevronDown size={14} className="text-[#94A3B8]" />
+              </button>
+
+              {datePickerOpen && (
+                <div className="absolute right-0 top-12 z-50 w-72 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 text-slate-800 animate-in fade-in zoom-in-95 duration-200 select-none">
+                  {/* Calendar Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <button
+                      type="button"
+                      onClick={handlePrevMonth}
+                      className="p-1 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors flex items-center justify-center focus:outline-none"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                    </button>
+                    <span className="text-[13px] font-bold text-slate-900">
+                      {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleNextMonth}
+                      className="p-1 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors flex items-center justify-center focus:outline-none"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                    </button>
+                  </div>
+
+                  {/* Week Days Headers */}
+                  <div className="grid grid-cols-7 gap-1 text-center mb-1">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                      <span key={d} className="text-[10px] font-bold text-slate-400 uppercase">
+                        {d}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Days Grid */}
+                  <div className="grid grid-cols-7 gap-1 text-center">
+                    {daysInMonth.map((day, idx) => {
+                      if (!day) return <span key={`empty-${idx}`} />;
+                      const isToday = new Date().toDateString() === day.toDateString();
+                      const isSelected = selectedDate.toDateString() === day.toDateString();
+                      return (
+                        <button
+                          key={day.toISOString()}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDate(day);
+                            setDatePickerOpen(false);
+                            toast.success(`Selected date: ${day.toLocaleDateString()}`);
+                          }}
+                          className={`w-8 h-8 rounded-lg text-[12px] font-semibold flex items-center justify-center transition-colors focus:outline-none ${
+                            isSelected
+                              ? 'bg-[#EA580C] text-white'
+                              : isToday
+                              ? 'bg-orange-50 text-orange-600 border border-orange-200'
+                              : 'hover:bg-slate-50 text-slate-700'
+                          }`}
+                        >
+                          {day.getDate()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
+
             <button
               onClick={() => navigate('/hr/employees')}
               className="bg-[#EA580C] hover:bg-[#C2410C] text-white px-4 py-2 rounded-xl text-[12px] font-semibold transition-colors shadow-sm"
@@ -399,18 +521,43 @@ export default function HRDashboard() {
                 )}
               </div>
             )}
-            {/* User avatar */}
-            <div className="flex items-center gap-2 bg-white border border-[#F1E8E2] rounded-xl px-2 py-1.5 shadow-sm">
-              <div className="w-8 h-8 rounded-lg bg-[#EA580C] flex items-center justify-center text-white text-[11px] font-bold overflow-hidden">
-                {user?.profileImage || user?.avatar
-                  ? <img src={user.profileImage || user.avatar} alt="" className="w-full h-full object-cover" />
-                  : (user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'HR')}
-              </div>
-              <div className="hidden xl:block min-w-0">
-                <p className="text-[12px] font-semibold text-[#0F172A] truncate leading-tight">{user?.name || 'HR Manager'}</p>
-                <p className="text-[10px] text-[#94A3B8] truncate leading-tight">HR Manager</p>
-              </div>
-              <ChevronDown size={14} className="text-[#94A3B8]" />
+            {/* User Profile Chip with Dropdown */}
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setProfileOpen(!profileOpen)}
+                className="flex items-center gap-2 bg-white border border-[#F1E8E2] hover:border-orange-200 rounded-xl px-2 py-1.5 shadow-sm text-left transition-colors cursor-pointer focus:outline-none"
+              >
+                <div className="w-8 h-8 rounded-lg bg-[#EA580C] flex items-center justify-center text-white text-[11px] font-bold overflow-hidden shrink-0">
+                  {user?.profileImage || user?.avatar
+                    ? <img src={user.profileImage || user.avatar} alt="" className="w-full h-full object-cover" />
+                    : (user?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'HR')}
+                </div>
+                <div className="hidden xl:block min-w-0">
+                  <p className="text-[12px] font-semibold text-[#0F172A] truncate leading-tight">{user?.name || 'HR Manager'}</p>
+                  <p className="text-[10px] text-[#94A3B8] truncate leading-tight font-medium">HR Manager</p>
+                </div>
+                <ChevronDown size={14} className="text-[#94A3B8] shrink-0" />
+              </button>
+
+              {profileOpen && (
+                <div className="absolute right-0 top-12 z-50 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1 overflow-hidden">
+                  <button
+                    onClick={() => { setProfileOpen(false); navigate('/hr/profile'); }}
+                    className="w-full text-left px-4 py-2.5 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 hover:text-orange-600 transition-colors flex items-center gap-2 focus:outline-none"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">person</span>
+                    My Profile
+                  </button>
+                  <div className="h-px bg-slate-100 my-1" />
+                  <button
+                    onClick={() => { setProfileOpen(false); handleLogout(); }}
+                    className="w-full text-left px-4 py-2.5 text-[13px] font-semibold text-rose-600 hover:bg-slate-50 transition-colors flex items-center gap-2 focus:outline-none"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">logout</span>
+                    Sign Out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -703,6 +850,7 @@ export default function HRDashboard() {
                 <p className="text-[28px] font-bold text-[#0F172A] leading-none">3</p>
                 <p className="text-[10px] text-[#94A3B8] mt-1">Policy updates, certifications, audits</p>
                 <button
+                  onClick={() => navigate('/hr/documents')}
                   className="w-full mt-3 py-2 text-[11px] font-bold text-[#EA580C] bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                 >
                   View Tasks
@@ -742,6 +890,14 @@ export default function HRDashboard() {
           </div>
         </div>
       </main>
+
+      {/* Announcement Modal Popup */}
+      {selectedAnnouncement && (
+        <AnnouncementModal
+          announcement={selectedAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
     </div>
   );
 }

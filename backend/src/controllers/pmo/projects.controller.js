@@ -126,7 +126,7 @@ export const getProjectById = async (req, res, next) => {
       .populate('manager', 'name avatar designation')
       .populate('department', 'name code')
       .populate({ path: 'team.user', select: 'name designation department avatar', match: { deletedAt: { $exists: false } } })
-      .populate({ path: 'interns.user', select: 'name college avatar', match: { deletedAt: { $exists: false } } });
+      .populate({ path: 'interns.user', select: 'name college avatar domain employmentType', match: { deletedAt: { $exists: false } } });
 
     if (!project) return sendError(res, 'Project not found', 404);
 
@@ -362,7 +362,7 @@ export const assignInterns = async (req, res, next) => {
     }
 
     await project.save();
-    await project.populate('interns.user', 'name college avatar');
+    await project.populate('interns.user', 'name college avatar domain employmentType');
 
     sendSuccess(res, project.interns, 'Interns assigned successfully');
   } catch (error) {

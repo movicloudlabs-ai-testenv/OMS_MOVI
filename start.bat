@@ -17,6 +17,13 @@ if errorlevel 1 (
     exit /b 1
 )
 
+rem Check if MongoDB service is available and running
+sc query MongoDB >nul 2>nul
+if not errorlevel 1 (
+    echo [INFO] Ensuring MongoDB service is running...
+    net start MongoDB >nul 2>nul
+)
+
 rem Check Backend node_modules
 if not exist "backend\node_modules" (
     echo [INFO] Backend node_modules not found. Installing dependencies...

@@ -43,8 +43,8 @@ export const errorHandler = (err, req, res, next) => {
   }
 
   // Log server errors in development
-  if (statusCode === 500 && process.env.NODE_ENV === 'development') {
-    console.error('Server Error:', err);
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error:', err);
   }
 
   res.status(statusCode).json({

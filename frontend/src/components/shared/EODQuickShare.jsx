@@ -1,31 +1,48 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 
+const MAX_BACKDATE_DAYS = 14;
+const toDateInput = (d) => d.toISOString().slice(0, 10);
+const todayStr = () => toDateInput(new Date());
+const minDateStr = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - MAX_BACKDATE_DAYS);
+  return toDateInput(d);
+};
+
 /**
  * Simple EOD update box — "share what you worked on today" as a short message.
- * `api` must expose: getMyEODToday(), submitEOD(message)
+ * `api` must expose: getMyEODToday(date?), submitEOD(message, date?)
+ *
+ * Pass `allowBackdate` on the dedicated EOD Report pages so the person can
+ * fill in a missed day — left off (default) on compact dashboard widgets
+ * where a date picker would just be clutter, since that view is always
+ * "today".
  */
-export default function EODQuickShare({ api }) {
+export default function EODQuickShare({ api, allowBackdate = false }) {
   const [message, setMessage] = useState('');
-  const [submittedToday, setSubmittedToday] = useState(null); // the saved entry, or null
+  const [submittedForDate, setSubmittedForDate] = useState(null); // the saved entry, or null
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(todayStr());
 
-  const load = async () => {
+  const load = async (dateStr) => {
     try {
-      const res = await api.getMyEODToday();
+      setLoading(true);
+      const res = await api.getMyEODToday(dateStr === todayStr() ? undefined : dateStr);
       const entry = res.data?.data || null;
-      setSubmittedToday(entry);
-      if (entry) setMessage(entry.message);
+      setSubmittedForDate(entry);
+      setMessage(entry ? entry.message : '');
+      setEditing(false);
     } catch {
-      setSubmittedToday(null);
+      setSubmittedForDate(null);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(selectedDate); }, [selectedDate]);
 
   const handleSubmit = async () => {
     if (!message.trim()) {
@@ -34,8 +51,8 @@ export default function EODQuickShare({ api }) {
     }
     setSaving(true);
     try {
-      const res = await api.submitEOD(message.trim());
-      setSubmittedToday(res.data?.data);
+      const res = await api.submitEOD(message.trim(), allowBackdate ? selectedDate : undefined);
+      setSubmittedForDate(res.data?.data);
       setEditing(false);
       toast.success("EOD update shared with your team");
     } catch (err) {
@@ -52,17 +69,32 @@ export default function EODQuickShare({ api }) {
       <div className="flex items-center gap-2 mb-3">
         <span className="material-symbols-outlined text-[18px] text-[#2563EB]">forum</span>
         <h3 className="text-[14px] font-bold text-[#0F172A]">EOD Update</h3>
-        {submittedToday && !editing && (
+        {submittedForDate && !editing && (
           <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-[#059669]">
             <span className="material-symbols-outlined text-[14px]">check_circle</span>
-            Shared today
+            {selectedDate === todayStr() ? 'Shared today' : 'Shared'}
           </span>
         )}
       </div>
 
-      {submittedToday && !editing ? (
+      {allowBackdate && (
+        <div className="mb-3">
+          <label className="block text-[12px] font-semibold text-[#64748B] mb-1">Date</label>
+          <input
+            type="date"
+            value={selectedDate}
+            min={minDateStr()}
+            max={todayStr()}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full sm:w-48 border border-[#E2E8F0] rounded-md py-1.5 px-3 text-[12.5px] focus:outline-none focus:border-[#2563EB]"
+          />
+          <p className="text-[11px] text-[#94A3B8] mt-1">You can fill in a missed day up to {MAX_BACKDATE_DAYS} days back.</p>
+        </div>
+      )}
+
+      {submittedForDate && !editing ? (
         <div>
-          <p className="text-[13px] text-[#0F172A] bg-[#F8FAFC] border border-[#F1F5F9] rounded-md p-3 whitespace-pre-wrap leading-relaxed">{submittedToday.message}</p>
+          <p className="text-[13px] text-[#0F172A] bg-[#F8FAFC] border border-[#F1F5F9] rounded-md p-3 whitespace-pre-wrap leading-relaxed">{submittedForDate.message}</p>
           <button
             onClick={() => setEditing(true)}
             className="mt-2 text-[12px] font-medium text-[#2563EB] hover:underline"
@@ -81,7 +113,7 @@ export default function EODQuickShare({ api }) {
           />
           <div className="flex justify-end gap-2 mt-2">
             {editing && (
-              <button onClick={() => { setEditing(false); setMessage(submittedToday?.message || ''); }} className="px-3 py-1.5 rounded-md text-[12px] font-medium text-[#64748B] hover:bg-[#F1F5F9]">
+              <button onClick={() => { setEditing(false); setMessage(submittedForDate?.message || ''); }} className="px-3 py-1.5 rounded-md text-[12px] font-medium text-[#64748B] hover:bg-[#F1F5F9]">
                 Cancel
               </button>
             )}

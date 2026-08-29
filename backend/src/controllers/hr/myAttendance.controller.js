@@ -10,24 +10,24 @@ export const getMyAttendance = async (req, res, next) => {
     const y = year ? parseInt(year) : new Date().getFullYear();
     
     // First day of month and last day of month
-    const startDate = new Date(y, m, 1);
-    const endDate = new Date(y, m + 1, 0);
+    const startDate = new Date(Date.UTC(y, m, 1));
+    const endDate = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
 
     // Find user to get joining date
     const user = await import('../../models/User.js').then(m => m.default.findById(req.user._id));
     const joinDate = user.joinDate ? new Date(user.joinDate) : new Date(user.createdAt);
-    joinDate.setHours(0, 0, 0, 0);
+    const joinDateUTC = new Date(Date.UTC(joinDate.getFullYear(), joinDate.getMonth(), joinDate.getDate()));
 
     // Find the very first attendance record to use as the true "start" date if it's later than joinDate
     const userId = req.user._id;
     const firstAttendance = await Attendance.findOne({ user: userId }).sort({ date: 1 });
-    let startBoundary = joinDate;
+    let startBoundary = joinDateUTC;
 
     if (firstAttendance) {
       const firstLoginDate = new Date(firstAttendance.date);
-      firstLoginDate.setHours(0, 0, 0, 0);
-      if (firstLoginDate > joinDate) {
-        startBoundary = firstLoginDate;
+      const firstLoginDateUTC = new Date(Date.UTC(firstLoginDate.getUTCFullYear(), firstLoginDate.getUTCMonth(), firstLoginDate.getUTCDate()));
+      if (firstLoginDateUTC > joinDateUTC) {
+        startBoundary = firstLoginDateUTC;
       }
     }
 
@@ -47,10 +47,9 @@ export const getMyAttendance = async (req, res, next) => {
     }).lean();
 
     // Generate a day-by-day mapping
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
 
-    const daysInMonth = endDate.getDate();
+    const daysInMonth = endDate.getUTCDate();
     const attendanceList = [];
     
     let stats = {
@@ -61,13 +60,16 @@ export const getMyAttendance = async (req, res, next) => {
     };
 
     for (let day = 1; day <= daysInMonth; day++) {
-      const currentDate = new Date(y, m, day);
+      const currentDate = new Date(Date.UTC(y, m, day));
       const isFuture = currentDate > today;
 
       // Find if attendance exists
-      const attRecord = attendanceRecords.find(
-        (r) => new Date(r.date).toDateString() === currentDate.toDateString()
-      );
+      const attRecord = attendanceRecords.find((r) => {
+        const rDate = new Date(r.date);
+        return rDate.getUTCDate() === day &&
+               rDate.getUTCMonth() === m &&
+               rDate.getUTCFullYear() === y;
+      });
 
       // Find if leave exists for this date
       const leaveRecord = leaves.find(

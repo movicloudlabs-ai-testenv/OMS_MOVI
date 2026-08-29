@@ -24,6 +24,7 @@ export default function PMOProjects() {
     name: '', description: '', dueDate: '', priority: 'Medium', department: '', hrRepId: ''
   });
   const [availableHRs, setAvailableHRs] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const fetchData = async () => {
     if (!canRead) return;
@@ -65,10 +66,13 @@ export default function PMOProjects() {
   });
 
   const handleCreateProject = async () => {
+    if (submitting) return;
     if (!newProject.name.trim()) { toast.error('Project name is required.'); return; }
     const dept = newProject.department || departments[0]?._id || departments[0];
     if (!dept) { toast.error('Department is required.'); return; }
     if (!newProject.hrRepId) { toast.error('Please select an HR Representative.'); return; }
+    
+    setSubmitting(true);
     try {
       const res = await pmoAPI.createProject({
         name: newProject.name,
@@ -86,6 +90,8 @@ export default function PMOProjects() {
       navigate(`/pmo/projects/${res.data.data._id}`);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create project');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -339,15 +345,24 @@ export default function PMOProjects() {
               </div>
 
               <div className="px-6 py-4 border-t border-[#E2E8F0] bg-[#F8FAFC] flex justify-end gap-3">
-                <button onClick={() => setIsWizardOpen(false)} className="px-4 py-2 text-[13px] font-bold text-[#64748B] hover:bg-[#E2E8F0] rounded-lg">
+                <button 
+                  onClick={() => setIsWizardOpen(false)} 
+                  disabled={submitting}
+                  className="px-4 py-2 text-[13px] font-bold text-[#64748B] hover:bg-[#E2E8F0] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreateProject}
-                  className="px-5 py-2 bg-[#2563EB] text-white rounded-lg text-[13px] font-bold hover:bg-[#1D4ED8] transition-colors flex items-center gap-2"
+                  disabled={submitting}
+                  className={`px-5 py-2 bg-[#2563EB] text-white rounded-lg text-[13px] font-bold transition-colors flex items-center gap-2 ${
+                    submitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#1D4ED8]'
+                  }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">rocket_launch</span>
-                  Create Project
+                  <span className={`material-symbols-outlined text-[16px] ${submitting ? 'animate-spin' : ''}`}>
+                    {submitting ? 'sync' : 'rocket_launch'}
+                  </span>
+                  {submitting ? 'Creating...' : 'Create Project'}
                 </button>
               </div>
             </div>

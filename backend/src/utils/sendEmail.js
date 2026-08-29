@@ -116,13 +116,56 @@ async function mailerFor(type) {
   return { transporter: buildTransporter(n), ...resolveSender(type, n) };
 }
 
+// Transient errors worth retrying (network blips, temporary SMTP throttling —
+// NOT auth failures or permanent rejects, which will just fail again identically).
+const RETRYABLE_CODES = ['ETIMEDOUT', 'ECONNRESET', 'ESOCKET', 'ECONNECTION'];
+const RETRYABLE_RESPONSE_CODES = [421, 450, 451, 452]; // 4xx = temporary SMTP failure
+
+function isRetryable(err) {
+  if (RETRYABLE_CODES.includes(err.code)) return true;
+  if (RETRYABLE_RESPONSE_CODES.includes(err.responseCode)) return true;
+  return false;
+}
+
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Bug fix: with dozens of interns/employees requesting password resets in a
+// short window, a single Gmail SMTP account can hit a *temporary* throttling
+// response (e.g. "421 4.7.0 Too many login attempts") — the old code failed
+// that request permanently on the first try. This retries transient failures
+// with a short backoff before giving up, and logs the FULL error (code,
+// responseCode, command) instead of just err.message so the real cause
+// (auth failure vs rate limit vs bad recipient vs network) is visible in the
+// server console instead of the generic "Could not send the reset email"
+// message the user sees.
+async function sendWithRetry(transporter, mailOptions, { retries = 2, baseDelayMs = 1000, context = '' } = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await transporter.sendMail(mailOptions);
+    } catch (err) {
+      lastErr = err;
+      console.error(
+        `[sendEmail]${context ? ` ${context}` : ''} attempt ${attempt + 1}/${retries + 1} failed — ` +
+        `code=${err.code || '-'} responseCode=${err.responseCode || '-'} command=${err.command || '-'} : ${err.message}`
+      );
+      if (attempt < retries && isRetryable(err)) {
+        await delay(baseDelayMs * (attempt + 1)); // 1s, then 2s
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw lastErr;
+}
+
 /**
  * Low-level send used by the Settings "Send Test Email" button.
  * Verifies the active SMTP connection (DB or env) using a chosen identity.
  */
 export async function sendTestEmail({ to, identity = 'support' }) {
   const { transporter, from, replyTo } = await mailerFor(identity);
-  await transporter.sendMail({
+  await sendWithRetry(transporter, {
     from,
     replyTo,
     to,
@@ -138,14 +181,14 @@ export async function sendTestEmail({ to, identity = 'support' }) {
         <p style="font-size:12px;color:#64748B">Movi Cloud Labs — OWMS Notification System</p>
       </div>
     `,
-  });
+  }, { context: `test email -> ${to}` });
 }
 
 export const sendProjectAssignmentEmail = async ({
   to, employeeName, projectName, projectCode, role, pmoName, hrName, loginUrl,
 }) => {
   const { transporter, from, replyTo } = await mailerFor('alerts');
-  await transporter.sendMail({
+  await sendWithRetry(transporter, {
     from,
     replyTo,
     to,
@@ -203,12 +246,12 @@ export const sendProjectAssignmentEmail = async ({
         </p>
       </div>
     `,
-  });
+  }, { context: `project assignment -> ${to}` });
 };
 
 export const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
   const { transporter, from, replyTo } = await mailerFor('support');
-  await transporter.sendMail({
+  await sendWithRetry(transporter, {
     from,
     replyTo,
     to,
@@ -248,7 +291,7 @@ export const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
         </p>
       </div>
     `,
-  });
+  }, { context: `password reset -> ${to}` });
 };
 
 // ─── Pooled Welcome-Email Transporter ─────────────────────────────────────────

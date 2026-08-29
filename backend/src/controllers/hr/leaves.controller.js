@@ -146,6 +146,7 @@ export const reviewLeave = async (req, res, next) => {
         message: `Your ${leave.type} leave request has been approved by ${req.user.name}.`,
         link: '/employee/leave',
         sender: req.user._id,
+        metadata: { leaveId: leave._id },
       });
 
       // Notify PMO if assigned
@@ -157,6 +158,7 @@ export const reviewLeave = async (req, res, next) => {
           message: `${leave.user.name} leave approved: ${leave.fromDate.toDateString()} to ${leave.toDate.toDateString()}. Project impact: review tasks.`,
           link: '/pmo/approvals',
           sender: req.user._id,
+          metadata: { leaveId: leave._id },
         });
       }
     } else {
@@ -168,6 +170,7 @@ export const reviewLeave = async (req, res, next) => {
         message: `Your leave request was not approved. Reason: ${reviewNote || 'No reason provided'}`,
         link: '/employee/leave',
         sender: req.user._id,
+        metadata: { leaveId: leave._id },
       });
     }
 
@@ -217,8 +220,13 @@ export const getMyLeaves = async (req, res, next) => {
 export const applyMyLeave = async (req, res, next) => {
   try {
     const { type, fromDate, toDate, reason, projectImpact } = req.body;
-    if (!type || !fromDate || !toDate || !reason) {
-      return sendError(res, 'type, fromDate, toDate, and reason are required', 400);
+    if (!type || !fromDate || !toDate) {
+      return sendError(res, 'type, fromDate, and toDate are required', 400);
+    }
+
+    const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+    if (!trimmedReason) {
+      return sendError(res, 'Leave reason is required.', 400);
     }
 
     const from = new Date(fromDate);
@@ -251,7 +259,7 @@ export const applyMyLeave = async (req, res, next) => {
       fromDate: from,
       toDate: to,
       days,
-      reason,
+      reason: trimmedReason,
       projectImpact: projectImpact || '',
       status: 'Approved',
       reviewedBy: req.user._id,

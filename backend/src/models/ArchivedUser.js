@@ -62,6 +62,7 @@ const ArchivedUserSchema = new Schema({
 ArchivedUserSchema.index({ name: 'text', email: 'text', employeeId: 'text' });
 ArchivedUserSchema.index({ archivedAt: -1 });
 ArchivedUserSchema.index({ originalId: 1 }, { unique: true });
+ArchivedUserSchema.index({ employeeId: 1 });
 
 const ArchivedUser = mongoose.model('ArchivedUser', ArchivedUserSchema);
 export default ArchivedUser;

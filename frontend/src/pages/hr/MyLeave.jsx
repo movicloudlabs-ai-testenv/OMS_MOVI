@@ -43,6 +43,7 @@ function LeaveApplyModal({ onClose, onSubmit, balance, submitting }) {
   const [fromDate, setFromDate] = useState(today);
   const [toDate,   setToDate]   = useState(today);
   const [reason,   setReason]   = useState('');
+  const [error,    setError]    = useState('');
   const days = wDays(fromDate, toDate);
   const bal  = balance?.[type?.toLowerCase()];
   const exceeds = bal && days > (bal.total - bal.used);
@@ -96,14 +97,22 @@ function LeaveApplyModal({ onClose, onSubmit, balance, submitting }) {
           )}
           <div>
             <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-1.5">Reason *</label>
-            <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3}
+            <textarea value={reason} onChange={e => { setReason(e.target.value); if (e.target.value.trim()) setError(''); }} rows={3}
               placeholder="Describe the reason for your leave…"
               className="w-full p-3 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB] resize-none" />
+            {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
           </div>
           <div className="flex justify-end gap-3 pt-2 border-t border-[#E2E8F0]">
             <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-[#64748B] hover:bg-[#F1F5F9] rounded-lg">Cancel</button>
-            <button disabled={submitting || !type || days === 0 || !reason.trim() || exceeds}
-              onClick={() => onSubmit({ type, fromDate, toDate, reason })}
+            <button disabled={submitting || !type || days === 0 || exceeds}
+              onClick={() => {
+                if (!reason || !reason.trim()) {
+                  setError('Leave reason is required.');
+                  toast.error('Leave reason is required.');
+                  return;
+                }
+                onSubmit({ type, fromDate, toDate, reason: reason.trim() });
+              }}
               className="px-5 py-2 text-sm font-bold bg-[#2563EB] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
               {submitting ? 'Applying…' : 'Apply Leave'}
             </button>

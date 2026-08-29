@@ -150,6 +150,7 @@ const UserSchema = new Schema({
 UserSchema.index({ role: 1 });
 UserSchema.index({ department: 1 });
 UserSchema.index({ status: 1 });
+UserSchema.index({ hrManager: 1, onboardingComplete: 1 });
 
 // ─── Virtual: avatar URL ──────────────────────────────────────────────────────
 UserSchema.virtual('avatarUrl').get(function () {
@@ -162,7 +163,7 @@ UserSchema.virtual('avatarUrl').get(function () {
 // ─── Pre-save: hash password ──────────────────────────────────────────────────
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  const rounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+  const rounds = this.mustChangePassword ? 4 : (parseInt(process.env.BCRYPT_ROUNDS) || 12);
   this.password = await bcrypt.hash(this.password, rounds);
   this.passwordChangedAt = new Date();
   next();
@@ -191,10 +192,27 @@ UserSchema.methods.createPasswordResetToken = function () {
 UserSchema.statics.generateEmployeeId = async function (type) {
   const prefix = type === 'Intern' ? 'INT' : 'EMP';
   const year = new Date().getFullYear();
-  const count = await this.countDocuments({
+  let count = await this.countDocuments({
     employeeId: new RegExp(`^${prefix}-${year}`),
   });
-  return `${prefix}-${year}-${String(count + 1).padStart(3, '0')}`;
+
+  let employeeId;
+  let exists = true;
+  while (exists) {
+    const paddedSeq = String(count + 1).padStart(3, '0');
+    employeeId = `${prefix}-${year}-${paddedSeq}`;
+
+    // Verify that the generated Employee ID does not already exist in User or ArchivedUser
+    const userExists = await this.findOne({ employeeId });
+    const archivedExists = await mongoose.model('ArchivedUser').findOne({ employeeId });
+
+    if (!userExists && !archivedExists) {
+      exists = false;
+    } else {
+      count++;
+    }
+  }
+  return employeeId;
 };
 
 const User = mongoose.model('User', UserSchema);

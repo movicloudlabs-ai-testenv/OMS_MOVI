@@ -111,8 +111,7 @@ router.post('/change-password', async (req, res, next) => {
     await user.save();
     
     // Automatically mark attendance for the day if not exists (since they just completed login flow)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
     const existingAttendance = await Attendance.findOne({
       user: user._id,
       date: today

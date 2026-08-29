@@ -397,7 +397,7 @@ export default function HRInternDetails() {
             
             {/* Quick Actions */}
             <div className="flex gap-3 shrink-0">
-              <button className="border border-[#E2E8F0] bg-white text-[#0F172A] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2 shadow-sm">
+              <button onClick={() => navigate(`/admin/users/${id}/edit`)} className="border border-[#E2E8F0] bg-white text-[#0F172A] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2 shadow-sm">
                 <span className="material-symbols-outlined text-[18px]">edit</span> Edit Profile
               </button>
               <button className="border border-[#E2E8F0] bg-white text-[#2563EB] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-sm">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import {
   Columns, List, CalendarDays, X, CheckCircle2, Circle,
@@ -39,7 +40,9 @@ const relTime = (d) => {
 // ─── Task Detail Modal ────────────────────────────────────────────────────────
 function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh }) {
   const [task,        setTask]        = useState(initialTask);
-  const [activeTab,   setActiveTab]   = useState('Subtasks');
+  const [activeTab,   setActiveTab]   = useState(
+    initialTask?.initialTab?.toLowerCase() === 'comments' ? 'Comments' : 'Subtasks'
+  );
   const [comment,     setComment]     = useState('');
   const [commenting,  setCommenting]  = useState(false);
   const [togglingId,  setTogglingId]  = useState(null);
@@ -384,8 +387,12 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function InternTasks() {
+  const [searchParams] = useSearchParams();
+  const urlTaskId = searchParams.get('taskId');
   const [view,          setView]          = useState('board');
   const [tasks,         setTasks]         = useState([]);
+  const [projects,      setProjects]      = useState([]);
+  const [projectFilter, setProjectFilter] = useState('All Projects');
   const [search,        setSearch]        = useState('');
   const [selectedTask,  setSelectedTask]  = useState(null);
   const [loading,       setLoading]       = useState(true);
@@ -393,13 +400,40 @@ export default function InternTasks() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const res = await internAPI.getTasks();
-      setTasks(res.data?.data || []);
+      const [tRes, pRes] = await Promise.allSettled([
+        internAPI.getTasks(),
+        internAPI.getProjects(),
+      ]);
+      if (tRes.status === 'fulfilled') {
+        setTasks(tRes.value.data?.data || tRes.value.data || []);
+      } else {
+        toast.error('Failed to load tasks');
+      }
+      if (pRes.status === 'fulfilled') {
+        setProjects(pRes.value.data?.data || pRes.value.data || []);
+      }
     } catch { toast.error('Failed to load tasks'); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchTasks(); }, []);
+
+  useEffect(() => {
+    if (!urlTaskId) return;
+    (async () => {
+      try {
+        const res = await internAPI.getTask(urlTaskId);
+        const taskData = res.data?.data || res.data;
+        if (taskData) {
+          const urlTab = searchParams.get('tab');
+          if (urlTab) taskData.initialTab = urlTab;
+          setSelectedTask(taskData);
+        }
+      } catch (err) {
+        console.warn('Could not load target task by ID:', err);
+      }
+    })();
+  }, [urlTaskId, searchParams]);
 
   const handleStatusChange = async (taskId, status) => {
     try {
@@ -410,7 +444,9 @@ export default function InternTasks() {
   };
 
   const filtered = tasks.filter(t => {
-    return !search || t.title.toLowerCase().includes(search.toLowerCase());
+    const matchProject = projectFilter === 'All Projects' || t.project?.name === projectFilter;
+    const matchSearch  = !search || t.title.toLowerCase().includes(search.toLowerCase());
+    return matchProject && matchSearch;
   });
 
   const overdue = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done').length;
@@ -434,6 +470,12 @@ export default function InternTasks() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            <select value={projectFilter} onChange={e => setProjectFilter(e.target.value)}
+              className="text-sm border border-[#E2E8F0] rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-[#2563EB] font-medium text-[#0F172A]">
+              <option value="All Projects">All Projects</option>
+              {projects.map(p => <option key={p._id} value={p.name}>{p.name}</option>)}
+            </select>
+
             <div className="flex bg-[#F1F5F9] p-1 rounded-lg border border-[#E2E8F0]">
               {[['board', 'Board', Columns], ['list', 'List', List]].map(([id, label, Icon]) => (
                 <button key={id} onClick={() => setView(id)}

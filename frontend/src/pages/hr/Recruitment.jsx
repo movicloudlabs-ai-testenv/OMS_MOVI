@@ -118,7 +118,7 @@ export default function HRRecruitment() {
 
   return (
     <HRLayout bare>
-      <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-5 max-w-[1440px] mx-auto pb-8">
+      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 max-w-[1440px] mx-auto pb-8">
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
@@ -195,7 +195,7 @@ export default function HRRecruitment() {
         </div>
 
         {/* TABLE VIEW */}
-        <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden flex-1">
+        <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden">
           {loading && (
             <div className="px-4 py-12 text-center text-[14px] text-[#64748B]">Loading candidates...</div>
           )}

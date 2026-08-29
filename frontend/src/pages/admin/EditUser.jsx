@@ -5,19 +5,10 @@ import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
 
-// Kept in sync with INTERN_ROLE_OPTIONS in pages/pmo/ProjectDetails.jsx —
-// PMO's "Assign Interns" wizard keyword-matches this exact designation
-// string to a project role, so editing an intern's designation must stay
-// within this list or they can silently stop showing up as assignable.
-const INTERN_DESIGNATION_OPTIONS = [
-  'Full Stack Intern', 'Frontend Intern', 'Backend Intern',
-  'UI/UX Intern', 'QA Intern', 'Data Intern', 'DevOps Intern', 'Mobile Intern',
-];
-
 export default function AdminEditUser() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { hasPermission } = useAuth();
+  const { user, hasPermission } = useAuth();
 
   const [formData, setFormData] = useState({
     name: '', email: '', phone: '', department: '',
@@ -30,6 +21,14 @@ export default function AdminEditUser() {
   const [fetching, setFetching]       = useState(true);
   const [submitting, setSubmitting]   = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  const getBackUrl = () => {
+    const userSlug = user?.role?.slug || user?.role || '';
+    if (userSlug === 'hr-manager' || userSlug === 'hr') {
+      return formData.employmentType === 'Intern' ? `/hr/interns/${id}` : `/hr/employees/${id}`;
+    }
+    return `/admin/users/${id}`;
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -116,7 +115,7 @@ export default function AdminEditUser() {
         } : {}),
       });
       toast.success('User updated successfully');
-      navigate(`/admin/users/${id}`);
+      navigate(getBackUrl());
     } catch (err) {
       setSubmitError(err.response?.data?.message || 'Failed to update user. Please try again.');
     } finally {
@@ -222,18 +221,8 @@ export default function AdminEditUser() {
                 </div>
               </div>
               <div>
-                <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Job Title{formData.employmentType === 'Intern' ? ' / Track' : ''}</label>
-                {formData.employmentType === 'Intern' ? (
-                  <div className="relative">
-                    <select className={selectCls} value={formData.designation} onChange={handleChange('designation')}>
-                      <option value="">Select Intern Track</option>
-                      {INTERN_DESIGNATION_OPTIONS.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
-                  </div>
-                ) : (
-                  <input type="text" className={inputCls} placeholder="e.g. Senior Developer" value={formData.designation} onChange={handleChange('designation')} />
-                )}
+                <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Job Title</label>
+                <input type="text" className={inputCls} placeholder="e.g. Senior Developer" value={formData.designation} onChange={handleChange('designation')} />
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Employment Type</label>
@@ -311,7 +300,7 @@ export default function AdminEditUser() {
         <div className="flex items-center justify-between pt-8 mt-4 border-t border-[#E2E8F0]">
           <button
             type="button"
-            onClick={() => navigate(`/admin/users/${id}`)}
+            onClick={() => navigate(getBackUrl())}
             className="text-[14px] font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
           >
             Cancel
@@ -319,7 +308,7 @@ export default function AdminEditUser() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigate(`/admin/users/${id}`)}
+              onClick={() => navigate(getBackUrl())}
               className="border border-[#E2E8F0] bg-white text-[#0F172A] px-5 py-2.5 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors shadow-sm"
             >
               Discard Changes

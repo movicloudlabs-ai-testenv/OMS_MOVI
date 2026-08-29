@@ -49,7 +49,13 @@ export default function PMOEmployees() {
       const res = await pmoAPI.getTeam();
       // Filter to only employee-type members (not interns or PM leads)
       const employees = (res.data.data || []).filter(
-        m => m.role?.slug === 'employee' || m.role === 'employee' || (!m.role?.slug?.includes('intern') && !m.role?.slug?.includes('pmo') && !m.role?.slug?.includes('hr') && !m.role?.slug?.includes('admin'))
+        m => m.user?.role?.slug === 'employee' || 
+             m.user?.role === 'employee' || 
+             (!m.user?.role?.slug?.includes('intern') && 
+              !m.user?.role?.slug?.includes('pmo') && 
+              !m.user?.role?.slug?.includes('hr') && 
+              !m.user?.role?.slug?.includes('admin') && 
+              m.user?.employmentType !== 'Intern')
       );
       setTeamData(employees);
     } catch {
@@ -71,9 +77,9 @@ export default function PMOEmployees() {
     if (!search) return teamData;
     const q = search.toLowerCase();
     return teamData.filter(m =>
-      m.name?.toLowerCase().includes(q) ||
-      m.designation?.toLowerCase().includes(q) ||
-      m.department?.name?.toLowerCase().includes(q)
+      m.user?.name?.toLowerCase().includes(q) ||
+      m.user?.designation?.toLowerCase().includes(q) ||
+      m.user?.department?.name?.toLowerCase().includes(q)
     );
   }, [teamData, search]);
 
@@ -134,31 +140,31 @@ export default function PMOEmployees() {
         {!loading && filtered.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filtered.map(member => {
-              const pct   = Math.min(Math.round((member.workloadPercentage || 0)), 100);
+              const pct   = Math.min(Math.round((member.stats?.workload || 0)), 100);
               const level = workloadLevel(pct);
               const wl    = WORKLOAD_STYLES[level];
               return (
                 <div
-                  key={member._id || member.user?._id}
-                  onClick={() => navigate(`/pmo/employees/${member._id || member.user?._id}`)}
+                  key={member.user?._id}
+                  onClick={() => navigate(`/pmo/employees/${member.user?._id}`)}
                   className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#2563EB] transition-all cursor-pointer group"
                 >
                   {/* Avatar + name */}
                   <div className="flex items-center gap-3 mb-4">
-                    <Avatar name={member.name || member.user?.name} size={40} />
+                    <Avatar name={member.user?.name} size={40} />
                     <div className="min-w-0">
                       <p className="text-[14px] font-semibold text-[#0F172A] truncate group-hover:text-[#2563EB] transition-colors">
-                        {member.name || member.user?.name}
+                        {member.user?.name}
                       </p>
-                      <p className="text-[11px] text-[#94A3B8] truncate">{member.designation || 'Employee'}</p>
+                      <p className="text-[11px] text-[#94A3B8] truncate">{member.user?.designation || 'Employee'}</p>
                     </div>
                   </div>
 
                   {/* Department */}
-                  {(member.department?.name || member.department) && (
+                  {(member.user?.department?.name || member.user?.department) && (
                     <div className="mb-3">
                       <span className="text-[11px] font-medium text-[#64748B] bg-[#F1F5F9] px-2 py-0.5 rounded-full">
-                        {member.department?.name || member.department}
+                        {member.user?.department?.name || member.user?.department}
                       </span>
                     </div>
                   )}
@@ -178,7 +184,7 @@ export default function PMOEmployees() {
                       />
                     </div>
                     <div className="flex justify-between mt-1">
-                      <span className="text-[10px] text-[#94A3B8]">{member.activeTaskCount || 0} active tasks</span>
+                      <span className="text-[10px] text-[#94A3B8]">{member.stats?.activeTasks || 0} active tasks</span>
                       <span className="text-[10px] text-[#64748B] font-medium">{pct}%</span>
                     </div>
                   </div>

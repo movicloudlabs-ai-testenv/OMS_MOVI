@@ -4,7 +4,7 @@ import { useNotifications } from '../../contexts/NotificationContext';
 import {
   Menu, LayoutDashboard, Users, GraduationCap, UserPlus,
   CalendarCheck, CalendarOff, FolderKanban, TrendingUp,
-  ClipboardList, User, LogOut, Building2, Shield, BarChart3, ClipboardCheck, MessageSquare,
+  ClipboardList, User, LogOut, Building2, Shield, BarChart3, ClipboardCheck, MessageSquare, FileText,
 } from 'lucide-react';
 
 // Primary nav links (always visible)
@@ -18,9 +18,11 @@ const NAV_LINKS = [
   { to: '/hr/leave-approval', icon: CalendarOff,   label: 'Leave Approval', permission: { resource: 'Leave', action: 'read' } },
   { to: '/hr/onboarding',   icon: UserPlus,        label: 'Onboarding',  permission: { resource: 'Users', action: 'update' } },
   { to: '/hr/attendance',   icon: CalendarCheck,    label: 'Attendance',  permission: { resource: 'Attendance', action: 'read' } },
+  { to: '/hr/documents',    icon: FileText,         label: 'Documents' },
   { to: '/hr/projects',     icon: FolderKanban,     label: 'Projects' },
   { to: '/hr/performance',  icon: TrendingUp,       label: 'Performance' },
   { to: '/hr/tasks',        icon: ClipboardList,    label: 'Task Board',  permission: { resource: 'Tasks', action: 'read' } },
+  { to: '/hr/communication', icon: MessageSquare,    label: 'Communication' },
   { to: '/hr/profile',      icon: User,            label: 'My Profile' },
 ];
 
@@ -147,8 +149,8 @@ export default function HRSidebar({ collapsed, setCollapsed, onLogout, user }) {
         </div>
         {!collapsed && (
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-medium truncate">{user?.name || 'HR Manager'}</p>
-            <p className="text-[11px] text-slate-400 truncate">HR Manager</p>
+            <p className="text-[13px] font-medium truncate">{user?.name || 'User'}</p>
+            <p className="text-[11px] text-slate-400 truncate">{user?.role?.name || user?.role?.slug || 'HR Manager'}</p>
           </div>
         )}
         <button

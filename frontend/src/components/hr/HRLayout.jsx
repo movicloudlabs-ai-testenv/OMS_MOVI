@@ -4,8 +4,10 @@ import { Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import HRSidebar from './HRSidebar';
+import AnnouncementModal from '../shared/AnnouncementModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
+import { getNotificationTarget } from '../../utils/notificationRouter';
 
 function notifMeta(type) {
   const t = type || '';
@@ -28,6 +30,7 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
   const { enabled: notifEnabled, unreadCount, notifications, refresh, markRead, markAllRead } = useNotifications();
 
   const [notifOpen, setNotifOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const notifRef = useRef();
 
   useEffect(() => {
@@ -36,6 +39,14 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
     };
     window.addEventListener('mousedown', handleClick);
     return () => window.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  // Force reflow on mount to fix Chromium zoom layout bounds calculation issue
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 150);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleNotifToggle = (e) => {
@@ -48,9 +59,20 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
-    const link = notif.link || '';
-    const target = (link === '/hr' || link.startsWith('/hr/') || link === '/profile') ? link : '/hr/dashboard';
-    navigate(target);
+
+    const isAnnouncement =
+      notif.type === 'announcement' ||
+      notif.metadata?.isAnnouncement ||
+      (notif.title || '').toLowerCase().includes('announcement') ||
+      (notif.title || '').startsWith('📢');
+
+    if (isAnnouncement) {
+      setSelectedAnnouncement(notif);
+      return;
+    }
+
+    const target = getNotificationTarget(notif, user?.role || user?.employmentType || 'hr-manager');
+    if (target) navigate(target);
   };
 
   const [collapsed, setCollapsed] = useState(() => {
@@ -148,7 +170,14 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
                                   {isUnread && <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
                                 </div>
                                 <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{preview}</p>
-                                <p className="text-[11px] text-slate-400 mt-1">{relTime(notif.createdAt)}</p>
+                                <div className="flex items-center justify-between gap-2 mt-1">
+                                  {(notif.sender?.name || notif.metadata?.senderName) ? (
+                                    <p className="text-[11px] text-slate-400 font-medium truncate">
+                                      {notif.sender?.name || notif.metadata?.senderName} {notif.sender?.designation || notif.metadata?.senderDesignation ? `(${notif.sender?.designation || notif.metadata?.senderDesignation})` : ''}
+                                    </p>
+                                  ) : <span />}
+                                  <p className="text-[11px] text-slate-400 shrink-0">{relTime(notif.createdAt)}</p>
+                                </div>
                               </div>
                             </button>
                           );
@@ -164,10 +193,18 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
         )}
 
         {/* Scrollable content */}
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-0.5">
+        <div className="flex-1 h-0 overflow-y-auto custom-scrollbar pr-0.5">
           {children}
         </div>
       </main>
+
+      {/* Announcement Modal Popup */}
+      {selectedAnnouncement && (
+        <AnnouncementModal
+          announcement={selectedAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
     </div>
   );
 }

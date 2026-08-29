@@ -102,8 +102,7 @@ export const login = async (req, res, next) => {
 
     // 9.5 Automatically mark attendance for the day if not exists, but ONLY if they don't need to change password
     if (!user.mustChangePassword) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
       const existingAttendance = await Attendance.findOne({
         user: user._id,
         date: today

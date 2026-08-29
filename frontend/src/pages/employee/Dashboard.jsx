@@ -37,9 +37,9 @@ export default function EmployeeDashboard() {
       setTasks(tasksRes.data.data || []);
 
       const attendanceRes = await employeeAPI.getAttendance();
-      // getAttendance returns { records, summary, month, year }
+      // getAttendance returns { records, summary, month, year } or { attendance, stats, ... }
       const attData = attendanceRes.data.data;
-      setAttendance(Array.isArray(attData) ? attData : (attData?.records || []));
+      setAttendance(attData?.attendance || attData?.records || (Array.isArray(attData) ? attData : []));
 
       try {
         const [leaveBalRes, leaveReqRes] = await Promise.all([
@@ -85,8 +85,9 @@ export default function EmployeeDashboard() {
   const activeTasksCount = tasks.filter(t => t.status !== 'Done').length;
 
   // Calculate attendance rate
-  const totalDays = attendance.length;
-  const presentDays = attendance.filter(a => a.status === 'Present').length;
+  const activeDays = attendance.filter(a => a.status);
+  const totalDays = activeDays.length;
+  const presentDays = activeDays.filter(a => a.status === 'Present').length;
   const attendancePercent = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
 
   // Calculate remaining leaves

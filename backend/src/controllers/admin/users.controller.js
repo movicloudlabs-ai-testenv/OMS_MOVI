@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../../models/User.js';
 import Role from '../../models/Role.js';
 import Project from '../../models/Project.js';
@@ -35,7 +36,23 @@ export const getUsers = async (req, res, next) => {
     }
 
     if (department) filter.department = department;
-    if (role) filter.role = role;
+    if (role) {
+      if (mongoose.Types.ObjectId.isValid(role)) {
+        filter.role = role;
+      } else {
+        const foundRole = await Role.findOne({
+          $or: [
+            { slug: role.toLowerCase() },
+            { name: { $regex: new RegExp(`^${role}$`, 'i') } },
+          ],
+        });
+        if (foundRole) {
+          filter.role = foundRole._id;
+        } else {
+          filter.employmentType = { $regex: new RegExp(`^${role}$`, 'i') };
+        }
+      }
+    }
     if (status) filter.status = status;
     if (employmentType) filter.employmentType = employmentType;
 
@@ -117,6 +134,27 @@ export const createUser = async (req, res, next) => {
     // Always generate a system temp password — admin never sees it, user must change on first login
     const tempPassword = `OWMS@${Math.floor(100000 + Math.random() * 900000)}`;
 
+    // Auto-assign HR if not provided (run before User creation to avoid duplicate DB save and bcrypt hashing)
+    // Bypassed for interns so they remain in the unassigned pool visible to all HRs
+    let hrManagerId = hrManagerInput;
+    let assignedHR       = null;
+    let hrCapExceeded    = false;
+    let autoAssigned     = false;
+
+    if (!hrManagerId) {
+      if (empType !== 'Intern') {
+        const result = await autoAssignHR({ department });
+        if (result.hrUser) {
+          hrManagerId = result.hrUser._id;
+          assignedHR    = result.hrUser;
+          hrCapExceeded = result.capExceeded;
+          autoAssigned  = true;
+        }
+      }
+    } else {
+      assignedHR = await User.findById(hrManagerId).select('_id name');
+    }
+
     // Create user
     const user = await User.create({
       name,
@@ -131,7 +169,7 @@ export const createUser = async (req, res, next) => {
       phone: phone || undefined,
       manager: manager || undefined,
       joinDate: empType === 'Intern' ? undefined : (joinDate || new Date()),
-      hrManager: hrManagerInput || undefined,
+      hrManager: hrManagerId || undefined,
       college: empType === 'Intern' ? (college || undefined) : undefined,
       domain: empType === 'Intern' ? (domain || undefined) : undefined,
       batch: empType === 'Intern' ? (batch || undefined) : undefined,
@@ -141,37 +179,22 @@ export const createUser = async (req, res, next) => {
       mustChangePassword: true,
     });
 
-    // Auto-assign HR if not provided
-    let assignedHR       = null;
-    let hrCapExceeded    = false;
-    let autoAssigned     = false;
+    // Populate the newly created user directly to avoid doing another full findById query
+    await user.populate([
+      { path: 'role', select: 'name slug color' },
+      { path: 'department', select: 'name code' },
+      { path: 'hrManager', select: 'name employeeId' }
+    ]);
 
-    if (!hrManagerInput) {
-      const result = await autoAssignHR(user);
-      if (result.hrUser) {
-        user.hrManager = result.hrUser._id;
-        await user.save({ validateBeforeSave: false });
-        assignedHR    = result.hrUser;
-        hrCapExceeded = result.capExceeded;
-        autoAssigned  = true;
-      }
-    } else {
-      assignedHR = await User.findById(hrManagerInput).select('_id name');
-    }
-
-    // Fetch populated user for response
-    const populatedUser = await User.findById(user._id)
-      .populate('role', 'name slug color')
-      .populate('department', 'name code')
-      .populate('hrManager', 'name employeeId');
-
-    // Auto-create leave balance for non-interns
+    // Auto-create leave balance for non-interns in the background (non-blocking)
     if (empType !== 'Intern') {
-      await syncEmployeeLeaveBalance(user._id).catch(() => {});
+      syncEmployeeLeaveBalance(user._id).catch((err) => {
+        console.error('syncEmployeeLeaveBalance background failed:', err);
+      });
     }
 
-    // Notify the new user
-    await sendNotification({
+    // Notify the new user in the background (non-blocking)
+    sendNotification({
       recipient: user._id,
       type: 'user_created',
       title: 'Welcome to OWMS',
@@ -180,9 +203,9 @@ export const createUser = async (req, res, next) => {
       sender: req.user._id,
     });
 
-    // Notify the assigned HR
+    // Notify the assigned HR in the background (non-blocking)
     if (assignedHR) {
-      await sendNotification({
+      sendNotification({
         recipient: assignedHR._id,
         type:      'system_alert',
         title:     'New Onboarding Assignment',
@@ -192,9 +215,9 @@ export const createUser = async (req, res, next) => {
       });
     }
 
-    // If cap was exceeded, also warn the admin who created the user
+    // If cap was exceeded, also warn the admin in the background (non-blocking)
     if (hrCapExceeded && assignedHR) {
-      await sendNotification({
+      sendNotification({
         recipient: req.user._id,
         type:      'system_alert',
         title:     'HR Onboarding Cap Exceeded',
@@ -204,10 +227,9 @@ export const createUser = async (req, res, next) => {
       });
     }
 
-    // Send response IMMEDIATELY — do not wait for email
-    // User is already created successfully at this point
+    // Send response IMMEDIATELY
     sendSuccess(res, {
-      ...populatedUser.toJSON(),
+      ...user.toJSON(),
       tempPassword,
       emailSent: 'pending',
       ...(autoAssigned  && { autoAssignedHR: assignedHR?.name }),
@@ -294,7 +316,9 @@ export const updateUser = async (req, res, next) => {
     if (employmentType) user.employmentType = employmentType;
     if (status) user.status = status;
     if (manager !== undefined) user.manager = manager;
-    if (hrManager !== undefined) user.hrManager = hrManager;
+    if (hrManager !== undefined) {
+      user.hrManager = hrManager || undefined;
+    }
     if (skills) user.skills = skills;
     if (college !== undefined) user.college = college;
     if (domain !== undefined) user.domain = domain;

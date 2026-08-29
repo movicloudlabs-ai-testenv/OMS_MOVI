@@ -29,7 +29,10 @@ export default function PMOMyEODReport() {
           <p className="text-sm text-[#64748B] mt-1">Share your own quick end-of-day update.</p>
         </div>
 
-        <EODQuickShare api={{ ...pmoAPI, submitEOD: async (m) => { const r = await pmoAPI.submitEOD(m); load(); return r; } }} />
+        <EODQuickShare
+          allowBackdate
+          api={{ ...pmoAPI, submitEOD: async (m, d) => { const r = await pmoAPI.submitEOD(m, d); load(); return r; } }}
+        />
 
         <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
           <div className="px-5 py-4 border-b border-[#E2E8F0]">

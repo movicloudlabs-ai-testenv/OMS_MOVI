@@ -22,40 +22,49 @@ const emptyForm = {
   projectAssignment: '',
 };
 
+const MAX_BACKDATE_DAYS = 14;
+const toDateInput = (d) => d.toISOString().slice(0, 10);
+const todayStr = () => toDateInput(new Date());
+const minDateStr = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - MAX_BACKDATE_DAYS);
+  return toDateInput(d);
+};
+
 export default function InternDailyTracker() {
   const [form, setForm] = useState(emptyForm);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [submittedToday, setSubmittedToday] = useState(false);
+  const [submittedForDate, setSubmittedForDate] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(todayStr());
 
-  const load = async () => {
+  const loadForDate = async (dateStr) => {
     try {
       setLoading(true);
-      const [todayRes, historyRes] = await Promise.all([
-        internAPI.getMyTrackerToday(),
-        internAPI.getMyTrackerHistory(),
-      ]);
-      const today = todayRes.data?.data;
-      if (today) {
-        setSubmittedToday(true);
+      const entryRes = await internAPI.getMyTrackerToday(dateStr === todayStr() ? undefined : dateStr);
+      const entry = entryRes.data?.data;
+      if (entry) {
+        setSubmittedForDate(true);
         setForm({
-          yesterdayStatus: today.yesterdayStatus || 'Completed',
-          pendingReason: today.pendingReason || '',
-          todayTask: today.todayTask || '',
-          expectedCompletion: today.expectedCompletion ? today.expectedCompletion.slice(0, 10) : '',
-          blockers: today.blockers || '',
-          module: today.module || '',
-          workingTime: today.workingTime || '',
-          hours: today.hours ?? '',
-          attendance: today.attendance || 'Present',
-          ktCompletion: today.ktCompletion ?? '',
-          productivityMetrics: today.productivityMetrics ?? '',
-          aiCredits: today.aiCredits ?? '',
-          projectAssignment: today.projectAssignment || '',
+          yesterdayStatus: entry.yesterdayStatus || 'Completed',
+          pendingReason: entry.pendingReason || '',
+          todayTask: entry.todayTask || '',
+          expectedCompletion: entry.expectedCompletion ? entry.expectedCompletion.slice(0, 10) : '',
+          blockers: entry.blockers || '',
+          module: entry.module || '',
+          workingTime: entry.workingTime || '',
+          hours: entry.hours ?? '',
+          attendance: entry.attendance || 'Present',
+          ktCompletion: entry.ktCompletion ?? '',
+          productivityMetrics: entry.productivityMetrics ?? '',
+          aiCredits: entry.aiCredits ?? '',
+          projectAssignment: entry.projectAssignment || '',
         });
+      } else {
+        setSubmittedForDate(false);
+        setForm(emptyForm);
       }
-      setHistory(historyRes.data?.data || []);
     } catch (err) {
       toast.error('Failed to load daily tracker');
     } finally {
@@ -63,7 +72,17 @@ export default function InternDailyTracker() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  const loadHistory = async () => {
+    try {
+      const historyRes = await internAPI.getMyTrackerHistory();
+      setHistory(historyRes.data?.data || []);
+    } catch {
+      setHistory([]);
+    }
+  };
+
+  useEffect(() => { loadForDate(selectedDate); }, [selectedDate]);
+  useEffect(() => { loadHistory(); }, []);
 
   const set = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.value }));
 
@@ -77,15 +96,16 @@ export default function InternDailyTracker() {
     try {
       await internAPI.submitDailyTracker({
         ...form,
+        date: selectedDate,
         hours: form.hours === '' ? undefined : Number(form.hours),
         ktCompletion: form.ktCompletion === '' ? undefined : Number(form.ktCompletion),
         productivityMetrics: form.productivityMetrics === '' ? undefined : Number(form.productivityMetrics),
-        aiCredits: form.aiCredits === '' ? undefined : form.aiCredits,
+        aiCredits: form.aiCredits === '' ? undefined : Number(form.aiCredits),
         expectedCompletion: form.expectedCompletion || undefined,
       });
-      toast.success(submittedToday ? 'Report updated' : 'EOD report submitted!');
-      setSubmittedToday(true);
-      load();
+      toast.success(submittedForDate ? 'Report updated' : 'EOD report submitted!');
+      setSubmittedForDate(true);
+      loadHistory();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to submit report');
     } finally {
@@ -110,11 +130,26 @@ export default function InternDailyTracker() {
         <div className="mt-6">
           <h1 className="text-2xl font-bold text-[#0F172A]">Daily Report / EOD Tracker</h1>
           <p className="text-sm text-[#64748B] mt-1">
-            {submittedToday ? "You've submitted today's report — you can still update it below." : "Fill this out before you clock out today."}
+            {selectedDate === todayStr()
+              ? (submittedForDate ? "You've submitted today's report — you can still update it below." : "Fill this out before you clock out today.")
+              : (submittedForDate ? `Editing your report for ${selectedDate}.` : `No report was submitted for ${selectedDate} — you can fill it in now.`)}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-6 space-y-5">
+
+          <div>
+            <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Report Date</label>
+            <input
+              type="date"
+              value={selectedDate}
+              min={minDateStr()}
+              max={todayStr()}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="w-full sm:w-56 border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]"
+            />
+            <p className="text-[11px] text-[#94A3B8] mt-1">You can fill in a missed day up to {MAX_BACKDATE_DAYS} days back.</p>
+          </div>
 
           <div>
             <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Today's Task *</label>
@@ -184,7 +219,7 @@ export default function InternDailyTracker() {
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">AI Credits Used</label>
-              <input type="text" value={form.aiCredits} onChange={set('aiCredits')} placeholder="e.g. ChatGPT, Copilot" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input type="number" value={form.aiCredits} onChange={set('aiCredits')} placeholder="0" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
             </div>
           </div>
 
@@ -199,7 +234,7 @@ export default function InternDailyTracker() {
               disabled={saving}
               className="bg-[#2563EB] text-white px-6 py-2.5 rounded-md text-[13px] font-semibold hover:bg-[#1D4ED8] transition-colors disabled:opacity-60"
             >
-              {saving ? 'Submitting...' : submittedToday ? 'Update Report' : 'Submit EOD Report'}
+              {saving ? 'Submitting...' : submittedForDate ? 'Update Report' : 'Submit Report'}
             </button>
           </div>
         </form>

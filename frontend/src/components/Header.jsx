@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
+import AnnouncementModal from './shared/AnnouncementModal';
+import { getNotificationTarget, ROLE_HOME } from '../utils/notificationRouter';
 
 // Each role's own (working) profile page.
 const PROFILE_PATH = {
@@ -37,41 +39,13 @@ function relTime(date) {
   catch { return ''; }
 }
 
-// Dashboard fallback per role — used when a notification link is outside the
-// user's accessible namespace (prevents landing on an "Access Denied" page).
-const ROLE_HOME = {
-  'super-admin': '/admin/dashboard',
-  'admin':       '/admin/dashboard',
-  'hr-manager':  '/hr/dashboard',
-  'pmo-lead':    '/pmo/dashboard',
-  'employee':    '/employee/dashboard',
-  'intern':      '/intern/dashboard',
-};
-
-// Path prefixes each role is allowed to open from a notification.
-const ROLE_PREFIXES = {
-  'hr-manager': ['/hr', '/profile'],
-  'pmo-lead':   ['/pmo', '/profile'],
-  'employee':   ['/employee', '/profile'],
-  'intern':     ['/intern', '/profile'],
-};
-
-// Resolve a notification link to a path the current role can actually open.
-// Admins bypass; anything outside the role's namespace falls back to its dashboard.
-function resolveSafeLink(link, roleSlug) {
-  if (!link) return null;
-  if (roleSlug === 'super-admin' || roleSlug === 'admin') return link;
-  const prefixes = ROLE_PREFIXES[roleSlug] || [];
-  const allowed = prefixes.some((p) => link === p || link.startsWith(`${p}/`));
-  return allowed ? link : (ROLE_HOME[roleSlug] || '/');
-}
-
 export default function Header({ sidebarCollapsed }) {
   const { user, logout } = useAuth();
   const { enabled: notifEnabled, notifications, unreadCount, refresh, markRead, markAllRead } = useNotifications();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const popupRef = useRef();
   const notifRef = useRef();
 
@@ -98,7 +72,19 @@ export default function Header({ sidebarCollapsed }) {
   const handleNotifClick = async (notif) => {
     setNotifOpen(false);
     markRead(notif);
-    const target = resolveSafeLink(notif.link, roleSlug);
+
+    const isAnnouncement =
+      notif.type === 'announcement' ||
+      notif.metadata?.isAnnouncement ||
+      (notif.title || '').toLowerCase().includes('announcement') ||
+      (notif.title || '').startsWith('📢');
+
+    if (isAnnouncement) {
+      setSelectedAnnouncement(notif);
+      return;
+    }
+
+    const target = getNotificationTarget(notif, user?.role || user?.employmentType || roleSlug);
     if (target) navigate(target);
   };
 
@@ -202,7 +188,14 @@ export default function Header({ sidebarCollapsed }) {
                             {isUnread && <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />}
                           </div>
                           <p className="text-[12px] text-slate-500 mt-0.5 leading-relaxed line-clamp-2">{preview}</p>
-                          <p className="text-[11px] text-slate-400 mt-1">{relTime(notif.createdAt)}</p>
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            {(notif.sender?.name || notif.metadata?.senderName) ? (
+                              <p className="text-[11px] text-slate-400 font-medium truncate">
+                                {notif.sender?.name || notif.metadata?.senderName} {notif.sender?.designation || notif.metadata?.senderDesignation ? `(${notif.sender?.designation || notif.metadata?.senderDesignation})` : ''}
+                              </p>
+                            ) : <span />}
+                            <p className="text-[11px] text-slate-400 shrink-0">{relTime(notif.createdAt)}</p>
+                          </div>
                         </div>
                       </button>
                     );
@@ -259,6 +252,14 @@ export default function Header({ sidebarCollapsed }) {
           )}
         </div>
       </div>
+
+      {/* Announcement Modal Popup */}
+      {selectedAnnouncement && (
+        <AnnouncementModal
+          announcement={selectedAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
     </header>
   );
 }

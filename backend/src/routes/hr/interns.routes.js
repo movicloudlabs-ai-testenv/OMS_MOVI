@@ -3,6 +3,7 @@ import {
   getInterns, getInternById,
   addPerformanceRating, assignMentor,
   uploadInternDocument, deleteInternDocument,
+  exportInterns,
 } from '../../controllers/hr/interns.controller.js';
 import {
   getInternLearning, assignLearning, deleteLearning,
@@ -18,6 +19,7 @@ router.use(protect);
 router.use(hrScope);
 
 router.get('/', requirePermission('Interns', 'read'), getInterns);
+router.get('/export', requirePermission('Interns', 'read'), exportInterns);
 router.get('/:id', requirePermission('Interns', 'read'), getInternById);
 router.post('/:id/performance', requirePermission('Interns', 'manage'), auditLog('Update', 'Interns'), addPerformanceRating);
 router.patch('/:id/assign-mentor', requirePermission('Interns', 'manage'), auditLog('Update', 'Interns'), assignMentor);

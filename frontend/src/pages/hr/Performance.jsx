@@ -126,97 +126,103 @@ function RatingPanel({ person, label, onSubmit, onClose }) {
   };
 
   return (
-    <div className="w-full lg:w-1/3 bg-white border border-[#E2E8F0] rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[800px]">
-      <div className="px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC] flex justify-between items-center">
-        <div>
-          <h3 className="text-[14px] font-bold text-[#0F172A]">{person.name}</h3>
-          <p className="text-[12px] text-[#64748B]">{label} Performance Review</p>
-        </div>
-        <button onClick={onClose} className="text-[#64748B] hover:bg-[#E2E8F0] p-1.5 rounded-full transition-colors">
-          <X size={16} />
-        </button>
-      </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 font-sans text-[#0F172A]">
+      {/* Backdrop overlay */}
+      <div className="absolute inset-0 cursor-pointer" onClick={onClose} />
 
-      {/* Combined score summary */}
-      {(person.performanceRatings?.length > 0) && (
-        <div className="px-5 py-3 border-b border-[#E2E8F0] bg-white flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Star size={16} className="text-amber-400" fill="currentColor" />
-            <span className="text-[15px] font-bold text-[#0F172A]">{combinedRating(person.performanceRatings)}</span>
-            <span className="text-[11px] text-[#94A3B8]">/ 5 combined</span>
+      {/* Modal Dialog Content */}
+      <div className="relative w-full max-w-md bg-white border border-[#E2E8F0] rounded-2xl shadow-xl flex flex-col overflow-hidden max-h-[90vh] z-10 animate-in fade-in zoom-in-95 duration-200">
+        <div className="px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC] flex justify-between items-center shrink-0">
+          <div>
+            <h3 className="text-[14px] font-bold text-[#0F172A]">{person.name}</h3>
+            <p className="text-[12px] text-[#64748B]">{label} Performance Review</p>
           </div>
-          <RoleBreakdown ratings={person.performanceRatings} />
+          <button onClick={onClose} className="text-[#64748B] hover:bg-[#E2E8F0] p-1.5 rounded-full transition-colors">
+            <X size={16} />
+          </button>
         </div>
-      )}
 
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
-        {/* Submit form */}
-        <form onSubmit={handleSubmit} className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-4">
-          <h4 className="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-1.5">
-            <Plus size={14} /> Submit Evaluation
-          </h4>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Week</label>
-              <input type="number" min="1" max="52" value={week}
-                onChange={e => setWeek(e.target.value)} required
-                className="w-full border border-[#E2E8F0] bg-white rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+        {/* Combined score summary */}
+        {(person.performanceRatings?.length > 0) && (
+          <div className="px-5 py-3 border-b border-[#E2E8F0] bg-white flex items-center justify-between gap-4 shrink-0">
+            <div className="flex items-center gap-2">
+              <Star size={16} className="text-amber-400" fill="currentColor" />
+              <span className="text-[15px] font-bold text-[#0F172A]">{combinedRating(person.performanceRatings)}</span>
+              <span className="text-[11px] text-[#94A3B8]">/ 5 combined</span>
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Stars</label>
-              <div className="flex items-center gap-1 mt-2">
-                {[1,2,3,4,5].map(s => (
-                  <button key={s} type="button"
-                    onMouseEnter={() => setHover(s)} onMouseLeave={() => setHover(0)}
-                    onClick={() => setRating(s)} className="focus:outline-none">
-                    <Star size={20} fill={(hover || rating) >= s ? 'currentColor' : 'none'}
-                      className={(hover || rating) >= s ? 'text-amber-400' : 'text-[#CBD5E1]'} />
-                  </button>
-                ))}
+            <RoleBreakdown ratings={person.performanceRatings} />
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-5 custom-scrollbar">
+          {/* Submit form */}
+          <form onSubmit={handleSubmit} className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 space-y-4">
+            <h4 className="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-1.5">
+              <Plus size={14} /> Submit Evaluation
+            </h4>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Week</label>
+                <input type="number" min="1" max="52" value={week}
+                  onChange={e => setWeek(e.target.value)} required
+                  className="w-full border border-[#E2E8F0] bg-white rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Stars</label>
+                <div className="flex items-center gap-1 mt-2">
+                  {[1,2,3,4,5].map(s => (
+                    <button key={s} type="button"
+                      onMouseEnter={() => setHover(s)} onMouseLeave={() => setHover(0)}
+                      onClick={() => setRating(s)} className="focus:outline-none">
+                      <Star size={20} fill={(hover || rating) >= s ? 'currentColor' : 'none'}
+                        className={(hover || rating) >= s ? 'text-amber-400' : 'text-[#CBD5E1]'} />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
 
+            <div>
+              <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Notes</label>
+              <textarea rows="3" placeholder="Feedback on performance, strengths, areas to improve..."
+                value={note} onChange={e => setNote(e.target.value)}
+                className="w-full border border-[#E2E8F0] bg-white rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#2563EB] resize-none" />
+            </div>
+
+            <button type="submit" disabled={submitting}
+              className="w-full py-2 bg-[#2563EB] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1D4ED8] transition-colors disabled:opacity-50">
+              {submitting ? 'Saving...' : 'Submit Evaluation'}
+            </button>
+          </form>
+
+          {/* History */}
           <div>
-            <label className="block text-[11px] font-bold text-[#64748B] uppercase mb-1">Notes</label>
-            <textarea rows="3" placeholder="Feedback on performance, strengths, areas to improve..."
-              value={note} onChange={e => setNote(e.target.value)}
-              className="w-full border border-[#E2E8F0] bg-white rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-[#2563EB] resize-none" />
-          </div>
-
-          <button type="submit" disabled={submitting}
-            className="w-full py-2 bg-[#2563EB] text-white rounded-lg text-[13px] font-semibold hover:bg-[#1D4ED8] transition-colors disabled:opacity-50">
-            {submitting ? 'Saving...' : 'Submit Evaluation'}
-          </button>
-        </form>
-
-        {/* History */}
-        <div>
-          <h4 className="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider mb-3">Evaluation History</h4>
-          {(person.performanceRatings || []).length > 0 ? (
-            <div className="space-y-2.5">
-              {[...person.performanceRatings].sort((a,b) => b.week - a.week).map((r, idx) => (
-                <div key={idx} className="border border-[#E2E8F0] rounded-xl p-3 bg-white space-y-1.5">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-bold text-[#0F172A]">Week {r.week}</span>
-                      {r.source === 'pmo'
-                        ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">PMO</span>
-                        : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">HR</span>}
+            <h4 className="text-[12px] font-bold text-[#0F172A] uppercase tracking-wider mb-3">Evaluation History</h4>
+            {(person.performanceRatings || []).length > 0 ? (
+              <div className="space-y-2.5">
+                {[...person.performanceRatings].sort((a,b) => b.week - a.week).map((r, idx) => (
+                  <div key={idx} className="border border-[#E2E8F0] rounded-xl p-3 bg-white space-y-1.5">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-bold text-[#0F172A]">Week {r.week}</span>
+                        {r.source === 'pmo'
+                          ? <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-100 text-violet-700">PMO</span>
+                          : <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-700">HR</span>}
+                      </div>
+                      <StarRow rating={r.rating} />
                     </div>
-                    <StarRow rating={r.rating} />
+                    {r.note && <p className="text-[12px] text-[#64748B] leading-relaxed">{r.note}</p>}
                   </div>
-                  {r.note && <p className="text-[12px] text-[#64748B] leading-relaxed">{r.note}</p>}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 border border-dashed border-[#E2E8F0] rounded-xl">
-              <ShieldAlert size={22} className="text-[#CBD5E1] mx-auto mb-2" />
-              <p className="text-[12px] text-[#64748B]">No evaluations yet</p>
-            </div>
-          )}
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 border border-dashed border-[#E2E8F0] rounded-xl">
+                <ShieldAlert size={22} className="text-[#CBD5E1] mx-auto mb-2" />
+                <p className="text-[12px] text-[#64748B]">No evaluations yet</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

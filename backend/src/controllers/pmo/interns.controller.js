@@ -6,10 +6,14 @@ import { sendNotification } from '../../utils/sendNotification.js';
 
 export const getInterns = async (req, res, next) => {
   try {
-    const projects = await Project.find({ ...req.projectFilter })
+    // BUG-016 FIX: Query all projects for interns, not just the logged-in PMO's projects.
+    // The pmoScope middleware already ensures only pmo-lead / super-admin can reach here,
+    // and requirePermission('Interns','read') enforces RBAC. Scoping by manager caused
+    // PMO accounts that don't manage specific projects to see zero interns.
+    const projects = await Project.find({})
       .populate({
         path: 'interns.user',
-        select: 'name college avatar department email internshipStart internshipEnd performanceRatings',
+        select: 'name college avatar department email internshipStart internshipEnd performanceRatings domain employmentType',
         match: { deletedAt: { $exists: false } },
       });
       

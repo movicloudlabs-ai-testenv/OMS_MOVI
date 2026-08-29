@@ -18,6 +18,13 @@ export default function AdminRoles() {
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredRoles = roles.filter(role => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return true;
+    return role.name?.toLowerCase().includes(term);
+  });
 
   const fetchRoles = async () => {
     setLoading(true);
@@ -38,7 +45,7 @@ export default function AdminRoles() {
   }, []);
 
   const handleSelectAll = (e) => {
-    setSelectedIds(e.target.checked ? roles.map(r => r._id) : []);
+    setSelectedIds(e.target.checked ? filteredRoles.map(r => r._id) : []);
   };
 
   const handleSelect = (id) => {
@@ -82,7 +89,13 @@ export default function AdminRoles() {
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
               <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
-              <input type="text" className="w-full border border-[#E2E8F0] rounded py-1.5 pl-9 pr-3 text-[13px] focus:outline-none focus:border-[#EA580C] transition-colors" placeholder="Search roles..." />
+              <input 
+                type="text" 
+                className="w-full border border-[#E2E8F0] rounded py-1.5 pl-9 pr-3 text-[13px] focus:outline-none focus:border-[#EA580C] transition-colors" 
+                placeholder="Search roles..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -107,7 +120,7 @@ export default function AdminRoles() {
               <thead>
                 <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
                   <th className="px-4 py-3 w-10 text-center">
-                    <input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === roles.length && roles.length > 0} className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C] accent-[#EA580C]" />
+                    <input type="checkbox" onChange={handleSelectAll} checked={selectedIds.length === filteredRoles.length && filteredRoles.length > 0} className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C] accent-[#EA580C]" />
                   </th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Role Name</th>
                   <th className="px-4 py-3 text-[12px] font-semibold text-[#64748B] uppercase">Type</th>
@@ -131,12 +144,12 @@ export default function AdminRoles() {
                   <tr>
                     <td colSpan="7" className="px-4 py-8 text-center text-[#DC2626]">{error}</td>
                   </tr>
-                ) : roles.length === 0 ? (
+                ) : filteredRoles.length === 0 ? (
                   <tr>
                     <td colSpan="7" className="px-4 py-8 text-center text-[#64748B]">No roles found.</td>
                   </tr>
                 ) : (
-                  roles.map((role) => (
+                  filteredRoles.map((role) => (
                     <tr key={role._id} className="border-b border-[#F1F5F9] hover:bg-[#F8FAFC] transition-colors last:border-0 group">
                       <td className="px-4 py-3 text-center">
                         <input type="checkbox" checked={selectedIds.includes(role._id)} onChange={() => handleSelect(role._id)} className="w-4 h-4 rounded border-[#CBD5E1] text-[#EA580C] focus:ring-[#EA580C] accent-[#EA580C]" />
@@ -180,7 +193,7 @@ export default function AdminRoles() {
             </table>
           </div>
           <div className="px-4 py-3 border-t border-[#E2E8F0] flex items-center justify-between bg-white">
-            <p className="text-[13px] text-[#64748B]">Showing <span className="font-medium text-[#0F172A]">{roles.length}</span> results</p>
+            <p className="text-[13px] text-[#64748B]">Showing <span className="font-medium text-[#0F172A]">{filteredRoles.length}</span> results</p>
           </div>
         </div>
 

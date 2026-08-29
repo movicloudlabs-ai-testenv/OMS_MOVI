@@ -3,6 +3,7 @@ import Task from '../../models/Task.js';
 import Project from '../../models/Project.js';
 import User from '../../models/User.js';
 import Role from '../../models/Role.js';
+import Notification from '../../models/Notification.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 import { sendNotification } from '../../utils/sendNotification.js';
 
@@ -191,6 +192,12 @@ export const updateApproval = async (req, res, next) => {
       const newStatus = action === 'approve' ? 'Done' : 'Todo';
       task.status = newStatus;
       
+      // Mark matching "Task Ready for Review" notifications as read for this PMO Lead
+      await Notification.updateMany(
+        { recipient: req.user._id, link: '/pmo/approvals', read: false },
+        { read: true, readAt: new Date() }
+      ).catch(() => {});
+
       if (action === 'approve') {
         task.approvedAt = new Date();
         task.approvedBy = req.user._id;

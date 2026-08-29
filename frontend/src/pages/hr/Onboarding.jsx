@@ -208,10 +208,11 @@ function ChecklistDrawer({ person, onClose, onReassign, onTaskToggle }) {
   const [justDone, setJustDone] = useState(false);
   const prevPct = useRef(person.onboardingProgress || 0);
 
-  // sync when parent refreshes the person object
+  // sync when parent refreshes the person object or changes selection
   useEffect(() => {
     setLocalChecklist(person.onboardingChecklist || {});
-  }, [person.onboardingChecklist]);
+    prevPct.current = person.onboardingProgress || 0;
+  }, [person?._id, person?.onboardingChecklist]);
 
   const completedKeys = ALL_TASK_KEYS.filter(k => localChecklist[k]);
   const totalDone = completedKeys.length;

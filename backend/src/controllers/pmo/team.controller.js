@@ -10,21 +10,33 @@ export const getTeam = async (req, res, next) => {
     const projects = await Project.find({ ...req.projectFilter })
       .populate({
         path: 'team.user',
-        select: 'name designation avatar department employmentType',
+        select: 'name designation avatar department employmentType role',
         match: { deletedAt: { $exists: false } },
-        populate: {
-          path: 'department',
-          select: 'name code'
-        }
+        populate: [
+          {
+            path: 'department',
+            select: 'name code'
+          },
+          {
+            path: 'role',
+            select: 'name slug'
+          }
+        ]
       })
       .populate({
         path: 'interns.user',
-        select: 'name designation avatar department employmentType',
+        select: 'name designation avatar department employmentType role domain',
         match: { deletedAt: { $exists: false } },
-        populate: {
-          path: 'department',
-          select: 'name code'
-        }
+        populate: [
+          {
+            path: 'department',
+            select: 'name code'
+          },
+          {
+            path: 'role',
+            select: 'name slug'
+          }
+        ]
       });
     
     const projectIds = projects.map(p => p._id);

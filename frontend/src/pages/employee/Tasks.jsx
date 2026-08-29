@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import {
   Columns, List, CalendarDays, X, CheckCircle2, Circle,
@@ -39,7 +40,9 @@ const relTime = (d) => {
 // ─── Task Detail Modal ────────────────────────────────────────────────────────
 function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh }) {
   const [task,        setTask]        = useState(initialTask);
-  const [activeTab,   setActiveTab]   = useState('Subtasks');
+  const [activeTab,   setActiveTab]   = useState(
+    initialTask?.initialTab?.toLowerCase() === 'comments' ? 'Comments' : 'Subtasks'
+  );
   const [comment,     setComment]     = useState('');
   const [commenting,  setCommenting]  = useState(false);
   const [togglingId,  setTogglingId]  = useState(null);
@@ -384,6 +387,8 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function EmployeeTasks() {
+  const [searchParams] = useSearchParams();
+  const urlTaskId = searchParams.get('taskId');
   const [view,          setView]          = useState('board');
   const [tasks,         setTasks]         = useState([]);
   const [projects,      setProjects]      = useState([]);
@@ -395,17 +400,40 @@ export default function EmployeeTasks() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      const [tRes, pRes] = await Promise.all([
+      const [tRes, pRes] = await Promise.allSettled([
         employeeAPI.getTasks(),
         employeeAPI.getProjects(),
       ]);
-      setTasks(tRes.data?.data || []);
-      setProjects(pRes.data?.data || []);
+      if (tRes.status === 'fulfilled') {
+        setTasks(tRes.value.data?.data || tRes.value.data || []);
+      } else {
+        toast.error('Failed to load tasks');
+      }
+      if (pRes.status === 'fulfilled') {
+        setProjects(pRes.value.data?.data || pRes.value.data || []);
+      }
     } catch { toast.error('Failed to load tasks'); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { fetchTasks(); }, []);
+
+  useEffect(() => {
+    if (!urlTaskId) return;
+    (async () => {
+      try {
+        const res = await employeeAPI.getTask(urlTaskId);
+        const taskData = res.data?.data || res.data;
+        if (taskData) {
+          const urlTab = searchParams.get('tab');
+          if (urlTab) taskData.initialTab = urlTab;
+          setSelectedTask(taskData);
+        }
+      } catch (err) {
+        console.warn('Could not load target task by ID:', err);
+      }
+    })();
+  }, [urlTaskId, searchParams]);
 
   const handleStatusChange = async (taskId, status) => {
     try {

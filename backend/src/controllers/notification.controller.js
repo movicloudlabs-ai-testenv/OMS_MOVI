@@ -11,7 +11,7 @@ export const getNotifications = async (req, res, next) => {
       Notification.find({ recipient: req.user._id })
         .sort({ createdAt: -1 })
         .limit(20)
-        .populate('sender', 'name avatarUrl'),
+        .populate('sender', 'name avatarUrl designation role'),
       Notification.countDocuments({ recipient: req.user._id, read: false }),
     ]);
 

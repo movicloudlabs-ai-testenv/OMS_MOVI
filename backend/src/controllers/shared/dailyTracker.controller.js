@@ -9,12 +9,41 @@ const startOfDay = (dateStr) => {
   return d;
 };
 
+// How far back a self-submitted entry can be backdated.
+const MAX_BACKDATE_DAYS = 14;
+
+// Validates an optional ?date=/body.date value: must not be in the future,
+// and not further back than MAX_BACKDATE_DAYS. Returns { date, error }.
+const resolveEntryDate = (dateStr) => {
+  const today = startOfDay();
+  if (!dateStr) return { date: today };
+
+  const requested = startOfDay(dateStr);
+  if (Number.isNaN(requested.getTime())) {
+    return { error: 'Invalid date' };
+  }
+  if (requested.getTime() > today.getTime()) {
+    return { error: 'Cannot submit a report for a future date' };
+  }
+  const earliestAllowed = new Date(today);
+  earliestAllowed.setDate(earliestAllowed.getDate() - MAX_BACKDATE_DAYS);
+  if (requested.getTime() < earliestAllowed.getTime()) {
+    return { error: `Cannot backdate more than ${MAX_BACKDATE_DAYS} days` };
+  }
+  return { date: requested };
+};
+
 /* ───────────────────────── Self-service (intern / employee) ───────────────────────── */
 
-// GET /my/today — fetch today's own entry (to pre-fill the form if already submitted)
+// GET /my/today — fetch own entry for today, or for ?date=YYYY-MM-DD if given
+// (used both to pre-fill "today's" form and to check/edit a past date's entry).
 export const getMyTodayEntry = async (req, res, next) => {
   try {
-    const entry = await DailyTracker.findOne({ user: req.user._id, date: startOfDay() })
+    const { date: dateStr } = req.query;
+    const { date, error } = resolveEntryDate(dateStr);
+    if (error) return sendError(res, error, 400);
+
+    const entry = await DailyTracker.findOne({ user: req.user._id, date })
       .populate('project', 'name');
     sendSuccess(res, entry || null);
   } catch (error) {
@@ -35,21 +64,25 @@ export const getMyEntries = async (req, res, next) => {
   }
 };
 
-// POST /my — submit or update today's entry (upsert; this is the EOD report + tracker row)
+// POST /my — submit or update an entry for today, or for body.date if given
+// (upsert; this is the EOD report + tracker row). Backdating is allowed up
+// to MAX_BACKDATE_DAYS so a missed day can still be filled in.
 export const submitMyEntry = async (req, res, next) => {
   try {
     const {
       project, role, yesterdayStatus, pendingReason, todayTask,
       expectedCompletion, blockers, module, workingTime, hours,
       reportSubmission, attendance, ktCompletion, productivityMetrics,
-      aiCredits, projectAssignment,
+      aiCredits, projectAssignment, date: dateStr,
     } = req.body;
 
     if (!todayTask || !todayTask.trim()) {
       return sendError(res, "Today's task is required", 400);
     }
 
-    const date = startOfDay();
+    const { date, error } = resolveEntryDate(dateStr);
+    if (error) return sendError(res, error, 400);
+
     const update = {
       user: req.user._id,
       date,

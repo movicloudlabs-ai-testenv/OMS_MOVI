@@ -20,8 +20,12 @@ import adminAuditRoutes from './routes/admin/auditLogs.routes.js';
 import adminReportsRoutes from './routes/admin/reports.routes.js';
 import adminSettingsRoutes from './routes/admin/settings.routes.js';
 import adminDashboardRoutes from './routes/admin/dashboard.routes.js';
+import adminPaymentRoutes from './routes/admin/payments.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
+import announcementsRoutes from './routes/announcements.routes.js';
 import logsRoutes from './routes/logs.routes.js';
+import documentRoutes from './routes/documents.routes.js';
+import issuesRoutes from './routes/issues.routes.js';
 
 // Part 2 Route Imports
 import hrEmployeesRoutes from './routes/hr/employees.routes.js';
@@ -63,6 +67,8 @@ import internLeaveRoutes from './routes/intern/leave.routes.js';
 import internLearningRoutes from './routes/intern/learning.routes.js';
 import internDailyTrackerRoutes from './routes/intern/dailyTracker.routes.js';
 import internEodRoutes from './routes/intern/eod.routes.js';
+import internPaymentRoutes from './routes/intern/payments.routes.js';
+import internProjectsRoutes from './routes/intern/projects.routes.js';
 import hrDailyTrackerRoutes from './routes/hr/dailyTracker.routes.js';
 import hrEodRoutes from './routes/hr/eod.routes.js';
 import hrPerformanceRoutes from './routes/hr/performance.routes.js';
@@ -108,21 +114,13 @@ app.use(cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
 
-    if (defaultFrontendOrigins.includes(origin)) {
+    // Allow all origins in development mode (prevents local CORS errors across ports)
+    if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        const url = new URL(origin);
-        const isLocalHost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-        const port = Number(url.port);
-        if (isLocalHost && port >= 5173 && port <= 5199) {
-          return callback(null, true);
-        }
-      } catch {
-        // Ignore malformed origins and fall through to the denial below.
-      }
+    if (defaultFrontendOrigins.includes(origin)) {
+      return callback(null, true);
     }
 
     return callback(new Error(`Not allowed by CORS: ${origin}`));
@@ -176,8 +174,8 @@ app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'OWMS API is running',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
+    version: '2.0.1',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
 });
 
@@ -185,11 +183,23 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
     status: 'healthy',
-    mongoConnection: mongoose.connection.readyState === 1
-      ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV,
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
+});
+
+// ─── Database Readiness Guard for API Routes ───────────────────────────────────
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || req.path === '/status') {
+    return next();
+  }
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database is connecting or MongoDB service is not running on localhost:27017. Please start the MongoDB service.',
+    });
+  }
+  next();
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
@@ -204,8 +214,12 @@ app.use('/api/admin/audit-logs', adminAuditRoutes);
 app.use('/api/admin/reports', adminReportsRoutes);
 app.use('/api/admin/settings', adminSettingsRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/payments', adminPaymentRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/announcements', announcementsRoutes);
 app.use('/api/logs', logsRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/issues', issuesRoutes);
 
 // HR Module
 app.use('/api/hr/employees', hrEmployeesRoutes);
@@ -250,6 +264,8 @@ app.use('/api/intern/leave', internLeaveRoutes);
 app.use('/api/intern/learning', internLearningRoutes);
 app.use('/api/intern/daily-tracker', internDailyTrackerRoutes);
 app.use('/api/intern/eod', internEodRoutes);
+app.use('/api/intern/payments', internPaymentRoutes);
+app.use('/api/intern/projects', internProjectsRoutes);
 app.use('/api/hr/daily-tracker', hrDailyTrackerRoutes);
 app.use('/api/hr/eod', hrEodRoutes);
 app.use('/api/hr/performance-analytics', hrPerformanceRoutes);

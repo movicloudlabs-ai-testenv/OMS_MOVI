@@ -20,7 +20,7 @@ export async function autoAssignHR(employee) {
   const cap = settings?.hr?.onboardingHRCap ?? 10;
 
   // Find HR role
-  const hrRole = await Role.findOne({ slug: 'hr' }).select('_id');
+  const hrRole = await Role.findOne({ slug: 'hr-manager' }).select('_id');
   if (!hrRole) return { hrUser: null, capExceeded: false };
 
   // All active HR users
@@ -32,17 +32,33 @@ export async function autoAssignHR(employee) {
 
   if (!hrUsers.length) return { hrUser: null, capExceeded: false };
 
-  // Count each HR's current active onboarding load
-  const withLoad = await Promise.all(
-    hrUsers.map(async (hr) => ({
-      hr,
-      load: await User.countDocuments({
-        hrManager:          hr._id,
+  // Count each HR's current active onboarding load using a single aggregation query
+  const hrIds = hrUsers.map(hr => hr._id);
+  const loads = await User.aggregate([
+    {
+      $match: {
+        hrManager: { $in: hrIds },
         onboardingComplete: false,
-        deletedAt:          { $exists: false },
-      }),
-    }))
-  );
+        deletedAt: { $exists: false }
+      }
+    },
+    {
+      $group: {
+        _id: '$hrManager',
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const loadMap = {};
+  loads.forEach(l => {
+    loadMap[l._id.toString()] = l.count;
+  });
+
+  const withLoad = hrUsers.map(hr => ({
+    hr,
+    load: loadMap[hr._id.toString()] || 0
+  }));
 
   // Sort by load ascending
   withLoad.sort((a, b) => a.load - b.load);

@@ -9,7 +9,7 @@ const ALLOWED_TRANSITIONS = {
   'Todo': ['In Progress'],
   'In Progress': ['In Review', 'Blocked'],
   'Blocked': ['In Progress'],
-  'In Review': ['In Progress'],
+  'In Review': ['In Progress', 'Done'],
 };
 
 export const getMyTasks = async (req, res, next) => {
@@ -96,7 +96,7 @@ export const updateTaskStatus = async (req, res, next) => {
     if (task.assignedTo.toString() !== req.user._id.toString()) {
       return sendError(res, 'This task is not assigned to you', 403);
     }
-    if (status === 'Done') {
+    if (status === 'Done' && task.status !== 'In Review') {
       return sendError(res, 'Only PMO Lead can mark a task as Done', 400);
     }
 
@@ -190,8 +190,9 @@ export const addTaskComment = async (req, res, next) => {
       type: 'task_comment',
       title: 'New Comment on Task',
       message: `${req.user.name} commented on "${task.title}": "${truncated}"`,
-      link: '/employee/tasks',
+      link: `/tasks?taskId=${task._id}`,
       sender: req.user._id,
+      metadata: { taskId: task._id, projectId: task.project },
     });
 
     await task.populate('comments.author', 'name avatar role');

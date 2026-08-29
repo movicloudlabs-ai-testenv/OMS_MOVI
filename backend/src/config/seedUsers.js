@@ -19,7 +19,6 @@ import LeaveRequest from '../models/LeaveRequest.js';
 import LeaveBalance from '../models/LeaveBalance.js';
 import Task         from '../models/Task.js';
 import Project      from '../models/Project.js';
-import { syncEmployeeIdCounters } from '../utils/syncEmployeeIdCounters.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -282,10 +281,6 @@ const run = async () => {
     }
 
     // ── 10. Summary ──────────────────────────────────────────────────────────
-    // Sync employeeId counters so future auto-generated IDs (INT-/EMP-)
-    // never collide with the hard-coded IDs seeded above.
-    await syncEmployeeIdCounters();
-
     const totalUsers = await User.countDocuments();
     const totalDepts = await Department.countDocuments();
     console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

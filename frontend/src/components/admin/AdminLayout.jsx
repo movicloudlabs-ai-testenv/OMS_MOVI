@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -30,6 +30,14 @@ export default function AdminLayout({ title, subtitle, actions, children, bare =
     toast.success('Signed out successfully');
     navigate('/login');
   };
+
+  // Force reflow on mount to fix Chromium zoom layout bounds calculation issue
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     // zoom 0.8 renders admin pages at the density of an 80%-zoomed browser;
@@ -69,7 +77,7 @@ export default function AdminLayout({ title, subtitle, actions, children, bare =
         )}
 
         {/* Scrollable content */}
-        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pr-0.5">
+        <div className="flex-1 h-0 overflow-y-auto custom-scrollbar pr-0.5">
           {children}
         </div>
       </main>

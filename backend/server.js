@@ -9,14 +9,16 @@ import { validateEnv } from './src/config/env.js';
 import { syncPermissions } from './src/utils/syncPermissions.js';
 import { scheduleLeaveCleanup } from './src/utils/cleanupLeaves.js';
 import { scrubDeletedUserRefs } from './src/utils/scrubDeletedUsers.js';
+import { ensureDefaultUsersExist } from './src/utils/autoSeed.js';
 
 // Validate environment variables before anything else
 validateEnv();
 
-// Connect to MongoDB then sync permissions from config
+// Connect to MongoDB then sync permissions and bootstrap initial users if empty
 await connectDB();
 await syncPermissions();
 await scrubDeletedUserRefs(); // heal any stale references to soft-deleted users
+await ensureDefaultUsersExist(); // ensure standard demo roles and accounts are ready
 scheduleLeaveCleanup();
 
 // Start server

@@ -3,8 +3,7 @@ import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 
 const startOfToday = () => {
   const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
 };
 
 const to12Hour = (date) => {

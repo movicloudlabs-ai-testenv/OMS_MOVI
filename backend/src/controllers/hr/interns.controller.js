@@ -267,3 +267,63 @@ export const assignMentor = async (req, res, next) => {
     next(error);
   }
 };
+
+export const exportInterns = async (req, res, next) => {
+  try {
+    const { search, department, status, projectId, college, domain } = req.query;
+
+    const filter = {
+      ...req.scopeFilter,
+      employmentType: 'Intern',
+      deletedAt: { $exists: false },
+    };
+
+    if (search) {
+      filter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { employeeId: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (department) filter.department = department;
+    if (status) filter.status = status;
+    if (projectId) filter.project = projectId;
+    if (college) filter.college = { $regex: college, $options: 'i' };
+    if (domain) filter.domain = { $regex: domain, $options: 'i' };
+
+    const interns = await User.find(filter)
+      .populate('department', 'name code')
+      .populate('project', 'name status')
+      .populate('mentor', 'name')
+      .sort({ name: 1 });
+
+    let csv = '\ufeffEmployee ID,Name,Email,Phone,University,Domain,Batch,Start Date,End Date,Mentor,Status\n';
+
+    interns.forEach(emp => {
+      const empId = emp.employeeId || '';
+      const name = emp.name || '';
+      const email = emp.email || '';
+      const phone = emp.phone || '';
+      const univ = emp.college || '';
+      const dom = emp.domain || '';
+      const batch = emp.batch || '';
+      const start = emp.internshipStart ? new Date(emp.internshipStart).toISOString().split('T')[0] : '';
+      const end = emp.internshipEnd ? new Date(emp.internshipEnd).toISOString().split('T')[0] : '';
+      const mentor = emp.mentor?.name || '';
+      const status = emp.status || '';
+
+      const clean = (val) => `"${String(val).replace(/"/g, '""')}"`;
+
+      csv += `${clean(empId)},${clean(name)},${clean(email)},${clean(phone)},${clean(univ)},${clean(dom)},${clean(batch)},${clean(start)},${clean(end)},${clean(mentor)},${clean(status)}\n`;
+    });
+
+    const filename = `interns_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.status(200).send(csv);
+  } catch (error) {
+    next(error);
+  }
+};
+

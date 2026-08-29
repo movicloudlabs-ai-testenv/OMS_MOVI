@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import { documentsAPI, usersAPI } from '../../api';
+import { documentsAPI } from '../../api';
+import { hrAPI } from '../../utils/api';
 import HRLayout from '../../components/hr/HRLayout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
@@ -21,8 +22,8 @@ export default function HRDocuments() {
   const fileRef = useRef();
 
   useEffect(() => {
-    Promise.all([documentsAPI.getAll(), usersAPI.getAll({ role: 'intern' })])
-      .then(([d, u]) => { setDocs(d.data.data); setInterns(u.data.data); })
+    Promise.all([documentsAPI.getAll(), hrAPI.getInterns()])
+      .then(([d, u]) => { setDocs(d.data.data || []); setInterns(u.data.data || []); })
       .finally(() => setLoading(false));
   }, []);
 

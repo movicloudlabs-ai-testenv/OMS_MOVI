@@ -10,7 +10,7 @@ export const getHRList = async (req, res, next) => {
     const settings = await Settings.findOne({ key: 'global' }).select('hr');
     const cap      = settings?.hr?.onboardingHRCap ?? 10;
 
-    const hrRole = await Role.findOne({ slug: 'hr' }).select('_id');
+    const hrRole = await Role.findOne({ slug: 'hr-manager' }).select('_id');
     if (!hrRole) return sendSuccess(res, []);
 
     const hrUsers = await User.find({
@@ -19,16 +19,34 @@ export const getHRList = async (req, res, next) => {
       deletedAt: { $exists: false },
     }).select('_id name employeeId department');
 
-    const withLoad = await Promise.all(
-      hrUsers.map(async (hr) => {
-        const load = await User.countDocuments({
-          hrManager:          hr._id,
+    if (!hrUsers.length) return sendSuccess(res, []);
+
+    const hrIds = hrUsers.map(hr => hr._id);
+    const loads = await User.aggregate([
+      {
+        $match: {
+          hrManager: { $in: hrIds },
           onboardingComplete: false,
-          deletedAt:          { $exists: false },
-        });
-        return { _id: hr._id, name: hr.name, employeeId: hr.employeeId, load, cap, atCap: load >= cap };
-      })
-    );
+          deletedAt: { $exists: false }
+        }
+      },
+      {
+        $group: {
+          _id: '$hrManager',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const loadMap = {};
+    loads.forEach(l => {
+      loadMap[l._id.toString()] = l.count;
+    });
+
+    const withLoad = hrUsers.map(hr => {
+      const load = loadMap[hr._id.toString()] || 0;
+      return { _id: hr._id, name: hr.name, employeeId: hr.employeeId, load, cap, atCap: load >= cap };
+    });
 
     withLoad.sort((a, b) => a.load - b.load);
     sendSuccess(res, withLoad);

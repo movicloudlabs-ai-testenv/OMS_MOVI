@@ -47,7 +47,7 @@ const DailyTrackerSchema = new Schema({
 
   ktCompletion: { type: Number, min: 0, max: 100 }, // % knowledge-transfer completion
   productivityMetrics: { type: Number, min: 0, max: 10 }, // self/HR rated score out of 10
-  aiCredits: String, // AI tool usage note for the day (free text, e.g. tool name/usage)
+  aiCredits: Number, // AI tool credits/tokens used that day
   projectAssignment: String, // free-text note on current assignment
 
   submittedAt: { type: Date, default: Date.now },

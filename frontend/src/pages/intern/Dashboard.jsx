@@ -92,7 +92,7 @@ export default function InternDashboard() {
   const overdueCount = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done').length;
 
   // Attendance percentage from real data
-  const attendancePct = attendance?.summary?.attendancePercentage ?? attendance?.attendancePercentage ?? null;
+  const attendancePct = attendance?.stats?.percentage ?? attendance?.summary?.attendancePercentage ?? attendance?.attendancePercentage ?? null;
 
   // Remaining leaves from real balance
   const remainingLeaves = leaveBalance

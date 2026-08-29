@@ -68,8 +68,13 @@ export const applyForLeave = async (req, res, next) => {
   try {
     const { type, fromDate, toDate, reason } = req.body;
 
-    if (!type || !fromDate || !toDate || !reason) {
-      return sendError(res, 'type, fromDate, toDate, and reason are required', 400);
+    if (!type || !fromDate || !toDate) {
+      return sendError(res, 'type, fromDate, and toDate are required', 400);
+    }
+
+    const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
+    if (!trimmedReason) {
+      return sendError(res, 'Leave reason is required.', 400);
     }
 
     const validTypes = ['Casual', 'Sick', 'Annual', 'Emergency'];
@@ -122,7 +127,7 @@ export const applyForLeave = async (req, res, next) => {
     }
 
     const leave = await LeaveRequest.create({
-      user: req.user._id, type, fromDate: start, toDate: end, days, reason, status: 'Pending',
+      user: req.user._id, type, fromDate: start, toDate: end, days, reason: trimmedReason, status: 'Pending',
     });
 
     const employee = await User.findById(req.user._id).populate('hrManager', 'name');
@@ -135,8 +140,9 @@ export const applyForLeave = async (req, res, next) => {
         type: 'leave_requested',
         title: 'New Leave Request',
         message: `${employee.name} has requested ${type} leave from ${fromStr} to ${toStr} (${days} working days). Reason: ${reason}`,
-        link: '/hr/leave',
+        link: '/hr/leave-approval',
         sender: req.user._id,
+        metadata: { leaveId: leave._id },
       });
     }
 
@@ -150,6 +156,7 @@ export const applyForLeave = async (req, res, next) => {
         message: `${employee.name} applied for leave: ${fromStr} to ${toStr}. Review project timeline impact.`,
         link: '/pmo/approvals',
         sender: req.user._id,
+        metadata: { leaveId: leave._id },
       });
     }
 

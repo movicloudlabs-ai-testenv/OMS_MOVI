@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import HRLayout from '../../components/hr/HRLayout';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import { hrAPI } from '../../utils/api';
 import AccessDenied from '../../components/shared/AccessDenied';
 import BulkImportModal from '../../components/shared/BulkImportModal';
+import toast from 'react-hot-toast';
 
 const STATUS_COLORS = {
   'Active': 'bg-[#16A34A]/10 text-[#16A34A]',
@@ -25,6 +26,38 @@ export default function HRInterns() {
   const [loading, setLoading] = useState(true);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [error, setError] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const params = {
+        search: searchTerm,
+        college: filterUniversity,
+        status: filterStatus,
+        domain: filterDomain,
+      };
+      const res = await hrAPI.exportInterns(params);
+      
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const dateStr = new Date().toISOString().slice(0, 10);
+      link.setAttribute('download', `interns_export_${dateStr}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Intern records exported successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to export intern records');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   useEffect(() => {
     loadInterns();
@@ -79,11 +112,11 @@ export default function HRInterns() {
     return matchesSearch && matchesUniv && matchesStatus && matchesDomain;
   }), [interns, filterUniversity, filterStatus, filterDomain, searchTerm]);
 
-  if (!canRead) return <HRLayout bare><AccessDenied message="You don't have permission to view interns." /></HRLayout>;
+  if (!canRead) return <DynamicLayout bare><AccessDenied message="You don't have permission to view interns." /></DynamicLayout>;
 
   return (
-    <HRLayout bare>
-      <div className="font-sans text-[#0F172A] w-full flex flex-col h-full gap-5 max-w-[1440px] mx-auto pb-8">
+    <DynamicLayout bare>
+      <div className="font-sans text-[#0F172A] w-full flex flex-col gap-5 max-w-[1440px] mx-auto pb-8">
         
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6">
@@ -149,9 +182,15 @@ export default function HRInterns() {
           </div>
           
           <div className="flex items-center gap-3">
-            <button className="border border-[#E2E8F0] text-[#0F172A] px-3 py-1.5 rounded-md text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px]">download</span>
-              Export
+            <button
+              onClick={handleExport}
+              disabled={isExporting}
+              className="border border-[#E2E8F0] text-[#0F172A] px-3 py-1.5 rounded-md text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span className={`material-symbols-outlined text-[16px] ${isExporting ? 'animate-spin' : ''}`}>
+                {isExporting ? 'sync' : 'download'}
+              </span>
+              {isExporting ? 'Exporting...' : 'Export'}
             </button>
             {hasPermission('Users', 'create') && (
               <button
@@ -183,7 +222,7 @@ export default function HRInterns() {
         )}
 
         {/* TABLE VIEW */}
-        <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden flex-1">
+        <div className="bg-white border border-[#E2E8F0] rounded-lg shadow-sm overflow-hidden">
           {loading && (
             <div className="px-4 py-12 text-center text-[14px] text-[#64748B]">Loading intern records...</div>
           )}
@@ -333,6 +372,6 @@ export default function HRInterns() {
 
         </div>
       </div>
-    </HRLayout>
+    </DynamicLayout>
   );
 }

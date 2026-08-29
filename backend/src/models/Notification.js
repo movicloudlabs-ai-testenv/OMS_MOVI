@@ -19,6 +19,7 @@ const NotificationSchema = new Schema({
       'user_created', 'permission_changed',
       'system_alert', 'milestone_reached',
       'intern_assigned', 'attendance_marked',
+      'issue_reported', 'issue_status_updated',
     ],
   },
   title: String,

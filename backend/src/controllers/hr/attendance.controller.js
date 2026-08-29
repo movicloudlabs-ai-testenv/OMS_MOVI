@@ -8,8 +8,8 @@ export const getAttendance = async (req, res, next) => {
 
     const m = month ? parseInt(month) - 1 : new Date().getMonth();
     const y = year ? parseInt(year) : new Date().getFullYear();
-    const startDate = new Date(y, m, 1);
-    const endDate = new Date(y, m + 1, 0);
+    const startDate = new Date(Date.UTC(y, m, 1));
+    const endDate = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
 
     // Filter users in scope
     const userFilter = { ...req.scopeFilter, status: 'Active' };
@@ -62,7 +62,7 @@ export const getAttendance = async (req, res, next) => {
 
     sendSuccess(res, {
       period: { month: m + 1, year: y },
-      summary: { totalWorkingDays: endDate.getDate() },
+      summary: { totalWorkingDays: endDate.getUTCDate() },
       employees: employeesData,
     });
   } catch (error) {
@@ -78,7 +78,8 @@ export const markAttendance = async (req, res, next) => {
       return sendError(res, 'Date and records array are required', 400);
     }
 
-    const attendanceDate = new Date(date);
+    const parsedDate = new Date(date);
+    const attendanceDate = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate()));
     if (attendanceDate > new Date()) {
       return sendError(res, 'Cannot mark attendance for future dates', 400);
     }
@@ -153,8 +154,8 @@ export const exportAttendance = async (req, res, next) => {
     // In a real scenario, this would use the same logic as getAttendance and format to CSV
     const m = month ? parseInt(month) - 1 : new Date().getMonth();
     const y = year ? parseInt(year) : new Date().getFullYear();
-    const startDate = new Date(y, m, 1);
-    const endDate = new Date(y, m + 1, 0);
+    const startDate = new Date(Date.UTC(y, m, 1));
+    const endDate = new Date(Date.UTC(y, m + 1, 0, 23, 59, 59, 999));
 
     const userFilter = { ...req.scopeFilter, status: 'Active' };
     if (department) userFilter.department = department;

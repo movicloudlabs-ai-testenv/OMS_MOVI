@@ -33,13 +33,13 @@ function buildWeeklyCards(count = 6) {
   for (let i = 0; i < count; i++) {
     const monday = new Date(thisMonday);
     monday.setDate(thisMonday.getDate() - i * 7);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
+    const friday = new Date(monday);
+    friday.setDate(monday.getDate() + 4); // Mon -> Fri (business week only)
     cards.push({
       key: toISO(monday),
-      title: `${MONTH_NAMES[monday.getMonth()]} ${monday.getDate()} to ${MONTH_NAMES[sunday.getMonth()]} ${sunday.getDate()}`,
+      title: `${MONTH_NAMES[monday.getMonth()]} ${monday.getDate()} to ${MONTH_NAMES[friday.getMonth()]} ${friday.getDate()}`,
       from: toISO(monday),
-      to: toISO(sunday),
+      to: toISO(friday),
       anchorDate: toISO(monday),
     });
   }
@@ -51,7 +51,7 @@ function buildWeeklyCards(count = 6) {
  * Click the card body -> selects that period (calls onSelect with anchorDate).
  * Click the download icon -> exports that period directly (calls exportFn), no navigation.
  */
-export default function PeriodCardGrid({ mode, selectedAnchor, onSelect, exportFn, filePrefix, reportLabel, employmentType, college }) {
+export default function PeriodCardGrid({ mode, selectedAnchor, onSelect, exportFn, filePrefix, reportLabel, employmentType, college, fileExt = 'xlsx' }) {
   const [downloadingKey, setDownloadingKey] = useState(null);
 
   const cards = useMemo(() => (mode === 'month' ? buildMonthlyCards(6) : buildWeeklyCards(6)), [mode]);
@@ -71,7 +71,7 @@ export default function PeriodCardGrid({ mode, selectedAnchor, onSelect, exportF
       const url = window.URL.createObjectURL(new Blob([res.data]));
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${label}.xlsx`;
+      a.download = `${label}.${fileExt}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
