@@ -1,0 +1,22 @@
+{
+  "name": "oms-root",
+  "version": "2.0.1",
+  "description": "OWMS — Office Workspace Management System",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/start-all.js",
+    "start": "node scripts/start-all.js",
+    "setup": "node scripts/setup-all.js",
+    "backend:dev": "npm run dev --prefix backend",
+    "frontend:dev": "npm run dev --prefix frontend",
+    "seed": "npm run seed --prefix backend"
+  },
+  "keywords": [
+    "owms",
+    "workspace-management",
+    "enterprise"
+  ],
+  "author": "Movi Cloud Labs",
+  "license": "UNLICENSED"
+}

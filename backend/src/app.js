@@ -173,8 +173,8 @@ app.get('/', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'OWMS API is running',
-    version: '1.0.0',
-    timestamp: new Date().toISOString(),
+    version: '2.0.1',
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
 });
 
@@ -182,11 +182,23 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
     status: 'healthy',
-    mongoConnection: mongoose.connection.readyState === 1
-      ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV,
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
+});
+
+// ─── Database Readiness Guard for API Routes ───────────────────────────────────
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || req.path === '/status') {
+    return next();
+  }
+  if (mongoose.connection.readyState !== 1) {
+    return res.status(503).json({
+      success: false,
+      message: 'Database is connecting or MongoDB service is not running on localhost:27017. Please start the MongoDB service.',
+    });
+  }
+  next();
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
