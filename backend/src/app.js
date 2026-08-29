@@ -219,7 +219,10 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementsRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/documents', documentRoutes);
+<<<<<<< HEAD
 app.use('/api/issues', issuesRoutes);
+=======
+>>>>>>> 7aa5de23f21299714767557b56122640d50ce89e
 
 // HR Module
 app.use('/api/hr/employees', hrEmployeesRoutes);

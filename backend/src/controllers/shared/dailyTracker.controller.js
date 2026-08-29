@@ -183,6 +183,14 @@ export const getDayStatus = async (req, res, next) => {
       };
     });
 
+    // Two-tiered sort: Submitted users first (A-Z), followed by Not Submitted users (A-Z)
+    result.sort((a, b) => {
+      if (a.submitted !== b.submitted) {
+        return a.submitted ? -1 : 1;
+      }
+      return (a.user?.name || '').localeCompare(b.user?.name || '');
+    });
+
     sendSuccess(res, { date: targetDate, results: result });
   } catch (error) {
     next(error);
