@@ -2,7 +2,7 @@ import { Router } from 'express';
 import {
   getTasks, getTaskById, createTask,
   updateTask, updateTaskStatus, addTaskComment,
-  addTaskAttachment, deleteTask,
+  addTaskAttachment, deleteTask, bulkReassignTasks,
 } from '../../controllers/pmo/tasks.controller.js';
 import { protect } from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rbac.js';
@@ -16,6 +16,7 @@ router.use(pmoScope);
 
 router.get('/', requirePermission('Tasks', 'read'), getTasks);
 router.post('/', requirePermission('Tasks', 'create'), auditLog('Create', 'Tasks'), createTask);
+router.post('/bulk-reassign', requirePermission('Tasks', 'update'), auditLog('Update', 'Tasks'), bulkReassignTasks);
 router.get('/:id', requirePermission('Tasks', 'read'), getTaskById);
 router.put('/:id', requirePermission('Tasks', 'update'), auditLog('Update', 'Tasks'), updateTask);
 router.patch('/:id/status', requirePermission('Tasks', 'update'), auditLog('Update', 'Tasks'), updateTaskStatus);

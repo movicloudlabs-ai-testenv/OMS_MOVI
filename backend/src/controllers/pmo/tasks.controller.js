@@ -75,11 +75,16 @@ export const createTask = async (req, res, next) => {
     const assignee = await User.findById(assignedTo);
     if (!assignee) return sendError(res, 'Assignee not found', 404);
 
-    const isMember = proj.team.some(t => t.user.toString() === assignedTo) || 
-                     proj.interns.some(i => i.user.toString() === assignedTo);
+    const isMember = (proj.team || []).some(t => t.user?.toString() === assignedTo.toString()) || 
+                     (proj.interns || []).some(i => i.user?.toString() === assignedTo.toString());
     
     if (!isMember) {
-      return sendError(res, 'Assignee is not a member of this project', 400);
+      if (assignee.employmentType === 'Intern') {
+        proj.interns.push({ user: assignee._id, role: 'Intern Developer' });
+      } else {
+        proj.team.push({ user: assignee._id, role: assignee.designation || 'Team Member' });
+      }
+      await proj.save();
     }
 
     const task = await Task.create({
@@ -158,14 +163,24 @@ export const updateTask = async (req, res, next) => {
 
     const oldDueDate = task.dueDate;
 
-    // (Re)assignment — validate the new assignee belongs to the project, then
+    // (Re)assignment — validate or auto-allocate the new assignee to the project, then
     // clear the needs-reassignment flag once a valid owner is set.
     let reassignedTo = null;
     if (assignedTo && assignedTo.toString() !== task.assignedTo?.toString()) {
       const proj = task.project;
-      const isMember = proj.team.some(t => t.user?.toString() === assignedTo.toString()) ||
-                       proj.interns.some(i => i.user?.toString() === assignedTo.toString());
-      if (!isMember) return sendError(res, 'Assignee is not a member of this project', 400);
+      const isMember = (proj.team || []).some(t => t.user?.toString() === assignedTo.toString()) ||
+                       (proj.interns || []).some(i => i.user?.toString() === assignedTo.toString());
+      if (!isMember) {
+        const assignee = await User.findById(assignedTo);
+        if (assignee) {
+          if (assignee.employmentType === 'Intern') {
+            proj.interns.push({ user: assignee._id, role: 'Intern Developer' });
+          } else {
+            proj.team.push({ user: assignee._id, role: assignee.designation || 'Team Member' });
+          }
+          await proj.save();
+        }
+      }
       task.assignedTo = assignedTo;
       task.needsReassignment = false;
       reassignedTo = assignedTo;
@@ -343,3 +358,81 @@ export const deleteTask = async (req, res, next) => {
     next(error);
   }
 };
+
+export const bulkReassignTasks = async (req, res, next) => {
+  try {
+    const { taskIds, assignedTo, projectId } = req.body;
+
+    if (!Array.isArray(taskIds) || taskIds.length === 0 || !assignedTo) {
+      return sendError(res, 'taskIds (array) and assignedTo are required', 400);
+    }
+
+    const assignee = await User.findById(assignedTo).populate('role');
+    if (!assignee) {
+      return sendError(res, 'Assignee not found', 404);
+    }
+
+    // Find all tasks to reassign
+    const tasks = await Task.find({ _id: { $in: taskIds } }).populate('project');
+    if (tasks.length === 0) {
+      return sendError(res, 'No matching tasks found to reassign', 404);
+    }
+
+    // Collect project IDs involved
+    const projectIds = [...new Set(tasks.map(t => t.project?._id?.toString() || t.project?.toString()).filter(Boolean))];
+    if (projectId && !projectIds.includes(projectId.toString())) {
+      projectIds.push(projectId.toString());
+    }
+
+    // For each project, ensure the assignee is allocated to the project team/interns if not already a member
+    for (const pId of projectIds) {
+      const proj = await Project.findById(pId);
+      if (proj) {
+        const isMember = (proj.team || []).some(t => t.user?.toString() === assignedTo.toString()) ||
+                         (proj.interns || []).some(i => i.user?.toString() === assignedTo.toString());
+        if (!isMember) {
+          if (assignee.employmentType === 'Intern') {
+            proj.interns.push({ user: assignee._id, role: 'Intern Developer' });
+          } else {
+            proj.team.push({ user: assignee._id, role: assignee.designation || 'Team Member' });
+          }
+          await proj.save();
+        }
+      }
+    }
+
+    // Update all tasks
+    const updateResult = await Task.updateMany(
+      { _id: { $in: taskIds } },
+      {
+        $set: {
+          assignedTo: assignee._id,
+          assignedBy: req.user._id,
+          needsReassignment: false,
+        }
+      }
+    );
+
+    // Notify assignee
+    try {
+      await sendNotification({
+        recipient: assignee._id,
+        sender: req.user._id,
+        type: 'task_assigned',
+        title: 'Task(s) Assigned',
+        message: `${req.user.name || 'PMO Lead'} reassigned ${tasks.length} task(s) to you.`,
+        metadata: {
+          taskId: taskIds[0],
+          projectId: projectIds[0] || null,
+        }
+      });
+    } catch (notifErr) {
+      console.warn('Failed to send bulk reassignment notification:', notifErr.message);
+    }
+
+    sendSuccess(res, { modifiedCount: updateResult.modifiedCount }, `Successfully reassigned ${updateResult.modifiedCount} task(s)`);
+  } catch (error) {
+    next(error);
+  }
+};
+
