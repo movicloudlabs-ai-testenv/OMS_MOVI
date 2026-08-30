@@ -311,9 +311,15 @@ export const convertCandidateToUser = async (req, res, next) => {
       if (pmoLead) userData.pmoLead = pmoLead;
     }
 
-    // Auto-assign HR Manager
-    const { hrUser } = await autoAssignHR(userData);
-    if (hrUser) userData.hrManager = hrUser._id;
+    // Assign HR Manager
+    if (req.body.hrManager) {
+      userData.hrManager = req.body.hrManager;
+    } else if (req.user?.role?.slug === 'hr-manager') {
+      userData.hrManager = req.user._id;
+    } else {
+      const { hrUser } = await autoAssignHR(userData);
+      if (hrUser) userData.hrManager = hrUser._id;
+    }
 
     // Create User
     const newUser = await User.create(userData);
