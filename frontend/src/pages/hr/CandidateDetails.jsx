@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import HRLayout from '../../components/hr/HRLayout';
+import { useAuth } from '../../contexts/AuthContext';
 import { hrAPI, adminAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -27,6 +28,7 @@ export default function CandidateDetails() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [candidate, setCandidate] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,7 @@ export default function CandidateDetails() {
   // Departments & Roles for conversion
   const [departments, setDepartments] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [hrList, setHRList] = useState([]);
 
   // Onboard Modal State
   const [isOnboardModalOpen, setIsOnboardModalOpen] = useState(false);
@@ -48,6 +51,7 @@ export default function CandidateDetails() {
     role: '',
     designation: '',
     joiningDate: '',
+    hrManager: user?._id || '',
     password: 'Pass@1234',
   });
   const [converting, setConverting] = useState(false);
@@ -57,16 +61,18 @@ export default function CandidateDetails() {
     try {
       setLoading(true);
       setError('');
-      const [candRes, deptsRes, rolesRes] = await Promise.all([
+      const [candRes, deptsRes, rolesRes, hrListRes] = await Promise.all([
         hrAPI.getCandidate(id),
         adminAPI.getDepartments().catch(() => ({ data: { data: [] } })),
         adminAPI.getRoles().catch(() => ({ data: { data: [] } })),
+        hrAPI.getHRList().catch(() => ({ data: { data: [] } })),
       ]);
 
       const cand = candRes.data?.data || null;
       setCandidate(cand);
       setDepartments(deptsRes.data?.data || []);
       setRoles(rolesRes.data?.data || []);
+      setHRList(hrListRes.data?.data || []);
 
       if (cand) {
         setOnboardForm({
@@ -75,6 +81,7 @@ export default function CandidateDetails() {
           role: '',
           designation: cand.appliedRole || '',
           joiningDate: cand.joiningDate ? cand.joiningDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+          hrManager: user?._id || '',
           password: 'Pass@1234',
         });
       }
@@ -535,15 +542,33 @@ export default function CandidateDetails() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">Initial Password</label>
-                  <input
-                    type="text"
-                    value={onboardForm.password}
-                    onChange={e => setOnboardForm({ ...onboardForm, password: e.target.value })}
-                    className="w-full border border-[#E2E8F0] rounded-lg p-2.5 text-[13px] focus:outline-none focus:border-[#2563EB]"
-                  />
-                  <span className="text-[11px] text-[#64748B] mt-0.5 block">Default: Pass@1234 (User can reset on first login)</span>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">Assigned HR Manager</label>
+                    <select
+                      value={onboardForm.hrManager}
+                      onChange={e => setOnboardForm({ ...onboardForm, hrManager: e.target.value })}
+                      className="w-full border border-[#E2E8F0] rounded-lg p-2.5 text-[13px] bg-white focus:outline-none focus:border-[#2563EB]"
+                    >
+                      <option value="">Auto-assign (Least loaded HR)</option>
+                      {hrList.map(h => (
+                        <option key={h._id} value={h._id}>
+                          {h.name} {h._id === user?._id ? '(Me)' : `(${h.employeeId})`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[12px] font-bold text-[#0F172A] mb-1.5">Initial Password</label>
+                    <input
+                      type="text"
+                      value={onboardForm.password}
+                      onChange={e => setOnboardForm({ ...onboardForm, password: e.target.value })}
+                      className="w-full border border-[#E2E8F0] rounded-lg p-2.5 text-[13px] focus:outline-none focus:border-[#2563EB]"
+                    />
+                    <span className="text-[11px] text-[#64748B] mt-0.5 block">Default: Pass@1234 (User resets on login)</span>
+                  </div>
                 </div>
 
                 <div className="pt-3 border-t border-[#E2E8F0] flex justify-end gap-2.5">

@@ -111,7 +111,8 @@ export const getPendingOnboarding = async (req, res, next) => {
       .populate('department', 'name')
       .populate('role', 'name color')
       .populate('hrManager', 'name employeeId')
-      .select('name employeeId avatar department role hrManager onboardingChecklist createdAt');
+      .select('name employeeId avatar department role hrManager onboardingChecklist createdAt')
+      .sort({ createdAt: -1 });
 
     // Calculate completion percentage
     const usersWithProgress = pendingUsers.map(u => {
