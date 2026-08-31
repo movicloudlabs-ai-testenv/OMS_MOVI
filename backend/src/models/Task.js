@@ -23,7 +23,7 @@ const TaskSchema = new Schema({
   },
   status: {
     type: String,
-    enum: ['Todo', 'In Progress', 'In Review', 'Blocked', 'Done'],
+    enum: ['Todo', 'In Progress', 'In Review', 'Blocked', 'Done', 'Cancelled'],
     default: 'Todo',
   },
   effortPoints: { type: Number, min: 1, max: 13 },

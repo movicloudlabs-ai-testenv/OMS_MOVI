@@ -121,10 +121,13 @@ export const TaskDetailModal = ({ task: taskSummary, onClose, onDelete, initialT
     setDeleting(true);
     try {
       await pmoAPI.deleteTask(taskSummary._id);
-      toast.success('Task deleted');
+      toast.success('Task deleted successfully');
       if (onDelete) onDelete(taskSummary._id);
       onClose();
-    } catch { toast.error('Failed to delete task'); setDeleting(false); }
+    } catch (err) { 
+      toast.error(err.response?.data?.message || 'Failed to delete task'); 
+      setDeleting(false); 
+    }
   };
 
   const t = task || taskSummary;
