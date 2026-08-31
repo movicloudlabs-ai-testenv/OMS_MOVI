@@ -14,10 +14,12 @@ export default function AdminEditUser() {
     name: '', email: '', phone: '', department: '',
     designation: '', employmentType: 'Full-time', role: '', status: 'Active',
     college: '', domain: '', batch: '',
+    pmoLead: '', manager: '', hrManager: '', mentor: '',
   });
 
   const [roles, setRoles]             = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [managers, setManagers]       = useState([]);
   const [fetching, setFetching]       = useState(true);
   const [submitting, setSubmitting]   = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -36,17 +38,22 @@ export default function AdminEditUser() {
         const canReadRoles = hasPermission('Roles', 'read');
         const canReadDepts = hasPermission('Departments', 'read');
 
-        const promises = [adminAPI.getUser(id)];
+        const promises = [
+          adminAPI.getUser(id),
+          adminAPI.getUsers({ status: 'Active', limit: 100 }).catch(() => ({ data: { data: [] } }))
+        ];
         if (canReadRoles) promises.push(adminAPI.getRoles());
         if (canReadDepts) promises.push(adminAPI.getDepartments());
 
         const results = await Promise.all(promises);
         const userRes = results[0];
+        const managersRes = results[1];
         const u = userRes.data.data;
+        const managersList = managersRes.data?.data || [];
 
         let rolesData = [];
         let deptsData = [];
-        let resIdx = 1;
+        let resIdx = 2;
 
         if (canReadRoles) {
           rolesData = results[resIdx++].data.data || [];
@@ -72,9 +79,14 @@ export default function AdminEditUser() {
           college:        u.college || '',
           domain:         u.domain || '',
           batch:          u.batch || '',
+          pmoLead:        u.pmoLead?._id || u.pmoLead || '',
+          manager:        u.manager?._id || u.manager || '',
+          hrManager:      u.hrManager?._id || u.hrManager || '',
+          mentor:         u.mentor?._id || u.mentor || '',
         });
         setRoles(rolesData);
         setDepartments(deptsData);
+        setManagers(managersList);
       } catch (err) {
         toast.error('Failed to load user data');
       } finally {
@@ -108,10 +120,14 @@ export default function AdminEditUser() {
         designation:    formData.designation || undefined,
         employmentType: formData.employmentType,
         status:         formData.status,
+        manager:        formData.manager || undefined,
+        hrManager:      formData.hrManager || undefined,
         ...(formData.employmentType === 'Intern' ? {
           college: formData.college || undefined,
           domain:  formData.domain || undefined,
           batch:   formData.batch || undefined,
+          pmoLead: formData.pmoLead || undefined,
+          mentor:  formData.mentor || undefined,
         } : {}),
       });
       toast.success('User updated successfully');
@@ -247,7 +263,7 @@ export default function AdminEditUser() {
                   <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
                 </div>
               </div>
-              {formData.employmentType === 'Intern' && (
+              {formData.employmentType === 'Intern' ? (
                 <>
                   <div>
                     <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">College / Institution</label>
@@ -260,6 +276,57 @@ export default function AdminEditUser() {
                   <div>
                     <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Batch</label>
                     <input type="text" className={inputCls} placeholder="e.g. 2026 Summer Batch" value={formData.batch} onChange={handleChange('batch')} />
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">PMO Assigned</label>
+                    <div className="relative">
+                      <select className={selectCls} value={formData.pmoLead} onChange={handleChange('pmoLead')}>
+                        <option value="">Select PMO Lead (optional)</option>
+                        {managers.map(m => (
+                          <option key={m._id} value={m._id}>{m.name} — {m.role?.name || m.designation || ''}</option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Assigned HR</label>
+                    <div className="relative">
+                      <select className={selectCls} value={formData.hrManager} onChange={handleChange('hrManager')}>
+                        <option value="">Select HR Manager (optional)</option>
+                        {managers.map(m => (
+                          <option key={m._id} value={m._id}>{m.name} — {m.role?.name || ''}</option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Reporting Manager</label>
+                    <div className="relative">
+                      <select className={selectCls} value={formData.manager} onChange={handleChange('manager')}>
+                        <option value="">Select Manager (optional)</option>
+                        {managers.filter(m => m._id !== id).map(m => (
+                          <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || ''}</option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Assigned HR</label>
+                    <div className="relative">
+                      <select className={selectCls} value={formData.hrManager} onChange={handleChange('hrManager')}>
+                        <option value="">Select HR Manager (optional)</option>
+                        {managers.map(m => (
+                          <option key={m._id} value={m._id}>{m.name} — {m.role?.name || ''}</option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
+                    </div>
                   </div>
                 </>
               )}

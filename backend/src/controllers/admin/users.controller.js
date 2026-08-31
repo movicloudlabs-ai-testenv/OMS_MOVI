@@ -315,7 +315,9 @@ export const updateUser = async (req, res, next) => {
     if (role) user.role = role;
     if (employmentType) user.employmentType = employmentType;
     if (status) user.status = status;
-    if (manager !== undefined) user.manager = manager;
+    if (manager !== undefined) {
+      user.manager = manager || undefined;
+    }
     if (hrManager !== undefined) {
       user.hrManager = hrManager || undefined;
     }
@@ -323,8 +325,12 @@ export const updateUser = async (req, res, next) => {
     if (college !== undefined) user.college = college;
     if (domain !== undefined) user.domain = domain;
     if (batch !== undefined) user.batch = batch;
-    if (mentor !== undefined) user.mentor = mentor;
-    if (pmoLead !== undefined) user.pmoLead = pmoLead;
+    if (mentor !== undefined) {
+      user.mentor = mentor || undefined;
+    }
+    if (pmoLead !== undefined) {
+      user.pmoLead = pmoLead || undefined;
+    }
     if (internshipStart) user.internshipStart = internshipStart;
     if (internshipEnd) user.internshipEnd = internshipEnd;
 
