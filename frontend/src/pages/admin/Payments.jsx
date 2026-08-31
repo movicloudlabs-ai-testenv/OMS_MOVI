@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { paymentsAPI, adminAPI, hrAPI } from '../../utils/api';
-import PageWrapper from '../../components/PageWrapper';
+import DynamicLayout from '../../components/shared/DynamicLayout';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import Modal from '../../components/Modal';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
+import { Plus, Pencil, Trash2, Wallet } from 'lucide-react';
 
 const STATUS_STYLES = {
   pending: 'bg-amber-50 text-amber-700 border-amber-200',
@@ -99,38 +100,42 @@ export default function AdminPayments() {
     }
   };
 
-  return (
-    <PageWrapper>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="font-headline font-bold text-2xl text-slate-900">Manage Payments</h1>
-            <p className="text-slate-500 text-sm mt-1">Create invoices and manage intern stipends</p>
-          </div>
-          <button onClick={() => openModal()} className="btn-primary text-sm px-5 py-2.5 flex items-center gap-2">
-            <span className="material-symbols-outlined text-base">add</span> Create Invoice
-          </button>
-        </div>
+  const headerActions = (
+    <button 
+      onClick={() => openModal()} 
+      className="h-9 px-4 rounded-xl bg-[#EA580C] hover:bg-[#D94E08] text-white text-[13px] font-medium flex items-center gap-2 transition-colors shadow-sm shrink-0"
+    >
+      <Plus size={16} />
+      <span>Create Invoice</span>
+    </button>
+  );
 
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+  return (
+    <DynamicLayout 
+      title="Manage Payments" 
+      subtitle="Create invoices and manage intern stipends"
+      actions={headerActions}
+    >
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
           {loading ? (
             <div className="p-8"><LoadingSpinner /></div>
           ) : payments.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <span className="material-symbols-outlined text-slate-200 text-5xl mb-3">account_balance_wallet</span>
+              <Wallet className="text-slate-300 mb-3" size={48} />
               <p className="text-slate-500 font-semibold text-sm">No recorded payments</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-50 bg-slate-50/50">
-                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-widest font-extrabold text-slate-400">Intern</th>
-                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-widest font-extrabold text-slate-400">Amount</th>
-                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-widest font-extrabold text-slate-400">Description</th>
-                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-widest font-extrabold text-slate-400">Status</th>
-                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-widest font-extrabold text-slate-400">Date</th>
-                    <th className="text-right px-6 py-3 text-[11px] uppercase tracking-widest font-extrabold text-slate-400">Actions</th>
+                  <tr className="border-b border-slate-100 bg-slate-50/50">
+                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-wider font-bold text-slate-400">Intern</th>
+                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-wider font-bold text-slate-400">Amount</th>
+                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-wider font-bold text-slate-400">Description</th>
+                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-wider font-bold text-slate-400">Status</th>
+                    <th className="text-left px-6 py-3 text-[11px] uppercase tracking-wider font-bold text-slate-400">Date</th>
+                    <th className="text-right px-6 py-3 text-[11px] uppercase tracking-wider font-bold text-slate-400">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -143,17 +148,17 @@ export default function AdminPayments() {
                       <td className="px-6 py-4 font-bold text-slate-900">₹{p.amount?.toLocaleString()}</td>
                       <td className="px-6 py-4 text-slate-600 max-w-[200px] truncate" title={p.description}>{p.description}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold border capitalize ${STATUS_STYLES[p.status] || STATUS_STYLES.pending}`}>
+                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-bold border capitalize ${STATUS_STYLES[p.status] || STATUS_STYLES.pending}`}>
                           {p.status}
                         </span>
                       </td>
                       <td className="px-6 py-4 text-slate-500 text-xs">{format(new Date(p.createdAt), 'MMM d, yyyy')}</td>
                       <td className="px-6 py-4 text-right">
-                        <button onClick={() => openModal(p)} className="text-blue-500 hover:text-blue-700 p-1 rounded-lg hover:bg-blue-50 transition-colors mr-1">
-                          <span className="material-symbols-outlined text-[18px]">edit</span>
+                        <button onClick={() => openModal(p)} className="text-blue-500 hover:text-blue-700 p-1.5 rounded-lg hover:bg-blue-50 transition-colors mr-1" title="Edit">
+                          <Pencil size={15} />
                         </button>
-                        <button onClick={() => handleDelete(p._id)} className="text-red-500 hover:text-red-700 p-1 rounded-lg hover:bg-red-50 transition-colors">
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
+                        <button onClick={() => handleDelete(p._id)} className="text-red-500 hover:text-red-700 p-1.5 rounded-lg hover:bg-red-50 transition-colors" title="Delete">
+                          <Trash2 size={15} />
                         </button>
                       </td>
                     </tr>
@@ -230,6 +235,6 @@ export default function AdminPayments() {
           </div>
         </form>
       </Modal>
-    </PageWrapper>
+    </DynamicLayout>
   );
 }
