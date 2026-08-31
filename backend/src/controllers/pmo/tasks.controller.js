@@ -333,27 +333,34 @@ export const deleteTask = async (req, res, next) => {
     const task = await Task.findById(req.params.id).populate('project');
     if (!task) return sendError(res, 'Task not found', 404);
 
-    // Hard delete is possible, or soft delete by status Cancelled.
-    // Spec: Soft approach: mark task as cancelled, Hard delete only by Super Admin
-    if (req.user.role.slug === 'super-admin') {
-      await Task.findByIdAndDelete(req.params.id);
-    } else {
-      if (task.project.manager?.toString() !== req.user._id.toString()) {
-        return sendError(res, 'Not authorized to delete this task', 403);
-      }
-      task.status = 'Cancelled';
-      await task.save();
+    const isSuperAdmin = req.user.role?.slug === 'super-admin' || req.user.role === 'super-admin';
+    const isProjectManager = task.project?.manager?.toString() === req.user._id.toString();
+    const isPMO = req.user.role?.slug === 'pmo-lead' || req.user.role === 'pmo-lead';
+
+    if (!isSuperAdmin && !isProjectManager && !isPMO) {
+      return sendError(res, 'Not authorized to delete this task', 403);
     }
 
-    await sendNotification({
-      recipient: task.assignedTo,
-      type: 'system_alert',
-      title: 'Task Removed',
-      message: `Task '${task.title}' has been removed.`,
-      sender: req.user._id,
-    });
+    const assignedTo = task.assignedTo;
+    const taskTitle = task.title;
 
-    sendSuccess(res, null, 'Task deleted/cancelled successfully');
+    await Task.findByIdAndDelete(req.params.id);
+
+    if (assignedTo) {
+      try {
+        await sendNotification({
+          recipient: assignedTo,
+          type: 'system_alert',
+          title: 'Task Removed',
+          message: `Task '${taskTitle}' has been removed.`,
+          sender: req.user._id,
+        });
+      } catch (notifErr) {
+        console.warn('Could not send task deletion notification:', notifErr.message);
+      }
+    }
+
+    sendSuccess(res, null, 'Task deleted successfully');
   } catch (error) {
     next(error);
   }
