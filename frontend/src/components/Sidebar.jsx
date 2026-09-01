@@ -23,7 +23,6 @@ const NAV_CONFIG = {
     { to: '/employee/projects', icon: Briefcase, label: 'My Projects', isLucide: true },
     { to: '/employee/team', icon: Users, label: 'My Team', isLucide: true },
     { to: '/support/issues', icon: LifeBuoy, label: 'Issue Support', isLucide: true },
-    { to: '/support/bugs', icon: Bug, label: 'Bug Sheet', isLucide: true },
 
     { to: '/employee/leave', icon: Clock, label: 'Leave', isLucide: true },
     { to: '/employee/profile', icon: User, label: 'My Profile', isLucide: true },
@@ -91,7 +90,6 @@ const NAV_CONFIG = {
     { to: '/admin/settings', icon: 'settings', label: 'Settings', permission: { resource: 'Settings', action: 'read' } },
     { to: '/admin/profile', icon: User, label: 'My Profile', isLucide: true },
     { to: '/support/issues', icon: LifeBuoy, label: 'Issue Support', isLucide: true },
-    { to: '/support/bugs', icon: Bug, label: 'Bug Sheet', isLucide: true },
   ],
 };
 
