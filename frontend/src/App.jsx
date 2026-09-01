@@ -149,7 +149,7 @@ export default function App() {
 
       {/* Issue Support — routing is role-aware in the backend */}
       <Route path="/support/issues" element={<ProtectedRoute allowedRoles={['intern','employee','hr','pmo','admin']}><IssueSupport /></ProtectedRoute>} />
-      <Route path="/support/bugs" element={<ProtectedRoute allowedRoles={['intern','employee','hr','pmo','admin']}><BugSheet /></ProtectedRoute>} />
+      <Route path="/support/bugs" element={<ProtectedRoute allowedRoles={['intern','hr','pmo']}><BugSheet /></ProtectedRoute>} />
 
       {/* HR */}
       <Route path="/hr/dashboard" element={<ProtectedRoute allowedRoles={['hr']}><HRDashboard /></ProtectedRoute>} />

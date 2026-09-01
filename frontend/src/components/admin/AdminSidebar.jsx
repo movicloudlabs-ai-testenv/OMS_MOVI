@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   Menu, LayoutDashboard, Users, Building2, Shield, Grid2X2, FileClock,
-  BarChart3, Settings as SettingsIcon, LogOut, User, CreditCard, LifeBuoy, Bug,
+  BarChart3, Settings as SettingsIcon, LogOut, User, CreditCard, LifeBuoy,
 } from 'lucide-react';
 
 export const NAV_LINKS = [
@@ -16,7 +16,6 @@ export const NAV_LINKS = [
   { to: '/admin/settings',      icon: SettingsIcon,    label: 'Settings' },
   { to: '/admin/profile',       icon: User,            label: 'My Profile' },
   { to: '/support/issues',      icon: LifeBuoy,        label: 'Issue Support' },
-  { to: '/support/bugs',        icon: Bug,             label: 'Bug Sheet' },
 ];
 
 export default function AdminSidebar({ collapsed, setCollapsed, onLogout, user }) {
