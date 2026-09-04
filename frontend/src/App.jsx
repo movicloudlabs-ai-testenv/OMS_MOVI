@@ -155,7 +155,7 @@ export default function App() {
       <Route path="/hr/dashboard" element={<ProtectedRoute allowedRoles={['hr']}><HRDashboard /></ProtectedRoute>} />
       <Route path="/hr/employees" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'read' }}><HREmployees /></ProtectedRoute>} />
       <Route path="/hr/employees/new" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'create' }}><HRAddEmployee /></ProtectedRoute>} />
-      <Route path="/hr/employees/:id" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Users', action: 'read' }}><HREmployeeDetails /></ProtectedRoute>} />
+      <Route path="/hr/employees/:id" element={<ProtectedRoute allowedRoles={['hr', 'employee', 'pmo', 'admin']}><HREmployeeDetails /></ProtectedRoute>} />
       <Route path="/hr/interns"    element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Interns', action: 'read' }}><HRInterns /></ProtectedRoute>} />
       <Route path="/hr/interns/:id" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Interns', action: 'read' }}><HRInternDetails /></ProtectedRoute>} />
       <Route path="/hr/recruitment"    element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Recruitment', action: 'read' }}><HRRecruitment /></ProtectedRoute>} />

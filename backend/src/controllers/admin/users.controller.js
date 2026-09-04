@@ -21,7 +21,7 @@ import { generateEmployeeId } from '../../utils/generateEmployeeId.js';
 export const getUsers = async (req, res, next) => {
   try {
     const { page, limit, skip } = getPagination(req.query);
-    const { search, department, role, status, employmentType, sortBy, sortOrder } = req.query;
+    const { search, department, role, status, employmentType, sortBy, sortOrder, isManager, managersOnly, isHR, hrOnly } = req.query;
 
     // Build filter — always exclude soft-deleted users
     const filter = { deletedAt: { $exists: false } };
@@ -55,6 +55,79 @@ export const getUsers = async (req, res, next) => {
     }
     if (status) filter.status = status;
     if (employmentType) filter.employmentType = employmentType;
+
+    // Filter only eligible managers when requested
+    if (isManager === 'true' || isManager === true || managersOnly === 'true' || managersOnly === true) {
+      filter.employmentType = { $ne: 'Intern' };
+
+      const [internRole, managerRoles] = await Promise.all([
+        Role.findOne({ slug: 'intern' }),
+        Role.find({
+          $or: [
+            { slug: { $in: ['super-admin', 'admin', 'pmo-lead', 'hr-manager', 'manager', 'project-manager', 'team-lead'] } },
+            { slug: { $regex: /manager|lead|head|director|admin/i } },
+            { name: { $regex: /manager|lead|head|director|admin/i } }
+          ],
+          slug: { $nin: ['intern', 'employee', 'hr', 'hr-executive', 'hr-personnel', 'hr-assistant', 'user'] }
+        }).select('_id')
+      ]);
+
+      const managerRoleIds = managerRoles.map(r => r._id);
+      const managerConditions = [
+        { role: { $in: managerRoleIds } },
+        { designation: { $regex: /manager|lead|director|head|vp|chief|supervisor/i } }
+      ];
+
+      if (filter.$or) {
+        filter.$and = [
+          { $or: filter.$or },
+          { $or: managerConditions }
+        ];
+        delete filter.$or;
+      } else {
+        filter.$or = managerConditions;
+      }
+
+      if (internRole) {
+        filter['role'] = filter['role'] ? { ...filter['role'], $ne: internRole._id } : { $ne: internRole._id };
+      }
+    }
+
+    // Filter only eligible HR personnel when requested
+    if (isHR === 'true' || isHR === true || hrOnly === 'true' || hrOnly === true) {
+      filter.employmentType = { $ne: 'Intern' };
+
+      const [internRole, hrRoles] = await Promise.all([
+        Role.findOne({ slug: 'intern' }),
+        Role.find({
+          $or: [
+            { slug: { $in: ['hr-manager', 'hr', 'hr-executive', 'hr-personnel', 'hr-assistant', 'hr-partner'] } },
+            { slug: { $regex: /hr|human-resource/i } },
+            { name: { $regex: /hr|human resource/i } }
+          ]
+        }).select('_id')
+      ]);
+
+      const hrRoleIds = hrRoles.map(r => r._id);
+      const hrConditions = [
+        { role: { $in: hrRoleIds } },
+        { designation: { $regex: /\bhr\b|human resource/i } }
+      ];
+
+      if (filter.$or) {
+        filter.$and = [
+          { $or: filter.$or },
+          { $or: hrConditions }
+        ];
+        delete filter.$or;
+      } else {
+        filter.$or = hrConditions;
+      }
+
+      if (internRole) {
+        filter['role'] = filter['role'] ? { ...filter['role'], $ne: internRole._id } : { $ne: internRole._id };
+      }
+    }
 
     // Sorting
     const sort = {};
@@ -134,15 +207,20 @@ export const createUser = async (req, res, next) => {
     // Always generate a system temp password — admin never sees it, user must change on first login
     const tempPassword = `OWMS@${Math.floor(100000 + Math.random() * 900000)}`;
 
-    // Auto-assign HR if not provided (run before User creation to avoid duplicate DB save and bcrypt hashing)
-    // Bypassed for interns so they remain in the unassigned pool visible to all HRs
+    // Auto-assign HR if not provided
     let hrManagerId = hrManagerInput;
     let assignedHR       = null;
     let hrCapExceeded    = false;
     let autoAssigned     = false;
 
+    const reqUserSlug = req.user?.role?.slug || req.user?.role?.name || '';
+    const isHRUser = reqUserSlug === 'hr-manager' || reqUserSlug === 'hr';
+
     if (!hrManagerId) {
-      if (empType !== 'Intern') {
+      if (isHRUser) {
+        hrManagerId = req.user._id;
+        assignedHR  = req.user;
+      } else if (empType !== 'Intern') {
         const result = await autoAssignHR({ department });
         if (result.hrUser) {
           hrManagerId = result.hrUser._id;
@@ -170,6 +248,7 @@ export const createUser = async (req, res, next) => {
       manager: manager || undefined,
       joinDate: empType === 'Intern' ? undefined : (joinDate || new Date()),
       hrManager: hrManagerId || undefined,
+      createdBy: req.user?._id || undefined,
       college: empType === 'Intern' ? (college || undefined) : undefined,
       domain: empType === 'Intern' ? (domain || undefined) : undefined,
       batch: empType === 'Intern' ? (batch || undefined) : undefined,

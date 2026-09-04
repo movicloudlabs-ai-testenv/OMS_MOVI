@@ -100,14 +100,14 @@ export const DOMAIN_ROUTES = {
 
 // 3. Allowed Path Prefixes per Role (for direct link authorization check)
 export const ROLE_PREFIXES = {
-  'super-admin': ['/admin', '/pmo', '/hr', '/employee', '/intern', '/profile'],
-  'admin':       ['/admin', '/pmo', '/hr', '/employee', '/intern', '/profile'],
-  'hr-manager':  ['/hr', '/profile'],
-  'hr':          ['/hr', '/profile'],
-  'pmo-lead':    ['/pmo', '/profile'],
-  'pmo':         ['/pmo', '/profile'],
-  'employee':    ['/employee', '/profile'],
-  'intern':      ['/intern', '/profile'],
+  'super-admin': ['/admin', '/pmo', '/hr', '/employee', '/intern', '/profile', '/support'],
+  'admin':       ['/admin', '/pmo', '/hr', '/employee', '/intern', '/profile', '/support'],
+  'hr-manager':  ['/hr', '/profile', '/support'],
+  'hr':          ['/hr', '/profile', '/support'],
+  'pmo-lead':    ['/pmo', '/profile', '/support'],
+  'pmo':         ['/pmo', '/profile', '/support'],
+  'employee':    ['/employee', '/profile', '/support'],
+  'intern':      ['/intern', '/profile', '/support'],
 };
 
 /**
@@ -193,6 +193,20 @@ export function getNotificationTarget(notif, roleSlug) {
     if (matchLeave) leaveId = matchLeave[1];
   }
 
+  let issueId = metadata.issueId || metadata.ticketId || null;
+  if (!issueId && link) {
+    const matchIssue = link.match(/[?&](?:issueId|ticketId)=([^&]+)/);
+    if (matchIssue) issueId = matchIssue[1];
+    else {
+      const matchTicket = link.match(/\b(ISS-\d+)\b/i);
+      if (matchTicket) issueId = matchTicket[0].toUpperCase();
+    }
+  }
+  if (!issueId && notifTitle) {
+    const matchTitleTicket = notifTitle.match(/\b(ISS-\d+)\b/i);
+    if (matchTitleTicket) issueId = matchTitleTicket[0].toUpperCase();
+  }
+
   // ─── 0. Announcements (Viewed in-place via modal) ───────────────────────
   if (
     notifType === 'announcement' ||
@@ -241,6 +255,19 @@ export function getNotificationTarget(notif, roleSlug) {
     return leaveId ? `${base}?leaveId=${leaveId}` : base;
   }
 
+  // ─── 3.5 Support Issue Notifications (issue_reported, issue_status_updated) ───
+  if (
+    notifType === 'issue_reported' ||
+    notifType === 'issue_status_updated' ||
+    link.includes('/support/issues') ||
+    notifTitle.includes('issue') ||
+    notifTitle.includes('support') ||
+    notifMsg.includes('issue')
+  ) {
+    const base = '/support/issues';
+    return issueId ? `${base}?issueId=${issueId}` : base;
+  }
+
   // ─── 4. Project Notifications (project_assigned, project_updated, milestone_reached) ───
   if (
     notifType === 'project_assigned' ||
@@ -272,7 +299,9 @@ export function getNotificationTarget(notif, roleSlug) {
     notifType === 'user_created' ||
     link.includes('/onboarding') ||
     link.includes('/interns') ||
-    /\binterns?\b/i.test(notifTitle)
+    /\binterns?\b/i.test(notifTitle) ||
+    notifTitle.includes('onboarding') ||
+    notifMsg.includes('onboarding')
   ) {
     const base = link.includes('/onboarding')
       ? (DOMAIN_ROUTES.onboarding[normRole] || ROLE_HOME[normRole] || '/')

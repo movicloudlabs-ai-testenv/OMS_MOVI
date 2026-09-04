@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import DynamicLayout from '../../components/shared/DynamicLayout';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { isEligibleReportingManager, isEligibleHRManager } from '../../utils/managerFilter';
 
 export default function AdminEditUser() {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export default function AdminEditUser() {
   const [roles, setRoles]             = useState([]);
   const [departments, setDepartments] = useState([]);
   const [managers, setManagers]       = useState([]);
+  const [hrUsers, setHrUsers]         = useState([]);
   const [fetching, setFetching]       = useState(true);
   const [submitting, setSubmitting]   = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -40,7 +42,8 @@ export default function AdminEditUser() {
 
         const promises = [
           adminAPI.getUser(id),
-          adminAPI.getUsers({ status: 'Active', limit: 100 }).catch(() => ({ data: { data: [] } }))
+          adminAPI.getUsers({ status: 'Active', isManager: true, limit: 100 }).catch(() => ({ data: { data: [] } })),
+          adminAPI.getUsers({ status: 'Active', isHR: true, limit: 100 }).catch(() => ({ data: { data: [] } }))
         ];
         if (canReadRoles) promises.push(adminAPI.getRoles());
         if (canReadDepts) promises.push(adminAPI.getDepartments());
@@ -48,12 +51,14 @@ export default function AdminEditUser() {
         const results = await Promise.all(promises);
         const userRes = results[0];
         const managersRes = results[1];
+        const hrRes = results[2];
         const u = userRes.data.data;
         const managersList = managersRes.data?.data || [];
+        const hrList = hrRes.data?.data || [];
 
         let rolesData = [];
         let deptsData = [];
-        let resIdx = 2;
+        let resIdx = 3;
 
         if (canReadRoles) {
           rolesData = results[resIdx++].data.data || [];
@@ -87,6 +92,7 @@ export default function AdminEditUser() {
         setRoles(rolesData);
         setDepartments(deptsData);
         setManagers(managersList);
+        setHrUsers(hrList);
       } catch (err) {
         toast.error('Failed to load user data');
       } finally {
@@ -294,8 +300,8 @@ export default function AdminEditUser() {
                     <div className="relative">
                       <select className={selectCls} value={formData.hrManager} onChange={handleChange('hrManager')}>
                         <option value="">Select HR Manager (optional)</option>
-                        {managers.map(m => (
-                          <option key={m._id} value={m._id}>{m.name} — {m.role?.name || ''}</option>
+                        {(hrUsers.length > 0 ? hrUsers : managers).filter(isEligibleHRManager).map(m => (
+                          <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || m.designation || 'HR'}</option>
                         ))}
                       </select>
                       <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
@@ -309,8 +315,8 @@ export default function AdminEditUser() {
                     <div className="relative">
                       <select className={selectCls} value={formData.manager} onChange={handleChange('manager')}>
                         <option value="">Select Manager (optional)</option>
-                        {managers.filter(m => m._id !== id).map(m => (
-                          <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || ''}</option>
+                        {managers.filter(m => isEligibleReportingManager(m, id)).map(m => (
+                          <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || m.designation || ''}</option>
                         ))}
                       </select>
                       <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
@@ -321,8 +327,8 @@ export default function AdminEditUser() {
                     <div className="relative">
                       <select className={selectCls} value={formData.hrManager} onChange={handleChange('hrManager')}>
                         <option value="">Select HR Manager (optional)</option>
-                        {managers.map(m => (
-                          <option key={m._id} value={m._id}>{m.name} — {m.role?.name || ''}</option>
+                        {(hrUsers.length > 0 ? hrUsers : managers).filter(isEligibleHRManager).map(m => (
+                          <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || m.designation || 'HR'}</option>
                         ))}
                       </select>
                       <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>

@@ -92,15 +92,133 @@ const AssignMaterialModal = ({ isOpen, onClose, internName, onAssign, saving }) 
   );
 };
 
+const SendMessageModal = ({ isOpen, onClose, recipientName, recipientEmail, onSendMessage }) => {
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (recipientName && isOpen) {
+      setSubject(`New Message from PMO`);
+      setMessage('');
+    }
+  }, [recipientName, isOpen]);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!message.trim()) {
+      toast.error('Please enter a message before sending.');
+      return;
+    }
+    try {
+      setSending(true);
+      await onSendMessage({ subject: subject.trim(), message: message.trim() });
+      setMessage('');
+      onClose();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Unable to send the message. Please try again.');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm font-sans">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-[550px] overflow-hidden flex flex-col text-left"
+        >
+          <div className="flex justify-between items-center px-6 py-4 border-b border-[#E2E8F0] shrink-0 bg-[#F8FAFC]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-full bg-[#F5F3FF] text-[#7C3AED] flex items-center justify-center font-bold">
+                <span className="material-symbols-outlined text-[20px]">notifications_active</span>
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-[#0F172A]">Send Message to Intern</h2>
+                <p className="text-xs text-[#64748B]">In-app notification for <span className="font-semibold text-[#0F172A]">{recipientName}</span></p>
+              </div>
+            </div>
+            <button onClick={onClose} className="text-[#64748B] hover:bg-[#E2E8F0] p-1.5 rounded-full transition-colors">
+              <X size={20} />
+            </button>
+          </div>
+
+          <form id="send-message-form-pmo" onSubmit={handleSubmit} className="p-6 space-y-4">
+            <div>
+              <label className="block text-xs uppercase tracking-wider font-bold text-[#64748B] mb-1.5">Subject</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Subject line..."
+                className="w-full p-2.5 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#7C3AED]"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs uppercase tracking-wider font-bold text-[#64748B] mb-1.5">Message Content *</label>
+              <textarea
+                required
+                rows={5}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder={`Write your message for ${recipientName}...`}
+                className="w-full p-3 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#7C3AED] resize-none"
+              />
+            </div>
+          </form>
+
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#E2E8F0] shrink-0 bg-[#F8FAFC]">
+            <button type="button" onClick={onClose} className="px-4 py-2 text-xs font-bold text-[#64748B] hover:bg-[#E2E8F0] rounded-lg transition-colors">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              form="send-message-form-pmo"
+              disabled={sending}
+              className="px-5 py-2 text-xs font-bold bg-[#7C3AED] text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
+            >
+              {sending ? (
+                <>
+                  <span className="material-symbols-outlined text-[16px] animate-spin">sync</span> Sending...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[16px]">send</span> Send Message
+                </>
+              )}
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    </AnimatePresence>
+  );
+};
+
 export default function PMOInternDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
 
   const [activeTab, setActiveTab] = useState('overview');
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [intern, setIntern] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const handleSendMessage = async ({ subject, message }) => {
+    try {
+      await pmoAPI.sendMessageToIntern?.(id, { subject, message }) || hrAPI.sendMessageToIntern(id, { subject, message });
+      toast.success(`Message sent to ${emp.name}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send message');
+    }
+  };
 
   useEffect(() => {
     const fetchIntern = async () => {
@@ -279,6 +397,14 @@ export default function PMOInternDetails() {
                 </div>
               </div>
             </div>
+          </div>
+          <div className="flex gap-3 shrink-0">
+            <button
+              onClick={() => setIsMessageModalOpen(true)}
+              className="border border-[#E2E8F0] bg-white text-[#7C3AED] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-purple-50 transition-colors flex items-center gap-2 shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[18px]">chat</span> Message
+            </button>
           </div>
         </div>
 
@@ -507,6 +633,13 @@ export default function PMOInternDetails() {
         internName={emp.name}
         onAssign={handleAssignMaterial}
         saving={assignSaving}
+      />
+      <SendMessageModal
+        isOpen={isMessageModalOpen}
+        onClose={() => setIsMessageModalOpen(false)}
+        recipientName={emp.name}
+        recipientEmail={emp.email}
+        onSendMessage={handleSendMessage}
       />
     </PageWrapper>
   );

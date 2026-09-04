@@ -3,6 +3,7 @@ import Task from '../../models/Task.js';
 import Attendance from '../../models/Attendance.js';
 import LeaveBalance from '../../models/LeaveBalance.js';
 import LearningResource from '../../models/LearningResource.js';
+import Message from '../../models/Message.js';
 import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.js';
 import { getPagination } from '../../utils/paginate.js';
 import { sendNotification } from '../../utils/sendNotification.js';
@@ -326,4 +327,75 @@ export const exportInterns = async (req, res, next) => {
     next(error);
   }
 };
+
+import mongoose from 'mongoose';
+
+export const sendMessageToIntern = async (req, res, next) => {
+  try {
+    const { subject, message } = req.body;
+    const targetId = req.params.internId || req.params.id;
+
+    let intern = null;
+    if (mongoose.Types.ObjectId.isValid(targetId)) {
+      intern = await User.findById(targetId);
+    }
+    if (!intern) {
+      intern = await User.findOne({ employeeId: targetId });
+    }
+
+    if (!intern) return sendError(res, 'Intern profile not found', 404);
+
+    let newMessageDoc = null;
+    if (message && message.trim()) {
+      newMessageDoc = await Message.create({
+        sender: req.user._id,
+        receiver: intern._id,
+        content: message.trim(),
+      });
+
+      const msgSubject = subject?.trim() || `Message from HR (${req.user.name})`;
+
+      await sendNotification({
+        recipient: intern._id,
+        type: 'system_alert',
+        title: msgSubject,
+        message: message.trim(),
+        link: '/intern/profile',
+        sender: req.user._id,
+      });
+    }
+
+    // Retrieve conversation history
+    const conversationHistory = await Message.find({
+      $or: [
+        { sender: req.user._id, receiver: intern._id },
+        { sender: intern._id, receiver: req.user._id },
+      ],
+    })
+      .populate('sender', 'name email avatar employeeId designation')
+      .populate('receiver', 'name email avatar employeeId designation')
+      .sort({ createdAt: 1 });
+
+    sendSuccess(
+      res,
+      {
+        conversationId: `conv-${req.user._id}-${intern._id}`,
+        intern: {
+          _id: intern._id,
+          name: intern.name,
+          email: intern.email,
+          employeeId: intern.employeeId,
+          designation: intern.designation,
+          avatar: intern.avatar,
+        },
+        messages: conversationHistory,
+        newMessage: newMessageDoc,
+      },
+      `Conversation retrieved successfully for ${intern.name}`
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 

@@ -5,6 +5,7 @@ import DynamicLayout from '../../components/shared/DynamicLayout';
 import AccessDenied from '../../components/shared/AccessDenied';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../contexts/AuthContext';
+import { isEligibleReportingManager, isEligibleHRManager } from '../../utils/managerFilter';
 
 const Field = ({ label, required, hint, children }) => (
   <div>
@@ -74,6 +75,7 @@ export default function AdminCreateUser() {
   const [roles, setRoles]             = useState([]);
   const [departments, setDepartments] = useState([]);
   const [managers, setManagers]       = useState([]);
+  const [hrUsers, setHrUsers]         = useState([]);
   const [rolesLoading, setRolesLoading] = useState(true);
   const [deptLoading, setDeptLoading]   = useState(true);
   const [submitting, setSubmitting]   = useState(false);
@@ -84,9 +86,11 @@ export default function AdminCreateUser() {
       .then(r => {
         const fetchedRoles = r.data.data || [];
         setRoles(fetchedRoles);
-        // Set default role to the first role if not already selected
+        // Set default role to matching preset type or employee role if not already selected
         if (fetchedRoles.length > 0 && !formData.role) {
-          setFormData(prev => ({ ...prev, role: fetchedRoles[0]._id }));
+          const targetSlug = presetType === 'intern' ? 'intern' : 'employee';
+          const defaultRole = fetchedRoles.find(r => r.slug === targetSlug) || fetchedRoles[0];
+          setFormData(prev => ({ ...prev, role: defaultRole._id }));
         }
       })
       .catch(() => setRoles([]))
@@ -97,9 +101,13 @@ export default function AdminCreateUser() {
       .catch(() => setDepartments([]))
       .finally(() => setDeptLoading(false));
 
-    adminAPI.getUsers({ status: 'Active', limit: 100 })
+    adminAPI.getUsers({ status: 'Active', isManager: true, limit: 100 })
       .then(r => setManagers(r.data.data || []))
       .catch(() => setManagers([]));
+
+    adminAPI.getUsers({ status: 'Active', isHR: true, limit: 100 })
+      .then(r => setHrUsers(r.data.data || []))
+      .catch(() => setHrUsers([]));
   }, []);
 
   const set = (field) => (e) => {
@@ -325,8 +333,8 @@ export default function AdminCreateUser() {
                   <SelectWrapper>
                     <select className={selectCls} value={formData.manager} onChange={set('manager')}>
                       <option value="">Select Manager (optional)</option>
-                      {managers.filter(m => m._id !== formData.email).map(m => (
-                        <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || ''}</option>
+                      {managers.filter(m => isEligibleReportingManager(m, formData.email)).map(m => (
+                        <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || m.designation || ''}</option>
                       ))}
                     </select>
                   </SelectWrapper>
@@ -335,8 +343,8 @@ export default function AdminCreateUser() {
                   <SelectWrapper>
                     <select className={selectCls} value={formData.hrManager} onChange={set('hrManager')}>
                       <option value="">Select HR Manager (optional)</option>
-                      {managers.map(m => (
-                        <option key={m._id} value={m._id}>{m.name} — {m.role?.name || ''}</option>
+                      {(hrUsers.length > 0 ? hrUsers : managers).filter(isEligibleHRManager).map(m => (
+                        <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || m.designation || 'HR'}</option>
                       ))}
                     </select>
                   </SelectWrapper>

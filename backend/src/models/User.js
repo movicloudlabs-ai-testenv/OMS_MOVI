@@ -54,6 +54,7 @@ const UserSchema = new Schema({
   },
   manager: { type: Schema.Types.ObjectId, ref: 'User' },
   hrManager: { type: Schema.Types.ObjectId, ref: 'User' },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
 
   // Intern-specific fields
   college: String,

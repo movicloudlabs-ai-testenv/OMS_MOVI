@@ -1,8 +1,25 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HRLayout from '../../components/hr/HRLayout';
+import { adminAPI } from '../../utils/api';
+import { isEligibleReportingManager } from '../../utils/managerFilter';
 
 export default function HRAddEmployee() {
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [manager, setManager] = useState('');
+  const [managers, setManagers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+
+  useEffect(() => {
+    adminAPI.getUsers({ status: 'Active', isManager: true, limit: 100 })
+      .then(r => setManagers(r.data?.data || []))
+      .catch(() => setManagers([]));
+
+    adminAPI.getDepartments()
+      .then(r => setDepartments(r.data?.data || []))
+      .catch(() => setDepartments([]));
+  }, []);
 
   return (
     <HRLayout bare>
@@ -44,7 +61,7 @@ export default function HRAddEmployee() {
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Email Address <span className="text-[#DC2626]">*</span></label>
-                <input type="email" className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors" placeholder="jane.doe@movicloud.com" />
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors" placeholder="jane.doe@movicloud.com" />
               </div>
               <div>
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Proposed Employee ID <span className="text-[#DC2626]">*</span></label>
@@ -74,9 +91,15 @@ export default function HRAddEmployee() {
                 <div className="relative">
                   <select className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors appearance-none cursor-pointer">
                     <option value="">Select Department</option>
-                    <option value="engineering">Engineering</option>
-                    <option value="hr">Human Resources</option>
-                    <option value="finance">Finance</option>
+                    {departments.length > 0 ? (
+                      departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)
+                    ) : (
+                      <>
+                        <option value="engineering">Engineering</option>
+                        <option value="hr">Human Resources</option>
+                        <option value="finance">Finance</option>
+                      </>
+                    )}
                   </select>
                   <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
                 </div>
@@ -88,10 +111,11 @@ export default function HRAddEmployee() {
               <div>
                 <label className="block text-[13px] font-medium text-[#0F172A] mb-1.5">Reporting Manager</label>
                 <div className="relative">
-                  <select className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors appearance-none cursor-pointer">
+                  <select value={manager} onChange={e => setManager(e.target.value)} className="w-full border border-[#E2E8F0] rounded-lg px-3.5 py-2.5 text-[14px] bg-white focus:outline-none focus:border-[#2563EB] focus:ring-1 focus:ring-[#2563EB] transition-colors appearance-none cursor-pointer">
                     <option value="">Select Manager</option>
-                    <option value="1">Sarah Johnson (Engineering)</option>
-                    <option value="2">Michael Chen (Product)</option>
+                    {managers.filter(m => isEligibleReportingManager(m, email)).map(m => (
+                      <option key={m._id} value={m._id}>{m.name} — {m.department?.name || m.role?.name || m.designation || ''}</option>
+                    ))}
                   </select>
                   <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] pointer-events-none text-[18px]">expand_more</span>
                 </div>

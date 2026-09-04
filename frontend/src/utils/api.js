@@ -175,6 +175,7 @@ export const hrAPI = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   deleteInternDocument: (id, docType) => api.delete(`/hr/interns/${id}/documents/${docType}`),
+  sendMessageToIntern: (id, data) => api.post(`/hr/interns/${id}/message`, data),
 
   // Recruitment / Candidate pipeline
   getCandidates: (params) => api.get('/hr/recruitment', { params }),

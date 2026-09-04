@@ -6,35 +6,61 @@ import { sendNotification } from '../../utils/sendNotification.js';
 
 export const getInterns = async (req, res, next) => {
   try {
-    // BUG-016 FIX: Query all projects for interns, not just the logged-in PMO's projects.
-    // The pmoScope middleware already ensures only pmo-lead / super-admin can reach here,
-    // and requirePermission('Interns','read') enforces RBAC. Scoping by manager caused
-    // PMO accounts that don't manage specific projects to see zero interns.
-    const projects = await Project.find({})
-      .populate({
-        path: 'interns.user',
-        select: 'name college avatar department email internshipStart internshipEnd performanceRatings domain employmentType',
-        match: { deletedAt: { $exists: false } },
-      });
-      
-    const internsSet = new Map();
-    
+    // 1. Fetch all active interns from User collection
+    const interns = await User.find({
+      employmentType: 'Intern',
+      deletedAt: { $exists: false },
+    })
+      .populate('department', 'name code')
+      .populate('project', 'name status')
+      .populate('pmoLead', 'name employeeId email')
+      .populate('manager', 'name')
+      .select('name email college avatar department domain employmentType status internshipStart internshipEnd performanceRatings pmoLead project manager createdAt');
+
+    // 2. Fetch all projects to map intern project assignments
+    const projects = await Project.find({}).populate('manager', 'name');
+    const projectMap = new Map();
     projects.forEach(project => {
-      project.interns.forEach(intern => {
-        if (intern.user && intern.user.name) {
-          const userId = intern.user._id.toString();
-          if (!internsSet.has(userId)) {
-            internsSet.set(userId, {
-              user: intern.user,
-              project: { _id: project._id, name: project.name },
-              joinedAt: intern.joinedAt,
-            });
-          }
+      project.interns?.forEach(item => {
+        if (item.user) {
+          projectMap.set(item.user.toString(), {
+            _id: project._id,
+            name: project.name,
+            manager: project.manager,
+            joinedAt: item.joinedAt,
+          });
         }
       });
     });
 
-    sendSuccess(res, Array.from(internsSet.values()));
+    const isSuperOrAdmin = req.user.role?.slug === 'super-admin' || req.user.role?.slug === 'admin';
+    const pmoUserId = req.user._id ? req.user._id.toString() : '';
+
+    // 3. Construct intern list
+    const result = [];
+    interns.forEach(userObj => {
+      const uId = userObj._id.toString();
+      const projectItem = projectMap.get(uId);
+      const proj = projectItem
+        ? { _id: projectItem._id, name: projectItem.name }
+        : (userObj.project ? { _id: userObj.project._id, name: userObj.project.name } : null);
+
+      const assignedPmoId = userObj.pmoLead?._id ? userObj.pmoLead._id.toString() : (userObj.pmoLead ? userObj.pmoLead.toString() : '');
+      const projManagerId = projectItem?.manager?._id ? projectItem.manager._id.toString() : (projectItem?.manager ? projectItem.manager.toString() : '');
+
+      const isAssignedToThisPmo = assignedPmoId === pmoUserId || projManagerId === pmoUserId;
+
+      // Include intern if super-admin/admin, OR assigned to this PMO, OR if PMO leads view all active interns
+      if (isSuperOrAdmin || isAssignedToThisPmo || userObj.pmoLead || proj || req.user.role?.slug === 'pmo-lead' || req.user.role?.slug === 'pmo') {
+        result.push({
+          user: userObj,
+          project: proj,
+          joinedAt: projectItem?.joinedAt || userObj.internshipStart || userObj.createdAt,
+        });
+      }
+    });
+
+    sendSuccess(res, result);
   } catch (error) {
     next(error);
   }

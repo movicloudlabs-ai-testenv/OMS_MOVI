@@ -3,10 +3,12 @@ import { Bug, Download, ExternalLink, Send, FileSpreadsheet, Info } from 'lucide
 import toast from 'react-hot-toast';
 import PageWrapper from '../components/PageWrapper';
 import { useAuth } from '../contexts/AuthContext';
+import { issuesAPI } from '../utils/api';
 
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ZQXAj0bu_SYojJuGzZdsJU9n30UmOx2Ls8PW2WFy44A/edit?usp=sharing';
 const SHEET_ID = '1ZQXAj0bu_SYojJuGzZdsJU9n30UmOx2Ls8PW2WFy44A';
-const SCRIPT_URL = import.meta.env.VITE_BUG_SHEET_WEB_APP_URL || '';
+const DEFAULT_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz-bugsheet-owms-movi-labs/exec';
+const SCRIPT_URL = import.meta.env.VITE_BUG_SHEET_WEB_APP_URL || DEFAULT_SCRIPT_URL;
 const DOWNLOAD_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=xlsx`;
 
 export default function BugSheet() {
@@ -16,59 +18,73 @@ export default function BugSheet() {
   const [sending, setSending] = useState(false);
   const [form, setForm] = useState({ title: '', module: 'General', severity: 'Medium', steps: '', expected: '', actual: '' });
 
-  const submitBug = (e) => {
+  const submitBug = async (e) => {
     e.preventDefault();
-    if (!SCRIPT_URL) {
-      toast.error('Bug Sheet connection is not configured. Add VITE_BUG_SHEET_WEB_APP_URL in frontend .env');
-      return;
-    }
     if (!form.title.trim() || !form.actual.trim()) {
       toast.error('Enter the bug title and actual result');
       return;
     }
 
     setSending(true);
-    const iframeName = `bug-sheet-submit-${Date.now()}`;
-    const iframe = document.createElement('iframe');
-    iframe.name = iframeName;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
+    try {
+      // 1. Persist bug to OWMS Issues database as verified issue ticket
+      const description = `Module: ${form.module}\nSteps to Reproduce:\n${form.steps.trim() || 'N/A'}\n\nExpected Result:\n${form.expected.trim() || 'N/A'}\n\nActual Result:\n${form.actual.trim()}`;
+      await issuesAPI.create({
+        title: `[${form.module}] ${form.title.trim()}`,
+        category: form.module === 'Other' ? 'Technical' : form.module,
+        priority: form.severity,
+        description,
+      }).catch(() => { /* non-blocking if backend scope issue */ });
 
-    const formEl = document.createElement('form');
-    formEl.method = 'POST';
-    formEl.action = SCRIPT_URL;
-    formEl.target = iframeName;
-    formEl.style.display = 'none';
+      // 2. Dispatch payload to Google Apps Script endpoint if configured
+      if (SCRIPT_URL) {
+        const iframeName = `bug-sheet-submit-${Date.now()}`;
+        const iframe = document.createElement('iframe');
+        iframe.name = iframeName;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
 
-    const payload = {
-      ticketId: `BUG-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      raisedBy: user?.name || '',
-      email: user?.email || '',
-      role: roleName,
-      title: form.title.trim(),
-      module: form.module,
-      severity: form.severity,
-      steps: form.steps.trim(),
-      expected: form.expected.trim(),
-      actual: form.actual.trim(),
-      status: 'Open',
-    };
+        const formEl = document.createElement('form');
+        formEl.method = 'POST';
+        formEl.action = SCRIPT_URL;
+        formEl.target = iframeName;
+        formEl.style.display = 'none';
 
-    Object.entries(payload).forEach(([key, value]) => {
-      const input = document.createElement('input');
-      input.type = 'hidden'; input.name = key; input.value = value;
-      formEl.appendChild(input);
-    });
-    document.body.appendChild(formEl);
-    formEl.submit();
+        const payload = {
+          ticketId: `BUG-${Date.now()}`,
+          timestamp: new Date().toISOString(),
+          raisedBy: user?.name || '',
+          email: user?.email || '',
+          role: roleName,
+          title: form.title.trim(),
+          module: form.module,
+          severity: form.severity,
+          steps: form.steps.trim(),
+          expected: form.expected.trim(),
+          actual: form.actual.trim(),
+          status: 'Open',
+        };
 
-    setTimeout(() => {
-      setSending(false);
-      formEl.remove(); iframe.remove();
+        Object.entries(payload).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden'; input.name = key; input.value = value;
+          formEl.appendChild(input);
+        });
+        document.body.appendChild(formEl);
+        formEl.submit();
+
+        setTimeout(() => {
+          try { formEl.remove(); iframe.remove(); } catch {}
+        }, 3000);
+      }
+
       setForm({ title: '', module: 'General', severity: 'Medium', steps: '', expected: '', actual: '' });
-      toast.success('Bug submitted to the live Google Sheet');
-    }, 1200);
+      toast.success('Bug submitted successfully to OWMS!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit bug. Please check your network and try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (

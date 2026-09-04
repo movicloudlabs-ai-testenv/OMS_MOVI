@@ -21,9 +21,21 @@ export const hrScope = async (req, res, next) => {
       return next();
     }
 
+    // Allow self-access if user is requesting their own profile/employee details
+    if (req.params.id && (req.params.id === req.user._id.toString() || req.params.id === req.user.employeeId)) {
+      req.scopeFilter = { _id: req.user._id };
+      req.hrUserIds   = null;
+      return next();
+    }
+
     if (req.user.role.slug === 'hr-manager') {
-      // Explicit assignments
-      const explicitUsers = await User.find({ hrManager: req.user._id }).select('_id');
+      // Explicit assignments & created users
+      const explicitUsers = await User.find({
+        $or: [
+          { hrManager: req.user._id },
+          { createdBy: req.user._id }
+        ]
+      }).select('_id');
       const ids = new Set(explicitUsers.map(u => u._id.toString()));
 
       // Implicit: all team members & interns in projects this HR is part of

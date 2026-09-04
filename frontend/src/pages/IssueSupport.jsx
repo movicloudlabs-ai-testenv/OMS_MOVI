@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, Clock3, LifeBuoy, RefreshCw, Send, ShieldAlert } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PageWrapper from '../components/PageWrapper';
@@ -42,6 +43,9 @@ export default function IssueSupport() {
   const [statusSaving, setStatusSaving] = useState('');
   const [form, setForm] = useState({ title: '', category: 'Technical', priority: 'Medium', description: '' });
 
+  const [searchParams] = useSearchParams();
+  const targetIssueParam = searchParams.get('issueId') || searchParams.get('ticketId') || '';
+
   const load = async () => {
     setLoading(true);
     try {
@@ -55,6 +59,19 @@ export default function IssueSupport() {
   };
 
   useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    if (targetIssueParam && issues.length > 0) {
+      const timer = setTimeout(() => {
+        const targetId = `issue-${targetIssueParam.toLowerCase()}`;
+        const el = document.getElementById(targetId) || document.getElementById(`issue-${targetIssueParam}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [targetIssueParam, issues]);
 
   const pageCopy = useMemo(() => {
     if (isAdmin) return { title: 'Issue Support', subtitle: 'Review and manage issues raised by HR and PMO.' };
@@ -169,8 +186,16 @@ export default function IssueSupport() {
                 const Icon = meta.icon;
                 const creator = issue.createdBy;
                 const creatorRole = ROLE_SLUGS[issue.creatorRole] || issue.creatorRole;
+                const isTarget = targetIssueParam && (
+                  issue._id === targetIssueParam ||
+                  (issue.ticketId || '').toLowerCase() === targetIssueParam.toLowerCase()
+                );
                 return (
-                  <div key={issue._id} className="p-5 md:p-6 hover:bg-slate-50/50 transition-colors">
+                  <div
+                    key={issue._id}
+                    id={`issue-${(issue.ticketId || issue._id).toLowerCase()}`}
+                    className={`p-5 md:p-6 transition-all ${isTarget ? 'bg-orange-50/50 ring-2 ring-orange-500 rounded-xl my-1 shadow-md' : 'hover:bg-slate-50/50'}`}
+                  >
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-2">

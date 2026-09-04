@@ -102,7 +102,7 @@ export default function Profile() {
           </div>
           <div className="hidden sm:block">
             <span className={`px-4 py-1.5 rounded-full bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10`}>
-              {user?.role} Access
+              {(typeof user?.role === 'object' ? (user?.role?.name || user?.role?.slug) : user?.role) || 'User'} Access
             </span>
           </div>
         </div>

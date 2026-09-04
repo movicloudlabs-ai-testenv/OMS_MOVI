@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import HRSidebar from './HRSidebar';
 import AnnouncementModal from '../shared/AnnouncementModal';
+import WelcomeMessageModal from '../shared/WelcomeMessageModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { getNotificationTarget } from '../../utils/notificationRouter';
@@ -31,6 +32,7 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [selectedWelcomeNotif, setSelectedWelcomeNotif] = useState(null);
   const notifRef = useRef();
 
   useEffect(() => {
@@ -68,6 +70,16 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
 
     if (isAnnouncement) {
       setSelectedAnnouncement(notif);
+      return;
+    }
+
+    const isWelcomeNotif =
+      (notif.title || '').toLowerCase().includes('onboarding') ||
+      (notif.title || '').toLowerCase().includes('welcome') ||
+      (notif.message || '').toLowerCase().includes('welcome to movi');
+
+    if (isWelcomeNotif) {
+      setSelectedWelcomeNotif(notif);
       return;
     }
 
@@ -203,6 +215,14 @@ export default function HRLayout({ title, subtitle, actions, children, bare = fa
         <AnnouncementModal
           announcement={selectedAnnouncement}
           onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
+
+      {/* Welcome Message Modal Popup */}
+      {selectedWelcomeNotif && (
+        <WelcomeMessageModal
+          notification={selectedWelcomeNotif}
+          onClose={() => setSelectedWelcomeNotif(null)}
         />
       )}
     </div>

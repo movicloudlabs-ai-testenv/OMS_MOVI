@@ -14,7 +14,12 @@ router.use(protect);
 router.use(hrScope);
 
 router.get('/', requirePermission('Users', 'read'), getEmployees);
-router.get('/:id', requirePermission('Users', 'read'), getEmployeeById);
+router.get('/:id', (req, res, next) => {
+  if (req.params.id === req.user._id.toString() || req.params.id === req.user.employeeId) {
+    return getEmployeeById(req, res, next);
+  }
+  return requirePermission('Users', 'read')(req, res, next);
+}, getEmployeeById);
 router.get('/:id/attendance', requirePermission('Attendance', 'read'), getEmployeeAttendance);
 router.get('/:id/leaves', requirePermission('Leave', 'read'), getEmployeeLeaves);
 router.post('/:id/notes', requirePermission('Users', 'update'), auditLog('Update', 'Users'), addEmployeeNote);

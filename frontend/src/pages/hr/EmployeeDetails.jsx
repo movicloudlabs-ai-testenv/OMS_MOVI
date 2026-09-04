@@ -1,14 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import HRLayout from '../../components/hr/HRLayout';
+import PageWrapper from '../../components/PageWrapper';
+import { useAuth } from '../../contexts/AuthContext';
 import { hrAPI } from '../../utils/api';
 
 export default function HREmployeeDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user: currentUser } = useAuth();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const isEmployeeRole = currentUser?.role?.slug === 'employee' || currentUser?.role === 'employee';
+  const LayoutComponent = isEmployeeRole ? PageWrapper : HRLayout;
 
   useEffect(() => {
     const loadEmployee = async () => {
@@ -98,28 +104,28 @@ export default function HREmployeeDetails() {
 
   if (error || !emp) {
     return (
-      <HRLayout bare>
-        <div className="font-sans text-[#0F172A] max-w-6xl mx-auto py-10">
+      <LayoutComponent bare>
+        <div className="font-sans text-[#0F172A] max-w-6xl mx-auto py-10 px-4">
           <p className="text-[14px] font-medium text-[#DC2626]">{error || 'Employee not found'}</p>
           <button
-            onClick={() => navigate('/hr/employees')}
+            onClick={() => navigate(isEmployeeRole ? '/employee/dashboard' : '/hr/employees')}
             className="mt-4 border border-[#E2E8F0] bg-white text-[#0F172A] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors"
           >
-            Back to Employees
+            {isEmployeeRole ? 'Back to Dashboard' : 'Back to Employees'}
           </button>
         </div>
-      </HRLayout>
+      </LayoutComponent>
     );
   }
 
   return (
-    <HRLayout bare>
-      <div className="font-sans text-[#0F172A] max-w-6xl mx-auto space-y-6 pb-20">
+    <LayoutComponent bare>
+      <div className="font-sans text-[#0F172A] max-w-6xl mx-auto space-y-6 pb-20 px-4">
         
         {/* Breadcrumb Navigation */}
         <div className="flex items-center gap-2 text-[13px] text-[#64748B] font-medium pt-2">
-          <button onClick={() => navigate('/hr/employees')} className="hover:text-[#2563EB] transition-colors flex items-center gap-1">
-            <span className="material-symbols-outlined text-[16px]">badge</span> Employees
+          <button onClick={() => navigate(isEmployeeRole ? '/employee/dashboard' : '/hr/employees')} className="hover:text-[#2563EB] transition-colors flex items-center gap-1">
+            <span className="material-symbols-outlined text-[16px]">{isEmployeeRole ? 'dashboard' : 'badge'}</span> {isEmployeeRole ? 'Dashboard' : 'Employees'}
           </button>
           <span className="material-symbols-outlined text-[16px]">chevron_right</span>
           <span className="text-[#0F172A]">{emp.name}</span>
@@ -170,7 +176,14 @@ export default function HREmployeeDetails() {
               <button onClick={() => navigate(`/admin/users/${id}/edit`)} className="border border-[#E2E8F0] bg-white text-[#0F172A] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-[#F8FAFC] transition-colors flex items-center gap-2 shadow-sm">
                 <span className="material-symbols-outlined text-[18px]">edit</span> Edit Profile
               </button>
-              <button className="border border-[#E2E8F0] bg-white text-[#2563EB] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-sm">
+              <button 
+                onClick={() => {
+                  if (emp.email) {
+                    window.location.href = `mailto:${emp.email}?subject=HR%20Communication`;
+                  }
+                }} 
+                className="border border-[#E2E8F0] bg-white text-[#2563EB] px-4 py-2 rounded-lg text-[13px] font-medium hover:bg-blue-50 transition-colors flex items-center gap-2 shadow-sm"
+              >
                 <span className="material-symbols-outlined text-[18px]">chat</span> Message
               </button>
             </div>
@@ -328,6 +341,6 @@ export default function HREmployeeDetails() {
         </div>
 
       </div>
-    </HRLayout>
+    </LayoutComponent>
   );
 }

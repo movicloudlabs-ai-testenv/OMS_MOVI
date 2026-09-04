@@ -26,6 +26,7 @@ import announcementsRoutes from './routes/announcements.routes.js';
 import logsRoutes from './routes/logs.routes.js';
 import documentRoutes from './routes/documents.routes.js';
 import issuesRoutes from './routes/issues.routes.js';
+import messagesRoutes from './routes/messages.routes.js';
 
 // Part 2 Route Imports
 import hrEmployeesRoutes from './routes/hr/employees.routes.js';
@@ -220,6 +221,7 @@ app.use('/api/announcements', announcementsRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/issues', issuesRoutes);
+app.use('/api/messages', messagesRoutes);
 
 // HR Module
 app.use('/api/hr/employees', hrEmployeesRoutes);

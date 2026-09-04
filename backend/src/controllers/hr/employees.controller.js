@@ -67,7 +67,9 @@ export const getEmployees = async (req, res, next) => {
 
 export const getEmployeeById = async (req, res, next) => {
   try {
-    const employee = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] })
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(req.params.id);
+    const idFilter = isObjectId ? { _id: req.params.id } : { employeeId: req.params.id };
+    const employee = await User.findOne({ $and: [idFilter, req.scopeFilter || {}] })
       .populate({
         path: 'role',
         select: 'name slug permissions color',

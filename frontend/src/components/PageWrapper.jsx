@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import AnnouncementModal from './shared/AnnouncementModal';
+import WelcomeMessageModal from './shared/WelcomeMessageModal';
 import { useNotifications } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getNotificationTarget } from '../utils/notificationRouter';
@@ -29,6 +30,7 @@ export default function PageWrapper({ children }) {
   const { enabled: notifEnabled, unreadCount, notifications, refresh, markRead, markAllRead } = useNotifications();
   const [notifOpen, setNotifOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [selectedWelcomeNotif, setSelectedWelcomeNotif] = useState(null);
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem('owms_sidebar_collapsed') === 'true'; } catch { return false; }
   });
@@ -74,6 +76,16 @@ export default function PageWrapper({ children }) {
 
     if (isAnnouncement) {
       setSelectedAnnouncement(notif);
+      return;
+    }
+
+    const isWelcomeNotif =
+      (notif.title || '').toLowerCase().includes('onboarding') ||
+      (notif.title || '').toLowerCase().includes('welcome') ||
+      (notif.message || '').toLowerCase().includes('welcome to movi');
+
+    if (isWelcomeNotif) {
+      setSelectedWelcomeNotif(notif);
       return;
     }
 
@@ -183,6 +195,14 @@ export default function PageWrapper({ children }) {
         <AnnouncementModal
           announcement={selectedAnnouncement}
           onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
+
+      {/* Welcome Message Modal Popup */}
+      {selectedWelcomeNotif && (
+        <WelcomeMessageModal
+          notification={selectedWelcomeNotif}
+          onClose={() => setSelectedWelcomeNotif(null)}
         />
       )}
     </div>

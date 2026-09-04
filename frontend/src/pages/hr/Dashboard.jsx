@@ -15,7 +15,9 @@ import {
 } from 'recharts';
 import HRSidebar from '../../components/hr/HRSidebar';
 import AnnouncementModal from '../../components/shared/AnnouncementModal';
+import WelcomeMessageModal from '../../components/shared/WelcomeMessageModal';
 import { hrAPI, notificationAPI } from '../../utils/api';
+import { getNotificationTarget } from '../../utils/notificationRouter';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -268,6 +270,7 @@ export default function HRDashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [profileOpen, setProfileOpen] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [selectedWelcomeNotif, setSelectedWelcomeNotif] = useState(null);
 
   const notifRef = useRef();
   const datePickerRef = useRef();
@@ -331,9 +334,18 @@ export default function HRDashboard() {
       return;
     }
 
-    const link = notif.link || '';
-    const target = (link === '/hr' || link.startsWith('/hr/') || link === '/profile') ? link : '/hr/dashboard';
-    navigate(target);
+    const isWelcomeNotif =
+      (notif.title || '').toLowerCase().includes('onboarding') ||
+      (notif.title || '').toLowerCase().includes('welcome') ||
+      (notif.message || '').toLowerCase().includes('welcome to movi');
+
+    if (isWelcomeNotif) {
+      setSelectedWelcomeNotif(notif);
+      return;
+    }
+
+    const target = getNotificationTarget(notif, user?.role || user?.employmentType || 'hr-manager');
+    if (target) navigate(target);
   };
 
   function notifMeta(type) {
@@ -896,6 +908,14 @@ export default function HRDashboard() {
         <AnnouncementModal
           announcement={selectedAnnouncement}
           onClose={() => setSelectedAnnouncement(null)}
+        />
+      )}
+
+      {/* Welcome Message Modal Popup */}
+      {selectedWelcomeNotif && (
+        <WelcomeMessageModal
+          notification={selectedWelcomeNotif}
+          onClose={() => setSelectedWelcomeNotif(null)}
         />
       )}
     </div>
