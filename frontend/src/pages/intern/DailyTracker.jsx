@@ -20,6 +20,7 @@ const emptyForm = {
   productivityMetrics: '',
   aiCredits: '',
   projectAssignment: '',
+  project: '',
 };
 
 const MAX_BACKDATE_DAYS = 14;
@@ -38,6 +39,16 @@ export default function InternDailyTracker() {
   const [saving, setSaving] = useState(false);
   const [submittedForDate, setSubmittedForDate] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [projects, setProjects] = useState([]);
+
+  const loadProjects = async () => {
+    try {
+      const res = await internAPI.getAllProjects();
+      setProjects(res.data?.data || []);
+    } catch {
+      setProjects([]);
+    }
+  };
 
   const loadForDate = async (dateStr) => {
     try {
@@ -60,6 +71,7 @@ export default function InternDailyTracker() {
           productivityMetrics: entry.productivityMetrics ?? '',
           aiCredits: entry.aiCredits ?? '',
           projectAssignment: entry.projectAssignment || '',
+          project: entry.project?._id || entry.project || '',
         });
       } else {
         setSubmittedForDate(false);
@@ -83,6 +95,7 @@ export default function InternDailyTracker() {
 
   useEffect(() => { loadForDate(selectedDate); }, [selectedDate]);
   useEffect(() => { loadHistory(); }, []);
+  useEffect(() => { loadProjects(); }, []);
 
   const set = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.value }));
 
@@ -211,16 +224,24 @@ export default function InternDailyTracker() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">KT Completion (%)</label>
-              <input type="number" min="0" max="100" value={form.ktCompletion} onChange={set('ktCompletion')} placeholder="0-100" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input type="text" value={form.ktCompletion} onChange={set('ktCompletion')} placeholder="0-100" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Self Productivity (0-10)</label>
-              <input type="number" min="0" max="10" value={form.productivityMetrics} onChange={set('productivityMetrics')} placeholder="0-10" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input type="text" value={form.productivityMetrics} onChange={set('productivityMetrics')} placeholder="0-10" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">AI Credits Used</label>
-              <input type="number" value={form.aiCredits} onChange={set('aiCredits')} placeholder="0" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input type="text" value={form.aiCredits} onChange={set('aiCredits')} placeholder="0" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Project</label>
+            <select value={form.project} onChange={set('project')} className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB] bg-white">
+              <option value="">Select project</option>
+              {projects.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
+            </select>
           </div>
 
           <div>

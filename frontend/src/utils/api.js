@@ -231,6 +231,7 @@ export const hrAPI = {
 // ─── PMO API ──────────────────────────────────────────────────────────────
 export const pmoAPI = {
   getProjects: (params) => api.get('/pmo/projects', { params }),
+  getAllProjects: () => api.get('/pmo/projects/all'),
   getProject: (id) => api.get(`/pmo/projects/${id}`),
   createProject: (data) => api.post('/pmo/projects', data),
   updateProject: (id, data) => api.put(`/pmo/projects/${id}`, data),
@@ -298,7 +299,7 @@ export const pmoAPI = {
   // EOD Report — PMO submitting their OWN update
   getMyEODToday: (date) => api.get('/pmo/eod/my/today', { params: date ? { date } : {} }),
   getMyEODHistory: () => api.get('/pmo/eod/my'),
-  submitEOD: (message, date) => api.post('/pmo/eod/my', { message, date }),
+  submitEOD: (fields, date) => api.post('/pmo/eod/my', { ...fields, date }),
 };
 
 // ─── EMPLOYEE API ─────────────────────────────────────────────────────────
@@ -322,6 +323,7 @@ export const employeeAPI = {
 
   // Projects
   getProjects: () => api.get('/employee/projects'),
+  getAllProjects: () => api.get('/employee/projects/all'),
   getProject: (id) => api.get(`/employee/projects/${id}`),
 
   // Team
@@ -342,7 +344,7 @@ export const employeeAPI = {
   // EOD Report (simple daily message)
   getMyEODToday: (date) => api.get('/employee/eod/today', { params: date ? { date } : {} }),
   getMyEODHistory: () => api.get('/employee/eod'),
-  submitEOD: (message, date) => api.post('/employee/eod', { message, date }),
+  submitEOD: (fields, date) => api.post('/employee/eod', { ...fields, date }),
 
   // Leave
   getLeaveBalance: () => api.get('/employee/leave/balance'),
@@ -380,7 +382,7 @@ export const internAPI = {
   // EOD Report (simple daily message)
   getMyEODToday: (date) => api.get('/intern/eod/today', { params: date ? { date } : {} }),
   getMyEODHistory: () => api.get('/intern/eod'),
-  submitEOD: (message, date) => api.post('/intern/eod', { message, date }),
+  submitEOD: (fields, date) => api.post('/intern/eod', { ...fields, date }),
   
   getLeaves: () => api.get('/intern/leave'),
   getLeaveBalance: () => api.get('/intern/leave/balance'),
@@ -391,6 +393,7 @@ export const internAPI = {
 
   cancelLeave: (id) => api.delete(`/intern/leave/${id}`),
   getProjects: () => api.get('/intern/projects'),
+  getAllProjects: () => api.get('/intern/projects/all'),
   getProject: (id) => api.get(`/intern/projects/${id}`),
   getTask: (id) => api.get(`/intern/tasks/${id}`),
   toggleSubtask: (taskId, subtaskId) => api.patch(`/intern/tasks/${taskId}/subtasks/${subtaskId}`),

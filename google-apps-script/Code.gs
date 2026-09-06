@@ -27,7 +27,8 @@ const HEADERS = [
   'Test Case ID', 'Module/Feature Name', 'Test Scenario', 'Test Case Description',
   'Precondition', 'Test Steps', 'Test Data', 'Expected Result', 'Actual Result',
   'Status', 'Priority', 'Severity', 'Environment/Browser/OS', 'Executed By',
-  'Execution Date', 'Bug ID / Defect ID', 'Remarks/Comments', 'BUGS RESOLVED',
+  'Execution Date', 'Bug ID / Defect ID', 'Remarks/Comments',
+  'starting time', 'end time', 'solved by', 'date',
 ];
 
 const TEST_CASE_ID_COL = 1;  // column A
@@ -120,7 +121,10 @@ function doPost(e) {
       'Execution Date': p.executionDate || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd-MM-yyyy'),
       'Bug ID / Defect ID': bugId,
       'Remarks/Comments': p.remarks || '',
-      'BUGS RESOLVED': p.bugsResolved || 'NOT RESOLVED',
+      'starting time': p.startingTime || '',
+      'end time': p.endTime || '',
+      'solved by': p.solvedBy || '',
+      'date': p.solvedDate || '',
     };
 
     sheet.appendRow(HEADERS.map((h) => rowData[h] ?? ''));

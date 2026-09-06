@@ -9,6 +9,16 @@ const SHEET_ID = '1ZQXAj0bu_SYojJuGzZdsJU9n30UmOx2Ls8PW2WFy44A';
 const SCRIPT_URL = import.meta.env.VITE_BUG_SHEET_WEB_APP_URL || '';
 const DOWNLOAD_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=xlsx`;
 
+// A correctly-deployed Apps Script Web App URL always looks like this. If the
+// configured URL doesn't match, every request will fail before it ever reaches
+// Apps Script — so we catch that up front instead of showing a vague network error.
+const SCRIPT_URL_LOOKS_VALID = /^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(SCRIPT_URL);
+function urlConfigError() {
+  if (!SCRIPT_URL) return 'VITE_BUG_SHEET_WEB_APP_URL is not set in frontend/.env — the app has no script URL to call at all.';
+  if (!SCRIPT_URL_LOOKS_VALID) return `Configured URL doesn't look like an Apps Script Web App URL (should look like https://script.google.com/macros/s/AKfycb.../exec). Currently set to: ${SCRIPT_URL}`;
+  return '';
+}
+
 // Bug Sheet is visible to Intern, HR and PMO only (see App.jsx route guard).
 // Of those, only Intern and PMO are allowed to add bugs — HR is view-only.
 const CAN_ADD_ROLES = new Set(['intern', 'pmo', 'pmo-lead']);
@@ -33,7 +43,8 @@ const SEVERITIES = ['Low', 'Medium', 'High', 'Critical'];
 const emptyForm = {
   module: '', scenario: '', description: '', precondition: '', steps: '', testData: '',
   expected: '', actual: '', status: 'Open', priority: 'Medium', severity: 'Medium',
-  environment: '', remarks: '', bugsResolved: 'NOT RESOLVED',
+  environment: '', remarks: '', startingTime: '', endTime: '', solvedBy: '', solvedDate: '',
+  executedBy: '',
 };
 
 // dd-MM-yyyy, matching the format already used across the live sheet's rows.
@@ -54,30 +65,48 @@ export default function BugSheet() {
   const [preview, setPreview] = useState({ loading: false, testCaseId: '', bugId: '', error: '' });
   const [sending, setSending] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  // Executed By used to be locked to the logged-in user's name — now it's a free-text
+  // field (so anyone can type whoever actually executed the test), just pre-filled
+  // with the logged-in user's name as a starting point.
+  useEffect(() => { setForm((f) => (f.executedBy ? f : { ...f, executedBy: user?.name || roleName })); }, [user, roleName]);
   const [executionDate, setExecutionDate] = useState(() => formatDate(new Date()));
 
   // Pulls the next free Test Case ID / Bug ID for the selected project's tab so
   // whoever is filling the form can see up front that it won't collide with an
   // existing row. The actual write re-checks this server-side at submit time.
   const loadPreview = useCallback(async (proj) => {
-    if (!SCRIPT_URL) return;
+    const configError = urlConfigError();
+    if (configError) {
+      setPreview({ loading: false, testCaseId: '', bugId: '', error: configError });
+      return;
+    }
     setPreview((p) => ({ ...p, loading: true, error: '' }));
     try {
       const res = await fetch(`${SCRIPT_URL}?project=${encodeURIComponent(proj)}`);
-      const data = await res.json();
+      if (!res.ok) {
+        setPreview({ loading: false, testCaseId: '', bugId: '', error: `Script responded with HTTP ${res.status} ${res.statusText} — check the deployment's "Who has access" setting.` });
+        return;
+      }
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        setPreview({ loading: false, testCaseId: '', bugId: '', error: 'Script returned a non-JSON response (likely a Google login/permission page, not the deployed script) — check "Who has access" is set to Anyone.' });
+        return;
+      }
       if (data.ok) {
         setPreview({ loading: false, testCaseId: data.nextTestCaseId, bugId: data.nextBugId, error: '' });
       } else {
         setPreview({ loading: false, testCaseId: '', bugId: '', error: data.error || 'Could not load sheet numbers' });
       }
     } catch (err) {
-      setPreview({ loading: false, testCaseId: '', bugId: '', error: 'Could not reach the Bug Sheet script' });
+      setPreview({ loading: false, testCaseId: '', bugId: '', error: `Network error reaching the script: ${err?.message || err}` });
     }
   }, []);
 
   useEffect(() => { if (canAdd) loadPreview(project); }, [project, canAdd, loadPreview]);
 
-  const submitBug = (e) => {
+  const submitBug = async (e) => {
     e.preventDefault();
     if (!canAdd) {
       toast.error('HR has view-only access to the Bug Sheet.');
@@ -87,23 +116,16 @@ export default function BugSheet() {
       toast.error('Bug Sheet connection is not configured. Add VITE_BUG_SHEET_WEB_APP_URL in frontend .env');
       return;
     }
+    if (!SCRIPT_URL_LOOKS_VALID) {
+      toast.error(urlConfigError());
+      return;
+    }
     if (!form.scenario.trim() || !form.actual.trim()) {
       toast.error('Enter at least the Test Scenario and Actual Result');
       return;
     }
 
     setSending(true);
-    const iframeName = `bug-sheet-submit-${Date.now()}`;
-    const iframe = document.createElement('iframe');
-    iframe.name = iframeName;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    const formEl = document.createElement('form');
-    formEl.method = 'POST';
-    formEl.action = SCRIPT_URL;
-    formEl.target = iframeName;
-    formEl.style.display = 'none';
 
     const payload = {
       project,
@@ -120,11 +142,39 @@ export default function BugSheet() {
       severity: form.severity,
       environment: form.environment.trim(),
       remarks: form.remarks.trim(),
-      bugsResolved: form.bugsResolved,
-      executedBy: user?.name || roleName,
+      startingTime: form.startingTime.trim(),
+      endTime: form.endTime.trim(),
+      solvedBy: form.solvedBy.trim(),
+      solvedDate: form.solvedDate.trim(),
+      executedBy: form.executedBy.trim() || user?.name || roleName,
       executionDate,
     };
 
+    // Delivery: a hidden iframe form-POST. This is the transport that reliably reaches
+    // Apps Script — a plain fetch() POST does NOT, because Apps Script Web Apps respond
+    // to POST with a redirect, and per the fetch spec the browser drops the POST body
+    // when following that redirect (turns it into a bodyless GET), so doPost never runs.
+    // The iframe form-post avoids this because full-page form submissions follow
+    // redirects at the browser/network layer without that body-dropping behaviour.
+    //
+    // Verification: since the iframe's response is unreadable (cross-origin), we instead
+    // record the "next Test Case ID" for this project BEFORE submitting, wait for the
+    // write to land, then re-fetch it via the GET endpoint (which we know works reliably
+    // for reads). If the number moved forward, a row was genuinely appended — that's real
+    // confirmation, not a blind assumption.
+    const idBefore = preview.testCaseId;
+
+    const iframeName = `bug-sheet-submit-${Date.now()}`;
+    const iframe = document.createElement('iframe');
+    iframe.name = iframeName;
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+
+    const formEl = document.createElement('form');
+    formEl.method = 'POST';
+    formEl.action = SCRIPT_URL;
+    formEl.target = iframeName;
+    formEl.style.display = 'none';
     Object.entries(payload).forEach(([key, value]) => {
       const input = document.createElement('input');
       input.type = 'hidden'; input.name = key; input.value = value;
@@ -133,15 +183,37 @@ export default function BugSheet() {
     document.body.appendChild(formEl);
     formEl.submit();
 
-    setTimeout(() => {
-      setSending(false);
+    setTimeout(async () => {
       formEl.remove(); iframe.remove();
-      setForm(emptyForm);
-      setExecutionDate(formatDate(new Date()));
-      toast.success(`Added to the ${PROJECTS.find((p) => p.value === project)?.label || project} sheet`);
-      // Refresh the preview so the next entry shows the correct next number.
-      loadPreview(project);
-    }, 1200);
+      try {
+        const res = await fetch(`${SCRIPT_URL}?project=${encodeURIComponent(project)}`);
+        if (!res.ok) {
+          toast.error(`Verification failed: script responded with HTTP ${res.status} ${res.statusText}.`);
+          return;
+        }
+        let data;
+        try {
+          data = await res.json();
+        } catch (parseErr) {
+          toast.error('Verification failed: script returned a non-JSON response (likely a Google login/permission page) — check the deployment is set to "Anyone" access.');
+          return;
+        }
+        if (data.ok && data.nextTestCaseId !== idBefore) {
+          setForm((f) => ({ ...emptyForm, executedBy: f.executedBy }));
+          setExecutionDate(formatDate(new Date()));
+          toast.success(`Added to the ${PROJECTS.find((p) => p.value === project)?.label || project} sheet (was ${idBefore || '—'}, now ${data.nextTestCaseId})`);
+          setPreview({ loading: false, testCaseId: data.nextTestCaseId, bugId: data.nextBugId, error: '' });
+        } else if (data.ok) {
+          toast.error(`Not confirmed — the ${PROJECTS.find((p) => p.value === project)?.label || project} sheet still shows ${idBefore || 'the same'} as next. The bug may NOT have been added. Please check the sheet.`);
+        } else {
+          toast.error(data.error || 'Could not confirm the submission — please check the sheet manually.');
+        }
+      } catch (err) {
+        toast.error(`Bug was sent, but verification failed: ${err?.message || err}. Please check the sheet manually.`);
+      } finally {
+        setSending(false);
+      }
+    }, 1800);
   };
 
   return (
@@ -217,7 +289,7 @@ export default function BugSheet() {
 
               <div className="md:col-span-2"><label className="label">Remarks / Comments</label><textarea rows="2" value={form.remarks} onChange={e=>setForm({...form,remarks:e.target.value})} className="input resize-none" /></div>
 
-              <div><label className="label">Executed By</label><input value={user?.name || roleName} disabled className="input opacity-70" /></div>
+              <div><label className="label">Executed By</label><input value={form.executedBy} onChange={e=>setForm({...form,executedBy:e.target.value})} className="input" placeholder="Enter your name" /></div>
               <div><label className="label">Execution Date</label><input value={executionDate} onChange={e=>setExecutionDate(e.target.value)} className="input" placeholder="DD-MM-YYYY" /></div>
 
               <div>
@@ -229,13 +301,10 @@ export default function BugSheet() {
                 <input value={preview.loading ? 'Loading…' : (preview.bugId || '—')} disabled className="input opacity-70 font-semibold" />
               </div>
 
-              <div className="md:col-span-2">
-                <label className="label">Bugs Resolved</label>
-                <select value={form.bugsResolved} onChange={e=>setForm({...form,bugsResolved:e.target.value})} className="input">
-                  <option>NOT RESOLVED</option>
-                  <option>RESOLVED</option>
-                </select>
-              </div>
+              <div><label className="label">Starting Time</label><input value={form.startingTime} onChange={e=>setForm({...form,startingTime:e.target.value})} className="input" placeholder="e.g. 14:00" /></div>
+              <div><label className="label">End Time</label><input value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})} className="input" placeholder="e.g. 14:30" /></div>
+              <div><label className="label">Solved By</label><input value={form.solvedBy} onChange={e=>setForm({...form,solvedBy:e.target.value})} className="input" placeholder="Name of whoever fixed it (leave blank if still open)" /></div>
+              <div><label className="label">Solved Date</label><input value={form.solvedDate} onChange={e=>setForm({...form,solvedDate:e.target.value})} className="input" placeholder="DD-MM-YYYY (leave blank if still open)" /></div>
 
               <div className="md:col-span-2 flex justify-end">
                 <button disabled={sending} className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-bold hover:bg-red-700 disabled:opacity-60">

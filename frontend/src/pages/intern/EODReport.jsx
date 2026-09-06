@@ -31,7 +31,7 @@ export default function InternEODReport() {
 
         <EODQuickShare
           allowBackdate
-          api={{ ...internAPI, submitEOD: async (m, d) => { const r = await internAPI.submitEOD(m, d); load(); return r; } }}
+          api={{ ...internAPI, submitEOD: async (fields, d) => { const r = await internAPI.submitEOD(fields, d); load(); return r; } }}
         />
 
         <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
