@@ -4,6 +4,7 @@ import {
   updateProject, addTeamMembers, removeTeamMember,
   addMilestone, updateMilestone, assignInterns, deleteProject,
 } from '../../controllers/pmo/projects.controller.js';
+import { getAllActiveProjects } from '../../controllers/shared/projectsLite.controller.js';
 import { protect } from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rbac.js';
 import { pmoScope } from '../../middleware/pmoScope.js';
@@ -12,6 +13,11 @@ import { auditLog } from '../../middleware/audit.js';
 const router = Router();
 router.use(protect);
 router.use(pmoScope);
+
+// Unfiltered list (id + name only) for dropdowns like EOD Update / Daily Tracker's
+// "Project" field — deliberately NOT run through requirePermission/pmoScope's project
+// filter, since picking a project for a status update isn't the same as managing it.
+router.get('/all', getAllActiveProjects);
 
 router.get('/', requirePermission('Projects', 'read'), getProjects);
 router.post('/', requirePermission('Projects', 'create'), auditLog('Create', 'Projects'), createProject);

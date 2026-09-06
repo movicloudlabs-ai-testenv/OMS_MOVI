@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import User from '../../models/User.js';
+import Project from '../../models/Project.js';
 import EODReport from '../../models/EODReport.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 
@@ -40,7 +41,7 @@ export const getMyTodayEOD = async (req, res, next) => {
     const { date, error } = resolveEntryDate(dateStr);
     if (error) return sendError(res, error, 400);
 
-    const entry = await EODReport.findOne({ user: req.user._id, date });
+    const entry = await EODReport.findOne({ user: req.user._id, date }).populate('project', 'name');
     sendSuccess(res, entry || null);
   } catch (error) {
     next(error);
@@ -50,30 +51,68 @@ export const getMyTodayEOD = async (req, res, next) => {
 // GET /my — own history
 export const getMyEODs = async (req, res, next) => {
   try {
-    const entries = await EODReport.find({ user: req.user._id }).sort({ date: -1 }).limit(60);
+    const entries = await EODReport.find({ user: req.user._id }).populate('project', 'name').sort({ date: -1 }).limit(60);
     sendSuccess(res, entries);
   } catch (error) {
     next(error);
   }
 };
 
+// Builds the labelled composite text stored in `message`, so every existing view/export
+// that just reads `.message` (HR/PMO list pages, the PDF export) keeps working unchanged
+// even though the data is now entered as separate structured fields.
+const buildComposedMessage = ({ name, projectName, role, module, activities, issues, proposedSolution }) => {
+  const lines = [];
+  if (name) lines.push(`Name: ${name}`);
+  if (projectName) lines.push(`Project: ${projectName}`);
+  if (role) lines.push(`Role: ${role}`);
+  if (module) lines.push(`Module: ${module}`);
+  if (activities) lines.push(`Development & Testing activities performed: ${activities}`);
+  if (issues) lines.push(`Issues identified/Debugging: ${issues}`);
+  if (proposedSolution) lines.push(`Proposed solution: ${proposedSolution}`);
+  return lines.join('\n');
+};
+
 // POST /my — submit/update an EOD for today, or for body.date if given (upsert).
 // Backdating is allowed up to MAX_BACKDATE_DAYS so a missed day can still be filled in.
 export const submitMyEOD = async (req, res, next) => {
   try {
-    const { message, date: dateStr } = req.body;
-    if (!message || !message.trim()) {
-      return sendError(res, 'Please share a short update before submitting', 400);
+    const {
+      name, project, role, module, activities, issues, proposedSolution,
+      date: dateStr,
+    } = req.body;
+
+    if (!activities || !activities.trim()) {
+      return sendError(res, 'Please describe the development & testing activities performed', 400);
     }
 
     const { date, error } = resolveEntryDate(dateStr);
     if (error) return sendError(res, error, 400);
 
+    let projectName = '';
+    if (project) {
+      const proj = await Project.findById(project).select('name');
+      projectName = proj?.name || '';
+    }
+
+    const fields = {
+      name: (name || '').trim(),
+      project: project || undefined,
+      role: (role || '').trim(),
+      module: (module || '').trim(),
+      activities: activities.trim(),
+      issues: (issues || '').trim(),
+      proposedSolution: (proposedSolution || '').trim(),
+    };
+
+    const message = buildComposedMessage({ ...fields, projectName });
+
     const entry = await EODReport.findOneAndUpdate(
       { user: req.user._id, date },
-      { user: req.user._id, date, message: message.trim(), submittedAt: new Date() },
+      { user: req.user._id, date, ...fields, message, submittedAt: new Date() },
       { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
+    await entry.populate('project', 'name');
 
     sendSuccess(res, entry, 'EOD update shared');
   } catch (error) {
@@ -103,6 +142,7 @@ export const getAllEODs = async (req, res, next) => {
 
     let entries = await EODReport.find(filter)
       .populate('user', 'name employeeId employmentType designation college')
+      .populate('project', 'name')
       .sort({ date: -1, createdAt: -1 })
       .limit(2000);
 
@@ -166,7 +206,7 @@ export const getDayStatus = async (req, res, next) => {
 // GET /user/:userId — one person's EOD history
 export const getUserEODs = async (req, res, next) => {
   try {
-    const entries = await EODReport.find({ user: req.params.userId }).sort({ date: -1 }).limit(90);
+    const entries = await EODReport.find({ user: req.params.userId }).populate('project', 'name').sort({ date: -1 }).limit(90);
     sendSuccess(res, entries);
   } catch (error) {
     next(error);
@@ -193,6 +233,7 @@ export const exportEODs = async (req, res, next) => {
 
     let entries = await EODReport.find(filter)
       .populate('user', 'name employeeId employmentType designation college')
+      .populate('project', 'name')
       .sort({ date: 1, 'user.name': 1 });
 
     if (employmentType) entries = entries.filter(e => e.user?.employmentType === employmentType);

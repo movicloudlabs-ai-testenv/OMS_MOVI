@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
 
 const MAX_BACKDATE_DAYS = 14;
 const toDateInput = (d) => d.toISOString().slice(0, 10);
@@ -10,9 +11,17 @@ const minDateStr = () => {
   return toDateInput(d);
 };
 
+const emptyFields = {
+  name: '', project: '', role: '', module: '', activities: '', issues: '', proposedSolution: '',
+};
+
 /**
- * Simple EOD update box — "share what you worked on today" as a short message.
- * `api` must expose: getMyEODToday(date?), submitEOD(message, date?)
+ * Structured EOD update — Name, Project, Role, Module, Development & Testing
+ * activities performed, Issues identified/Debugging, and an optional Proposed
+ * solution — instead of one free-text box.
+ *
+ * `api` must expose: getMyEODToday(date?), submitEOD(fields, date?), and
+ * optionally getProjects() to populate the Project dropdown.
  *
  * Pass `allowBackdate` on the dedicated EOD Report pages so the person can
  * fill in a missed day — left off (default) on compact dashboard widgets
@@ -20,12 +29,22 @@ const minDateStr = () => {
  * "today".
  */
 export default function EODQuickShare({ api, allowBackdate = false }) {
-  const [message, setMessage] = useState('');
+  const { user } = useAuth();
+  const [fields, setFields] = useState(emptyFields);
   const [submittedForDate, setSubmittedForDate] = useState(null); // the saved entry, or null
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayStr());
+  const [projects, setProjects] = useState([]);
+
+  const set = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
+
+  useEffect(() => {
+    const fetcher = api.getAllProjects || api.getProjects;
+    if (!fetcher) return;
+    fetcher().then((res) => setProjects(res.data?.data || [])).catch(() => setProjects([]));
+  }, [api]);
 
   const load = async (dateStr) => {
     try {
@@ -33,7 +52,19 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
       const res = await api.getMyEODToday(dateStr === todayStr() ? undefined : dateStr);
       const entry = res.data?.data || null;
       setSubmittedForDate(entry);
-      setMessage(entry ? entry.message : '');
+      if (entry) {
+        setFields({
+          name: entry.name || user?.name || '',
+          project: entry.project?._id || entry.project || '',
+          role: entry.role || '',
+          module: entry.module || '',
+          activities: entry.activities || '',
+          issues: entry.issues || '',
+          proposedSolution: entry.proposedSolution || '',
+        });
+      } else {
+        setFields({ ...emptyFields, name: user?.name || '' });
+      }
       setEditing(false);
     } catch {
       setSubmittedForDate(null);
@@ -42,19 +73,19 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
     }
   };
 
-  useEffect(() => { load(selectedDate); }, [selectedDate]);
+  useEffect(() => { load(selectedDate); }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async () => {
-    if (!message.trim()) {
-      toast.error('Write a quick update before sharing');
+    if (!fields.activities.trim()) {
+      toast.error('Describe the development & testing activities performed before sharing');
       return;
     }
     setSaving(true);
     try {
-      const res = await api.submitEOD(message.trim(), allowBackdate ? selectedDate : undefined);
+      const res = await api.submitEOD(fields, allowBackdate ? selectedDate : undefined);
       setSubmittedForDate(res.data?.data);
       setEditing(false);
-      toast.success("EOD update shared with your team");
+      toast.success('EOD update shared with your team');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to share update');
     } finally {
@@ -63,6 +94,9 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
   };
 
   if (loading) return null;
+
+  const inputCls = "w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]";
+  const labelCls = "block text-[12px] font-semibold text-[#64748B] mb-1";
 
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-5">
@@ -79,7 +113,7 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
 
       {allowBackdate && (
         <div className="mb-3">
-          <label className="block text-[12px] font-semibold text-[#64748B] mb-1">Date</label>
+          <label className={labelCls}>Date</label>
           <input
             type="date"
             value={selectedDate}
@@ -103,17 +137,48 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
           </button>
         </div>
       ) : (
-        <div>
-          <textarea
-            rows={4}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="What did you work on today? A quick line is enough..."
-            className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB] resize-y"
-          />
-          <div className="flex justify-end gap-2 mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className={labelCls}>Name</label>
+            <input value={fields.name} onChange={set('name')} placeholder="Your name" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Project</label>
+            <select value={fields.project} onChange={set('project')} className={`${inputCls} bg-white`}>
+              <option value="">Select project</option>
+              {projects.map((p) => <option key={p._id} value={p._id}>{p.name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Role</label>
+            <input value={fields.role} onChange={set('role')} placeholder="e.g. QA Intern" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Module</label>
+            <input value={fields.module} onChange={set('module')} placeholder="e.g. Student Management" className={inputCls} />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Development & Testing activities performed</label>
+            <textarea rows={3} value={fields.activities} onChange={set('activities')} placeholder="What did you build/test today?" className={`${inputCls} resize-y`} />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Issues identified / Debugging</label>
+            <textarea rows={3} value={fields.issues} onChange={set('issues')} placeholder="Any bugs or blockers found while working/testing" className={`${inputCls} resize-y`} />
+          </div>
+
+          <div className="sm:col-span-2">
+            <label className={labelCls}>Proposed solution <span className="font-normal text-[#94A3B8] normal-case">(optional — if any bug solved)</span></label>
+            <textarea rows={2} value={fields.proposedSolution} onChange={set('proposedSolution')} placeholder="How was it fixed, or how could it be fixed?" className={`${inputCls} resize-y`} />
+          </div>
+
+          <div className="sm:col-span-2 flex justify-end gap-2 mt-1">
             {editing && (
-              <button onClick={() => { setEditing(false); setMessage(submittedForDate?.message || ''); }} className="px-3 py-1.5 rounded-md text-[12px] font-medium text-[#64748B] hover:bg-[#F1F5F9]">
+              <button
+                onClick={() => { setEditing(false); load(selectedDate); }}
+                className="px-3 py-1.5 rounded-md text-[12px] font-medium text-[#64748B] hover:bg-[#F1F5F9]"
+              >
                 Cancel
               </button>
             )}

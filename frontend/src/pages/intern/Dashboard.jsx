@@ -161,7 +161,7 @@ export default function InternDashboard() {
           </div>
           <button
             onClick={() => navigate('/intern/daily-tracker')}
-            className="bg-[#2563EB] text-white rounded-xl shadow-sm p-5 flex items-center justify-between gap-3 hover:bg-[#1D4ED8] transition-colors text-left"
+            className="self-start bg-[#2563EB] text-white rounded-xl shadow-sm p-5 flex items-center justify-between gap-3 hover:bg-[#1D4ED8] transition-colors text-left"
           >
             <div>
               <p className="text-[14px] font-bold">Daily Tracker</p>

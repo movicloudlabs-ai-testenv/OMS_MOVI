@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { getMyProjects, getProjectById } from '../../controllers/employee/projects.controller.js';
+import { getAllActiveProjects } from '../../controllers/shared/projectsLite.controller.js';
 import { protect } from '../../middleware/auth.js';
 
 const router = Router();
 router.use(protect);
 
+router.get('/all', getAllActiveProjects);
 router.get('/', getMyProjects);
 router.get('/:id', getProjectById);
 

@@ -31,7 +31,7 @@ export default function PMOMyEODReport() {
 
         <EODQuickShare
           allowBackdate
-          api={{ ...pmoAPI, submitEOD: async (m, d) => { const r = await pmoAPI.submitEOD(m, d); load(); return r; } }}
+          api={{ ...pmoAPI, submitEOD: async (fields, d) => { const r = await pmoAPI.submitEOD(fields, d); load(); return r; } }}
         />
 
         <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm overflow-hidden">
