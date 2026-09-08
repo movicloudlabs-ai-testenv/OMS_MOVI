@@ -5,6 +5,7 @@ import {
   Menu, LayoutDashboard, Users, GraduationCap, UserPlus,
   CalendarCheck, CalendarOff, FolderKanban, TrendingUp,
   ClipboardList, User, LogOut, Building2, Shield, BarChart3, ClipboardCheck, MessageSquare, FileText,
+  LifeBuoy, Bug,
 } from 'lucide-react';
 
 // Primary nav links (always visible)
@@ -23,6 +24,8 @@ const NAV_LINKS = [
   { to: '/hr/performance',  icon: TrendingUp,       label: 'Performance' },
   { to: '/hr/tasks',        icon: ClipboardList,    label: 'Task Board',  permission: { resource: 'Tasks', action: 'read' } },
   { to: '/hr/communication', icon: MessageSquare,    label: 'Communication' },
+  { to: '/support/issues',  icon: LifeBuoy,        label: 'Issue Support' },
+  { to: '/support/bugs',    icon: Bug,             label: 'Bug Sheet' },
   { to: '/hr/profile',      icon: User,            label: 'My Profile' },
 ];
 
