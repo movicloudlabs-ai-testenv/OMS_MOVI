@@ -13,14 +13,30 @@ export const pmoScope = async (req, res, next) => {
       });
     }
 
-    if (req.user.role.slug === 'super-admin') {
-      req.projectFilter = {}; // No restriction
+    if (req.user.role.slug === 'super-admin' || req.user.role.slug === 'admin' || req.user.role.slug === 'hr-manager') {
+      req.projectFilter = {}; // Corporate administrators and HR managers have enterprise-wide portfolio visibility
       return next();
     }
 
     if (req.user.role.slug === 'pmo-lead') {
-      // PMO Lead sees only their projects
-      req.projectFilter = { manager: req.user._id };
+      // PMO Lead sees their managed projects or projects they are part of
+      req.projectFilter = {
+        $or: [
+          { manager: req.user._id },
+          { 'team.user': req.user._id },
+        ],
+      };
+      return next();
+    }
+
+    if (req.user.role.slug === 'employee' || req.user.role.slug === 'intern') {
+      req.projectFilter = {
+        $or: [
+          { manager: req.user._id },
+          { 'team.user': req.user._id },
+          { 'interns.user': req.user._id },
+        ],
+      };
       return next();
     }
 

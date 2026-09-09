@@ -100,24 +100,6 @@ export const login = async (req, res, next) => {
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
 
-    // 9.5 Automatically mark attendance for the day if not exists, but ONLY if they don't need to change password
-    if (!user.mustChangePassword) {
-      const today = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()));
-      const existingAttendance = await Attendance.findOne({
-        user: user._id,
-        date: today
-      });
-      if (!existingAttendance) {
-        await Attendance.create({
-          user: user._id,
-          date: today,
-          status: 'Present',
-          checkIn: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-          markedBy: user._id,
-          note: 'Auto-marked on login'
-        });
-      }
-    }
 
     // 10. Audit successful login
     await AuditLog.create({

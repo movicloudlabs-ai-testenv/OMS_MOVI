@@ -89,6 +89,7 @@ const UserSchema = new Schema({
   project: { type: Schema.Types.ObjectId, ref: 'Project' },
   onboardingComplete: { type: Boolean, default: false },
   onboardingChecklist: {
+    offerLetterIssued: { type: Boolean, default: false },
     welcomeEmail: { type: Boolean, default: false },
     idCardIssued: { type: Boolean, default: false },
     systemAccess: { type: Boolean, default: false },
@@ -97,10 +98,34 @@ const UserSchema = new Schema({
     hrDocumentation: { type: Boolean, default: false },
     mentorAssigned: { type: Boolean, default: false },
     firstWeekSchedule: { type: Boolean, default: false },
+    intervalReviewCompleted: { type: Boolean, default: false },
+    completionLetterIssued: { type: Boolean, default: false },
+    fteConversionCompleted: { type: Boolean, default: false },
   },
   notes: [{
     text: String,
     addedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now },
+  }],
+
+  // Career & Promotion Journey Timeline (Darwinbox / Workday Standard)
+  careerHistory: [{
+    changeType: {
+      type: String,
+      enum: ['Promotion', 'Transfer', 'Status Change', 'Initial Appointment', 'Role Reassignment'],
+      default: 'Promotion',
+    },
+    oldDesignation: String,
+    newDesignation: String,
+    oldDepartment: { type: Schema.Types.ObjectId, ref: 'Department' },
+    newDepartment: { type: Schema.Types.ObjectId, ref: 'Department' },
+    oldDepartmentName: String,
+    newDepartmentName: String,
+    oldStatus: String,
+    newStatus: String,
+    effectiveDate: { type: Date, default: Date.now },
+    reason: String,
+    changedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     createdAt: { type: Date, default: Date.now },
   }],
 
@@ -123,6 +148,10 @@ const UserSchema = new Schema({
       uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     },
     educationalCertificate: {
+      fileName: String, filePath: String, uploadedAt: Date,
+      uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    },
+    completionCertificate: {
       fileName: String, filePath: String, uploadedAt: Date,
       uploadedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     },

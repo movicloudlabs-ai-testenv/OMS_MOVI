@@ -3,6 +3,7 @@ import {
   getTasks, getTaskById, createTask,
   updateTask, updateTaskStatus, addTaskComment,
   addTaskAttachment, deleteTask, bulkReassignTasks,
+  sendToTesting, testSubtask,
 } from '../../controllers/pmo/tasks.controller.js';
 import { protect } from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rbac.js';
@@ -23,5 +24,9 @@ router.patch('/:id/status', requirePermission('Tasks', 'update'), auditLog('Upda
 router.post('/:id/comments', requirePermission('Tasks', 'update'), addTaskComment);
 router.post('/:id/attachments', requirePermission('Tasks', 'update'), setUploadType('attachments'), upload.single('file'), auditLog('Update', 'Tasks'), addTaskAttachment);
 router.delete('/:id', requirePermission('Tasks', 'delete'), auditLog('Delete', 'Tasks'), deleteTask);
+
+// ─── Testing Workflow ────────────────────────────────────────────────────────
+router.post('/:id/send-to-testing', requirePermission('Tasks', 'update'), auditLog('Update', 'Tasks'), sendToTesting);
+router.patch('/:id/test-subtask/:subtaskId', requirePermission('Tasks', 'update'), testSubtask);
 
 export default router;

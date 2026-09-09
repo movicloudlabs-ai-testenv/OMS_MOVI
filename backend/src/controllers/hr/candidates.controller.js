@@ -366,3 +366,88 @@ export const convertCandidateToUser = async (req, res, next) => {
     next(error);
   }
 };
+
+// POST /api/hr/recruitment/:id/scorecard — Submit 4-dimension evaluation scorecard
+export const submitCandidateScorecard = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { technical, problemSolving, cultureFit, communication, recommendation, notes } = req.body;
+
+    const candidate = await Candidate.findById(id);
+    if (!candidate) return sendError(res, 'Candidate not found', 404);
+
+    const t = Math.max(1, Math.min(5, Number(technical) || 3));
+    const p = Math.max(1, Math.min(5, Number(problemSolving) || 3));
+    const c = Math.max(1, Math.min(5, Number(cultureFit) || 3));
+    const cm = Math.max(1, Math.min(5, Number(communication) || 3));
+    const avg = Number(((t + p + c + cm) / 4).toFixed(1));
+
+    candidate.interviewScorecard = {
+      technical: t,
+      problemSolving: p,
+      cultureFit: c,
+      communication: cm,
+      overall: avg,
+      recommendation: recommendation || 'Hire',
+      notes: notes || '',
+      evaluatedBy: req.user._id,
+      evaluatedAt: new Date(),
+    };
+
+    // Auto-advance recruitment status based on hiring verdict
+    if (recommendation === 'Strong Hire' || recommendation === 'Hire') {
+      candidate.interviewResult = 'Selected';
+      candidate.recruitmentStatus = 'Selected';
+    } else if (recommendation === 'No Hire') {
+      candidate.interviewResult = 'Rejected';
+      candidate.recruitmentStatus = 'Rejected';
+    } else {
+      candidate.interviewResult = 'On Hold';
+      candidate.recruitmentStatus = 'On Hold';
+    }
+
+    await candidate.save();
+
+    sendSuccess(res, candidate, 'Interviewer evaluation scorecard recorded successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// POST /api/hr/recruitment/:id/generate-offer — Generate official in-app appointment offer
+export const generateCandidateOffer = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { designation, department, joiningDate, probationPeriod, workMode, reportingManager } = req.body;
+
+    if (!designation) return sendError(res, 'Appointment designation is required', 400);
+
+    const candidate = await Candidate.findById(id);
+    if (!candidate) return sendError(res, 'Candidate not found', 404);
+
+    const serial = `OFF-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    candidate.offerDetails = {
+      designation: designation.trim(),
+      department: department ? department.trim() : 'Engineering',
+      joiningDate: joiningDate ? new Date(joiningDate) : new Date(Date.now() + 14 * 86400000),
+      probationPeriod: probationPeriod || '3 Months',
+      workMode: workMode || 'Office',
+      reportingManager: reportingManager || 'Engineering Lead',
+      serialNumber: serial,
+      status: 'Issued',
+      issuedBy: req.user._id,
+      issuedAt: new Date(),
+    };
+
+    candidate.recruitmentStatus = 'Selected';
+    if (!candidate.appliedRole) candidate.appliedRole = designation;
+
+    await candidate.save();
+
+    sendSuccess(res, candidate, 'Official offer letter generated and attached successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+

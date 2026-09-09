@@ -10,6 +10,9 @@
     "setup": "node scripts/setup-all.js",
     "backend:dev": "npm run dev --prefix backend",
     "frontend:dev": "npm run dev --prefix frontend",
+    "mobile:dev": "npm start --prefix mobile",
+    "mobile:android": "npm run android --prefix mobile",
+    "mobile:ios": "npm run ios --prefix mobile",
     "seed": "npm run seed --prefix backend"
   },
   "keywords": [

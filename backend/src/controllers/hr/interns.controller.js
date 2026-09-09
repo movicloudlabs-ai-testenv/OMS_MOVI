@@ -327,3 +327,50 @@ export const exportInterns = async (req, res, next) => {
   }
 };
 
+export const convertInternToFullTime = async (req, res, next) => {
+  try {
+    const { designation, department } = req.body;
+    const intern = await User.findById(req.params.id);
+    if (!intern || intern.employmentType !== 'Intern') {
+      return sendError(res, 'Intern not found or already converted', 404);
+    }
+
+    intern.employmentType = 'Full-time';
+    if (designation) intern.designation = designation;
+    if (department) intern.department = department;
+    intern.joinDate = new Date();
+    await intern.save();
+
+    await sendNotification({
+      recipient: intern._id,
+      type: 'system_alert',
+      title: 'Congratulations on Full-Time Conversion!',
+      message: `You have been officially transitioned to Full-time status as ${intern.designation || 'Software Engineer'}.`,
+      link: '/profile',
+      sender: req.user._id,
+    });
+
+    sendSuccess(res, intern, 'Intern successfully converted to Full-time');
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getEligibleMentors = async (req, res, next) => {
+  try {
+    const mentors = await User.find({
+      employmentType: { $ne: 'Intern' },
+      status: 'Active',
+      deletedAt: { $exists: false },
+    })
+      .select('name email employeeId designation department')
+      .populate('department', 'name')
+      .sort({ name: 1 });
+
+    sendSuccess(res, mentors);
+  } catch (error) {
+    next(error);
+  }
+};
+
+

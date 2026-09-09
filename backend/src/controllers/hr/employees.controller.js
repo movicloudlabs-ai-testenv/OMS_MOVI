@@ -202,3 +202,95 @@ export const addEmployeeNote = async (req, res, next) => {
     next(error);
   }
 };
+
+// PATCH /api/hr/employees/:id/personnel — Promote, transfer, adjust status & record career journey
+export const updateEmployeePersonnel = async (req, res, next) => {
+  try {
+    const {
+      designation,
+      department,
+      departmentName,
+      status,
+      employmentType,
+      manager,
+      reason,
+      effectiveDate,
+    } = req.body;
+
+    const employee = await User.findOne({ $and: [{ _id: req.params.id }, req.scopeFilter || {}] })
+      .populate('department', 'name code');
+
+    if (!employee) return sendError(res, 'Employee not found or not in your scope', 404);
+
+    const oldDesig = employee.designation || '';
+    const oldDeptId = employee.department?._id;
+    const oldDeptName = employee.department?.name || 'General';
+    const oldStatus = employee.status || 'Active';
+
+    const isDesigChanged = designation && designation.trim() !== oldDesig;
+    const isDeptChanged = department && department.toString() !== (oldDeptId ? oldDeptId.toString() : '');
+    const isStatusChanged = status && status !== oldStatus;
+
+    if (isDesigChanged || isDeptChanged || isStatusChanged) {
+      if (!employee.careerHistory) employee.careerHistory = [];
+
+      const changeType = isDesigChanged
+        ? 'Promotion'
+        : isDeptChanged
+            ? 'Transfer'
+            : 'Status Change';
+
+      employee.careerHistory.unshift({
+        changeType,
+        oldDesignation: oldDesig,
+        newDesignation: designation ? designation.trim() : oldDesig,
+        oldDepartment: oldDeptId,
+        newDepartment: department || oldDeptId,
+        oldDepartmentName: oldDeptName,
+        newDepartmentName: departmentName || (isDeptChanged ? 'Transferred Dept' : oldDeptName),
+        oldStatus,
+        newStatus: status || oldStatus,
+        effectiveDate: effectiveDate ? new Date(effectiveDate) : new Date(),
+        reason: reason || (isDesigChanged ? 'Merit promotion and role advancement' : 'Organizational adjustment'),
+        changedBy: req.user._id,
+        createdAt: new Date(),
+      });
+    }
+
+    if (designation) employee.designation = designation.trim();
+    if (department) employee.department = department;
+    if (status) employee.status = status;
+    if (employmentType) employee.employmentType = employmentType;
+    if (manager) employee.manager = manager;
+
+    await employee.save({ validateBeforeSave: false });
+
+    // Send in-app notification to employee
+    try {
+      const { sendNotification } = await import('../../utils/sendNotification.js');
+      await sendNotification({
+        recipient: employee._id,
+        type: 'system_alert',
+        title: isDesigChanged ? 'Congratulations on Your Promotion!' : 'Personnel Profile Updated',
+        message: isDesigChanged
+          ? `You have been officially promoted to ${employee.designation}.`
+          : `Your employment record has been updated (${employee.designation}, ${employee.status}).`,
+        link: '/profile',
+        sender: req.user._id,
+      });
+    } catch (notifErr) {
+      console.warn('Could not dispatch career update notification:', notifErr.message);
+    }
+
+    const updatedEmployee = await User.findById(employee._id)
+      .populate('role', 'name slug permissions color')
+      .populate('department', 'name code')
+      .populate('manager', 'name employeeId designation')
+      .populate('hrManager', 'name employeeId');
+
+    sendSuccess(res, updatedEmployee, 'Personnel record and career journey updated successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+

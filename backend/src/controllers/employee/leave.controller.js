@@ -25,8 +25,8 @@ export const getMyLeaveBalance = async (req, res, next) => {
     if (!balance) {
       balance = await LeaveBalance.create({
         user: req.user._id, year: currentYear,
-        casual: { total: 10, used: 0 }, sick: { total: 7, used: 0 },
-        annual: { total: 15, used: 0 }, emergency: { total: 2, used: 0 },
+        casual: { total: 2, used: 0 }, sick: { total: 2, used: 0 },
+        annual: { total: 0, used: 0 }, emergency: { total: 2, used: 0 },
       });
     }
     sendSuccess(res, balance);
@@ -66,10 +66,14 @@ export const getMyLeaves = async (req, res, next) => {
 
 export const applyForLeave = async (req, res, next) => {
   try {
-    const { type, fromDate, toDate, reason } = req.body;
+    let { type, fromDate, toDate, reason, leaveType, startDate, endDate } = req.body;
+
+    type = type || leaveType;
+    fromDate = fromDate || startDate;
+    toDate = toDate || endDate;
 
     if (!type || !fromDate || !toDate) {
-      return sendError(res, 'type, fromDate, and toDate are required', 400);
+      return sendError(res, 'type (or leaveType), fromDate (or startDate), and toDate (or endDate) are required', 400);
     }
 
     const trimmedReason = typeof reason === 'string' ? reason.trim() : '';
@@ -77,7 +81,21 @@ export const applyForLeave = async (req, res, next) => {
       return sendError(res, 'Leave reason is required.', 400);
     }
 
-    const validTypes = ['Casual', 'Sick', 'Annual', 'Emergency'];
+    // Normalize type string
+    const normalizedLower = type.toString().toLowerCase().trim();
+    if (normalizedLower.includes('casual')) {
+      type = 'Casual';
+    } else if (normalizedLower.includes('sick')) {
+      type = 'Sick';
+    } else if (normalizedLower.includes('earned') || normalizedLower.includes('annual')) {
+      type = 'Annual';
+    } else if (normalizedLower.includes('emergency') || normalizedLower.includes('unpaid') || normalizedLower.includes('loss')) {
+      type = 'Emergency';
+    } else {
+      type = 'Casual';
+    }
+
+    const validTypes = ['Casual', 'Sick', 'Annual', 'Emergency', 'Compensatory'];
     if (!validTypes.includes(type)) {
       return sendError(res, `Leave type must be one of: ${validTypes.join(', ')}`, 400);
     }
@@ -99,19 +117,21 @@ export const applyForLeave = async (req, res, next) => {
     if (!balance) {
       balance = await LeaveBalance.create({
         user: req.user._id, year: currentYear,
-        casual: { total: 10, used: 0 }, sick: { total: 7, used: 0 },
-        annual: { total: 15, used: 0 }, emergency: { total: 2, used: 0 },
+        casual: { total: 2, used: 0 }, sick: { total: 2, used: 0 },
+        annual: { total: 0, used: 0 }, emergency: { total: 2, used: 0 },
       });
     }
 
     const typeKey = type.toLowerCase();
-    const remaining = balance[typeKey].total - balance[typeKey].used;
-    if (days > remaining) {
-      return sendError(
-        res,
-        `Insufficient ${type} leave balance. You have ${remaining} days remaining but requested ${days} days.`,
-        400
-      );
+    if (balance[typeKey]) {
+      const remaining = balance[typeKey].total - balance[typeKey].used;
+      if (days > remaining) {
+        return sendError(
+          res,
+          `Insufficient ${type} leave balance. You have ${remaining} days remaining but requested ${days} days.`,
+          400
+        );
+      }
     }
 
     // Overlap check

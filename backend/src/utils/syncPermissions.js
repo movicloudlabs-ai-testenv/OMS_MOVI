@@ -58,5 +58,7 @@ export const syncPermissions = async () => {
 
   await grantResourceToRole('hr-manager', 'Recruitment');
   await grantResourceToRole('hr-manager', 'Daily Tracker');
+  await grantResourceToRole('hr-manager', 'Projects');
+  await grantResourceToRole('hr-manager', 'Attendance');
   await grantResourceToRole('pmo-lead', 'Daily Tracker');
 };

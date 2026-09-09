@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="movi_owms">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>movi_owms</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <!-- Smart App Opener & Mobile Banner -->
+  <script>
+    (function () {
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isAndroid = /android/i.test(ua);
+      var isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+
+      window.openMobileApp = function () {
+        if (isAndroid) {
+          // Android Intent: Launches installed app or falls back cleanly
+          window.location.href = "intent://mcl-mobile.onrender.com#Intent;scheme=https;package=com.movi.owms.movi_owms;end";
+        } else if (isIOS) {
+          window.location.href = "moviowms://open";
+        }
+      };
+
+      if (isAndroid || isIOS) {
+        window.addEventListener('DOMContentLoaded', function () {
+          var banner = document.createElement('div');
+          banner.id = 'mobile-app-banner';
+          banner.style.cssText =
+            'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999999;' +
+            'background:linear-gradient(135deg, #0f172a, #1e293b);color:#f8fafc;' +
+            'padding:10px 18px;border-radius:9999px;box-shadow:0 12px 32px rgba(0,0,0,0.4);' +
+            'display:flex;align-items:center;gap:12px;font-family:system-ui,-apple-system,sans-serif;' +
+            'font-size:13px;border:1px solid rgba(255,255,255,0.12);backdrop-filter:blur(8px);';
+          banner.innerHTML =
+            '<span style="font-weight:600;">📱 Open in Movi App</span>' +
+            '<button onclick="window.openMobileApp()" style="background:#2563eb;color:#fff;border:none;padding:6px 14px;border-radius:9999px;font-weight:600;cursor:pointer;font-size:12px;transition:background 0.2s;">Open App</button>' +
+            '<button onclick="this.parentElement.remove()" style="background:transparent;color:#94a3b8;border:none;font-size:16px;cursor:pointer;padding:0 4px;line-height:1;">✕</button>';
+          document.body.appendChild(banner);
+        });
+      }
+    })();
+  </script>
+
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

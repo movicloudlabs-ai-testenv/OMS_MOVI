@@ -1,7 +1,12 @@
 import PDFDocument from 'pdfkit';
 import User from '../../models/User.js';
 import EODReport from '../../models/EODReport.js';
+import Task from '../../models/Task.js';
+import Project from '../../models/Project.js';
+import ChatChannel from '../../models/ChatChannel.js';
+import ChatMessage from '../../models/ChatMessage.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
+
 
 const startOfDay = (dateStr) => {
   const d = dateStr ? new Date(dateStr) : new Date();
@@ -58,22 +63,227 @@ export const getMyEODs = async (req, res, next) => {
 };
 
 // POST /my — submit/update an EOD for today, or for body.date if given (upsert).
-// Backdating is allowed up to MAX_BACKDATE_DAYS so a missed day can still be filled in.
+// Accepts both legacy `message` and new structured fields.
 export const submitMyEOD = async (req, res, next) => {
   try {
-    const { message, date: dateStr } = req.body;
-    if (!message || !message.trim()) {
+    const {
+      message,
+      tasksCompleted,
+      blockers,
+      learnings,
+      plansTomorrow,
+      mood,
+      hoursWorked,
+      netHoursWorked,
+      date: dateStr,
+      taskIds,
+    } = req.body;
+
+    // Require at least one meaningful content field
+    const hasContent = (message && message.trim()) ||
+      (tasksCompleted && tasksCompleted.trim()) ||
+      (plansTomorrow && plansTomorrow.trim());
+
+    if (!hasContent) {
       return sendError(res, 'Please share a short update before submitting', 400);
     }
 
     const { date, error } = resolveEntryDate(dateStr);
     if (error) return sendError(res, error, 400);
 
+    const moodEmoji = {
+      exhausted: '😴',
+      low: '😐',
+      neutral: '🙂',
+      good: '😃',
+      energized: '🚀',
+    };
+
+    const validMoods = ['exhausted', 'low', 'neutral', 'good', 'energized'];
+    const normalizedMood = validMoods.includes(mood) ? mood : 'neutral';
+
+    // Build the legacy message string from structured fields for backward compat
+    const structuredMessage = message?.trim() || [
+      tasksCompleted && `✅ Accomplished: ${tasksCompleted}`,
+      blockers && `🔴 Blockers: ${blockers}`,
+      learnings && `💡 Learnings: ${learnings}`,
+      plansTomorrow && `📅 Tomorrow: ${plansTomorrow}`,
+    ].filter(Boolean).join('\n');
+
     const entry = await EODReport.findOneAndUpdate(
       { user: req.user._id, date },
-      { user: req.user._id, date, message: message.trim(), submittedAt: new Date() },
+      {
+        user: req.user._id,
+        date,
+        message: structuredMessage,
+        tasksCompleted: tasksCompleted?.trim(),
+        blockers: blockers?.trim(),
+        learnings: learnings?.trim(),
+        plansTomorrow: plansTomorrow?.trim(),
+        mood: normalizedMood,
+        hoursWorked: hoursWorked ?? 8.0,
+        netHoursWorked: netHoursWorked ?? hoursWorked ?? 8.0,
+        submittedAt: new Date(),
+      },
       { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
+
+    // ── Finish & lock completed tasks in EOD ─────────────────────────────────
+    // When an EOD report is submitted, reported tasks are marked as Done (finished)
+    // and all subtasks are completed and locked against further changes.
+    try {
+      const taskQuery = (Array.isArray(taskIds) && taskIds.length > 0)
+        ? { _id: { $in: taskIds }, assignedTo: req.user._id }
+        : { assignedTo: req.user._id, status: { $in: ['In Review', 'In Progress', 'Done'] } };
+
+      const tasksToFinish = await Task.find(taskQuery);
+      for (const t of tasksToFinish) {
+        t.status = 'Done';
+        t.completedAt = t.completedAt || new Date();
+        t.eodSubmitted = true;
+        t.eodSubmittedAt = new Date();
+        if (Array.isArray(t.subtasks)) {
+          t.subtasks.forEach((s) => {
+            s.completed = true;
+            if (!s.completedAt) s.completedAt = new Date();
+          });
+        }
+        t.statusHistory.push({
+          status: 'Done',
+          changedBy: req.user._id,
+          changedAt: new Date(),
+          note: 'Completed via End-of-Day (EOD) Report submission',
+        });
+        await t.save();
+      }
+    } catch (taskLockErr) {
+      console.error('Task finish/locking error during EOD submission:', taskLockErr.message);
+    }
+
+    // ── Auto-dispatch strictly to the user's specific project group ─────────
+    try {
+      const user = await User.findById(req.user._id).select('name role designation department');
+      const userName = user?.name || req.user.name || 'Team Member';
+
+      // 1. Resolve project from the submitted task IDs
+      let projectIds = [];
+      if (Array.isArray(taskIds) && taskIds.length > 0) {
+        const reportedTasks = await Task.find({ _id: { $in: taskIds } }).select('project').lean();
+        projectIds = reportedTasks.map((t) => t.project?.toString()).filter(Boolean);
+      }
+
+      // 2. If no project from tasks, look for projects the user belongs to
+      if (projectIds.length === 0) {
+        const userProjects = await Project.find({
+          $or: [
+            { manager: req.user._id },
+            { 'team.user': req.user._id },
+            { 'interns.user': req.user._id },
+          ],
+        }).select('_id').lean();
+        projectIds = userProjects.map((p) => p._id.toString());
+      }
+
+      // 3. Find dedicated project group chat channels
+      let channels = [];
+      if (projectIds.length > 0) {
+        channels = await ChatChannel.find({
+          $or: [
+            { project: { $in: projectIds } },
+            { channelId: { $in: projectIds.map((id) => `prj_${id}`) } },
+          ],
+        }).populate('project', 'name').lean();
+      }
+
+      if (!channels || channels.length === 0) {
+        channels = await ChatChannel.find({
+          channelType: 'project',
+          'members.user': req.user._id,
+        }).populate('project', 'name').lean();
+      }
+
+      // 4. Fallback to general ONLY if the user has no project assigned at all
+      if (!channels || channels.length === 0) {
+        const fallbackGeneral = await ChatChannel.findOne({
+          $or: [
+            { channelId: '#general' },
+            { name: { $regex: /^general$/i } },
+            { channelType: 'company' },
+          ],
+        }).lean();
+        if (fallbackGeneral) channels = [fallbackGeneral];
+      }
+
+      // Broadcast exclusively to the specific project channel(s)
+      const broadcastChannels = channels || [];
+
+      if (broadcastChannels.length > 0) {
+        const today = new Date().toLocaleDateString('en-IN', {
+          day: '2-digit', month: 'short', year: 'numeric',
+        });
+        const grossH = Math.floor(hoursWorked ?? 8);
+        const grossM = Math.round(((hoursWorked ?? 8) - grossH) * 60);
+        const netH = Math.floor(netHoursWorked ?? hoursWorked ?? 8);
+        const netM = Math.round(((netHoursWorked ?? hoursWorked ?? 8) - netH) * 60);
+
+        const hoursLine = netHoursWorked && netHoursWorked !== hoursWorked
+          ? `⏱ *Hours:* ${netH}h ${netM}m net (${grossH}h ${grossM}m gross after breaks)`
+          : `⏱ *Hours Logged:* ${grossH}h ${grossM}m`;
+
+        const reportMsg = [
+          `📋 *EOD Report — ${userName}* | ${today}`,
+          hoursLine,
+          tasksCompleted ? `✅ *Accomplished:*\n${tasksCompleted}` : null,
+          blockers ? `🔴 *Blockers:* ${blockers}` : `🟢 *Blockers:* None`,
+          learnings ? `💡 *Learnings:* ${learnings}` : null,
+          plansTomorrow ? `📅 *Tomorrow:* ${plansTomorrow}` : null,
+          `🌟 *Energy:* ${moodEmoji[normalizedMood]} ${normalizedMood.charAt(0).toUpperCase() + normalizedMood.slice(1)}`,
+        ].filter(Boolean).join('\n');
+
+        let chatMessageId = null;
+        for (const ch of broadcastChannels) {
+          // IMPORTANT: channel must be channelId string (e.g. '#general' or 'prj_...'), matching what frontend queries
+          const channelKey = ch.channelId || ch._id.toString();
+
+          const chatMsg = await ChatMessage.create({
+            channel: channelKey,
+            sender: req.user._id,
+            message: reportMsg,
+            messageType: 'eod_report',
+            eodRef: {
+              eodId: entry._id,
+              tasksCompleted: tasksCompleted?.trim() || '',
+              blockers: blockers?.trim() || '',
+              learnings: learnings?.trim() || '',
+              plansTomorrow: plansTomorrow?.trim() || '',
+              mood: normalizedMood,
+              hoursWorked: hoursWorked ?? 8.0,
+              netHoursWorked: netHoursWorked ?? hoursWorked ?? 8.0,
+              date,
+            },
+          });
+
+          // Update last message on channel
+          await ChatChannel.findByIdAndUpdate(ch._id, {
+            lastMessage: {
+              message: `📋 EOD Report — ${userName}`,
+              sender: req.user._id,
+              createdAt: new Date(),
+            },
+            $inc: { messageCount: 1 },
+          });
+
+          if (!chatMessageId) chatMessageId = chatMsg._id;
+        }
+
+        // Store reference to first dispatched message
+        if (chatMessageId) {
+          await EODReport.findByIdAndUpdate(entry._id, { chatMessageId });
+        }
+      }
+    } catch (chatErr) {
+      console.error('EOD chat dispatch failed:', chatErr.message);
+    }
 
     sendSuccess(res, entry, 'EOD update shared');
   } catch (error) {
