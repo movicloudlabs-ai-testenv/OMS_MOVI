@@ -28,7 +28,7 @@ const emptyFields = {
  * where a date picker would just be clutter, since that view is always
  * "today".
  */
-export default function EODQuickShare({ api, allowBackdate = false }) {
+export default function EODQuickShare({ api, allowBackdate = false, rolePlaceholder }) {
   const { user } = useAuth();
   const [fields, setFields] = useState(emptyFields);
   const [submittedForDate, setSubmittedForDate] = useState(null); // the saved entry, or null
@@ -37,6 +37,13 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
   const [editing, setEditing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [projects, setProjects] = useState([]);
+
+  const userRoleSlug = user?.role?.slug || (typeof user?.role === 'string' ? user.role : '');
+  const isIntern = userRoleSlug === 'intern';
+  const defaultPlaceholder = isIntern
+    ? 'e.g. QA Intern'
+    : (user?.designation ? `e.g. ${user.designation}` : 'e.g. Backend Developer');
+  const effectiveRolePlaceholder = rolePlaceholder || defaultPlaceholder;
 
   const set = (field) => (e) => setFields((f) => ({ ...f, [field]: e.target.value }));
 
@@ -151,7 +158,7 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
           </div>
           <div>
             <label className={labelCls}>Role</label>
-            <input value={fields.role} onChange={set('role')} placeholder="e.g. QA Intern" className={inputCls} />
+            <input value={fields.role} onChange={set('role')} placeholder={effectiveRolePlaceholder} className={inputCls} />
           </div>
           <div>
             <label className={labelCls}>Module</label>

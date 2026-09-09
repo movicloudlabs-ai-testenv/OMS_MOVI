@@ -27,21 +27,30 @@ const priorityBadge = (p) => ({
 }[p] || 'bg-slate-100 text-slate-600');
 
 function ProjectDrawer({ project, onClose }) {
-  if (!project) return null;
-
-  const myRole = project.myRole || 'Member';
-  const managerName = project.manager?.name || '—';
+  const myRole = project?.myRole || 'Member';
+  const managerName = project?.manager?.name || '—';
 
   return (
     <AnimatePresence>
-      <motion.div className="fixed inset-0 bg-black/30 z-50 backdrop-blur-sm"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} />
-      <motion.div
-        initial={{ x: 480, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 480, opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-0 h-full w-full max-w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-[#E2E8F0]"
-      >
+      {project && (
+        <motion.div
+          key="project-drawer-backdrop"
+          className="fixed inset-0 bg-black/30 z-50 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        />
+      )}
+      {project && (
+        <motion.div
+          key="project-drawer-panel"
+          initial={{ x: 480, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 480, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="fixed right-0 top-0 h-full w-full max-w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-[#E2E8F0]"
+        >
         {/* Header */}
         <div className="px-6 py-5 border-b border-[#E2E8F0] bg-[#F8FAFC] shrink-0">
           <button onClick={onClose} className="absolute top-5 right-5 text-[#64748B] hover:bg-[#E2E8F0] p-1.5 rounded-full">
@@ -70,7 +79,7 @@ function ProjectDrawer({ project, onClose }) {
               <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-4">Milestones</h4>
               <div className="relative border-l-2 border-[#E2E8F0] ml-2 space-y-5">
                 {project.milestones.map((ms, i) => (
-                  <div key={i} className="relative pl-5">
+                  <div key={ms._id || ms.id || ms.name || `ms-${i}`} className="relative pl-5">
                     <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
                       ms.status === 'completed' ? 'bg-green-500' : ms.status === 'current' ? 'bg-[#2563EB] ring-2 ring-blue-100' : 'bg-[#CBD5E1]'
                     }`} />
@@ -88,7 +97,7 @@ function ProjectDrawer({ project, onClose }) {
               <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3">My Tasks in this Project</h4>
               <div className="space-y-2">
                 {project.myTasks.slice(0, 5).map((t, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-xl">
+                  <div key={t._id || t.id || `task-${i}`} className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-xl">
                     <div className="flex items-center gap-3">
                       <CheckSquare size={15} className={t.status === 'Done' ? 'text-green-500' : 'text-[#94A3B8]'} />
                       <span className={`text-sm font-medium ${t.status === 'Done' ? 'text-[#64748B] line-through' : 'text-[#0F172A]'}`}>{t.title}</span>
@@ -111,7 +120,7 @@ function ProjectDrawer({ project, onClose }) {
                   const name = m.user?.name || m.name || '?';
                   const av   = name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
                   return (
-                    <div key={i} className="flex items-center gap-3">
+                    <div key={m.user?._id || m._id || `member-${i}`} className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-[#1E293B] text-white flex items-center justify-center text-xs font-bold shrink-0">{av}</div>
                       <div>
                         <p className="text-sm font-semibold text-[#0F172A]">{name}</p>
@@ -140,6 +149,7 @@ function ProjectDrawer({ project, onClose }) {
           </div>
         </div>
       </motion.div>
+    )}
     </AnimatePresence>
   );
 }
