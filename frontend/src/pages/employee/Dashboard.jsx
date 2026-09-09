@@ -153,8 +153,22 @@ export default function EmployeeDashboard() {
         {/* CLOCK IN/OUT */}
         <AttendanceClock api={employeeAPI} />
 
-        {/* EOD UPDATE */}
-        <EODQuickShare api={employeeAPI} />
+        {/* EOD UPDATE + DAILY TRACKER */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <EODQuickShare api={employeeAPI} />
+          </div>
+          <button
+            onClick={() => navigate('/employee/daily-tracker')}
+            className="self-start bg-[#2563EB] text-white rounded-xl shadow-sm p-5 flex items-center justify-between gap-3 hover:bg-[#1D4ED8] transition-colors text-left"
+          >
+            <div>
+              <p className="text-[14px] font-bold">Daily Tracker</p>
+              <p className="text-[12px] text-blue-100 mt-0.5">Fill today's detailed work log</p>
+            </div>
+            <span className="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </button>
+        </div>
 
         {/* STATS BAR */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
