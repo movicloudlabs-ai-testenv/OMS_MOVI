@@ -151,19 +151,20 @@ export const getAvailableMembers = async (req, res, next) => {
     }
 
     let filter = {
-      status: 'Active',
+      status: { $regex: /^active$/i },
       ...roleFilter,
       ...employmentTypeFilter,
     };
 
-    if (type !== 'hr') {
+    if (req.query.unassignedOnly === 'true' && type !== 'hr') {
       filter.$or = [{ project: { $exists: false } }, { project: null }];
     }
 
     let availableUsers = await User.find(filter)
-      .select('name designation department avatar employmentType role email employeeId domain college batch')
+      .select('name designation department avatar employmentType role email employeeId domain college batch project status')
       .populate('role', 'name slug')
-      .populate('department', 'name code');
+      .populate('department', 'name code')
+      .populate('project', 'name code projectCode');
       
     if (type === 'hr') {
       availableUsers = await Promise.all(

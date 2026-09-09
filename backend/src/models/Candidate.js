@@ -56,6 +56,37 @@ const CandidateSchema = new Schema({
     createdAt: { type: Date, default: Date.now },
   }],
 
+  // Interviewer Evaluation Scorecard (Darwinbox / Greenhouse standard)
+  interviewScorecard: {
+    technical: { type: Number, min: 1, max: 5 },
+    problemSolving: { type: Number, min: 1, max: 5 },
+    cultureFit: { type: Number, min: 1, max: 5 },
+    communication: { type: Number, min: 1, max: 5 },
+    overall: { type: Number, min: 1, max: 5 },
+    recommendation: {
+      type: String,
+      enum: ['Strong Hire', 'Hire', 'Weak Hire', 'No Hire'],
+      default: 'Hire',
+    },
+    notes: String,
+    evaluatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    evaluatedAt: Date,
+  },
+
+  // Official In-App Offer Letter Details (Strictly non-monetary: designation, terms, dates)
+  offerDetails: {
+    designation: String,
+    department: String,
+    joiningDate: Date,
+    probationPeriod: String, // e.g. "3 Months", "6 Months"
+    workMode: { type: String, enum: ['Office', 'Hybrid', 'Remote'], default: 'Office' },
+    reportingManager: String,
+    serialNumber: String, // e.g. "OFF-2026-8942"
+    status: { type: String, enum: ['Draft', 'Issued', 'Accepted', 'Declined'], default: 'Issued' },
+    issuedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    issuedAt: Date,
+  },
+
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   convertedTo: { type: Schema.Types.ObjectId, ref: 'User' }, // set once Joined + converted to a real user account
 }, { timestamps: true });

@@ -126,6 +126,7 @@ export const getMyAttendance = async (req, res, next) => {
       month: m + 1,
       year: y,
       stats,
+      records: attendanceRecords,
       attendance: attendanceList
     });
 

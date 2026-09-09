@@ -99,6 +99,33 @@ export const reassignHR = async (req, res, next) => {
   }
 };
 
+const ALL_ONBOARDING_ITEMS = [
+  'offerLetterIssued',
+  'welcomeEmail',
+  'hrDocumentation',
+  'equipmentAssigned',
+  'systemAccess',
+  'idCardIssued',
+  'mentorAssigned',
+  'firstWeekSchedule',
+  'deptIntroduction',
+  'intervalReviewCompleted',
+  'completionLetterIssued',
+  'fteConversionCompleted',
+];
+
+const CORE_REQUIRED_ITEMS = [
+  'offerLetterIssued',
+  'welcomeEmail',
+  'hrDocumentation',
+  'systemAccess',
+  'mentorAssigned',
+  'firstWeekSchedule',
+  'deptIntroduction',
+  'intervalReviewCompleted',
+  'completionLetterIssued',
+];
+
 export const getPendingOnboarding = async (req, res, next) => {
   try {
     const filter = {
@@ -118,9 +145,8 @@ export const getPendingOnboarding = async (req, res, next) => {
     const usersWithProgress = pendingUsers.map(u => {
       const user = u.toJSON();
       const checklist = user.onboardingChecklist || {};
-      const items = Object.values(checklist);
-      const completed = items.filter(Boolean).length;
-      user.onboardingProgress = Math.round((completed / 8) * 100) || 0;
+      const completed = ALL_ONBOARDING_ITEMS.filter(k => checklist[k] === true).length;
+      user.onboardingProgress = Math.min(100, Math.round((completed / ALL_ONBOARDING_ITEMS.length) * 100)) || 0;
       return user;
     });
 
@@ -155,12 +181,7 @@ export const updateChecklist = async (req, res, next) => {
   try {
     const { item, completed } = req.body;
     
-    const validItems = [
-      'welcomeEmail', 'idCardIssued', 'systemAccess', 'deptIntroduction',
-      'equipmentAssigned', 'hrDocumentation', 'mentorAssigned', 'firstWeekSchedule'
-    ];
-
-    if (!validItems.includes(item)) {
+    if (!ALL_ONBOARDING_ITEMS.includes(item)) {
       return sendError(res, 'Invalid checklist item', 400);
     }
 
@@ -174,36 +195,34 @@ export const updateChecklist = async (req, res, next) => {
     
     user.onboardingChecklist[item] = !!completed;
 
-    // Check if all complete
-    const items = Object.values(user.onboardingChecklist);
-    const numCompleted = items.filter(Boolean).length;
+    // Check if core required milestones are all complete
+    const coreDone = CORE_REQUIRED_ITEMS.every(k => user.onboardingChecklist[k] === true);
     
-    if (numCompleted === 8 && !user.onboardingComplete) {
+    if (coreDone && !user.onboardingComplete) {
       user.onboardingComplete = true;
       
-      // Notify user
       // Notify user of onboarding completion
-        await sendNotification({
-          recipient: user._id,
-          type: 'system_alert',
-          title: 'Onboarding Complete',
-          message: 'Your onboarding is complete! Welcome to Movi Cloud Labs.',
-          link: '/profile',
-          sender: req.user._id,
-        });
+      await sendNotification({
+        recipient: user._id,
+        type: 'system_alert',
+        title: 'Onboarding & Internship Complete',
+        message: 'Congratulations! Your onboarding milestones and internship requirements are fully verified.',
+        link: '/profile',
+        sender: req.user._id,
+      });
 
-        // Create an approval for the PMO Lead
-        if (user.pmoLead) {
-          const { createApproval } = await import('../../utils/createApproval.js');
-          await createApproval({
-            type: 'Onboarding',
-            title: 'Team Member Ready',
-            message: `${user.name} has completed onboarding and is ready for tasks.`,
-            link: '/pmo/team',
-            recipientId: user.pmoLead._id,
-            createdById: req.user._id,
-          });
-        }
+      // Create an approval for the PMO Lead
+      if (user.pmoLead) {
+        const { createApproval } = await import('../../utils/createApproval.js');
+        await createApproval({
+          type: 'Onboarding',
+          title: 'Team Member Ready',
+          message: `${user.name} has completed onboarding and is ready for tasks.`,
+          link: '/pmo/team',
+          recipientId: user.pmoLead._id,
+          createdById: req.user._id,
+        });
+      }
 
       // Notify PMO Lead if they have one
       if (user.pmoLead) {
@@ -216,7 +235,7 @@ export const updateChecklist = async (req, res, next) => {
           sender: req.user._id,
         });
       }
-    } else if (numCompleted < 8 && user.onboardingComplete) {
+    } else if (!coreDone && user.onboardingComplete) {
       user.onboardingComplete = false;
     }
 

@@ -33,9 +33,20 @@ export const requirePermission = (resource, action) => {
       }
 
       // Check if user's role has this specific permission
-      const hasPermission = user.role.permissions && user.role.permissions.some(
-        (perm) => perm.name === permissionName && perm.status === 'Active'
-      );
+      const resourceSlug = resource.toLowerCase().replace(/\s+/g, '_');
+      const hasPermission = user.role.permissions && user.role.permissions.some((perm) => {
+        if (perm.status !== 'Active') return false;
+        if (perm.name === permissionName) return true;
+        // If route requires 'manage', having 'update' or 'create' or 'manage' also satisfies it
+        if (action === 'manage' && (perm.name === `${resourceSlug}.update` || perm.name === `${resourceSlug}.manage`)) {
+          return true;
+        }
+        // If route requires 'update', having 'manage' also satisfies it
+        if (action === 'update' && perm.name === `${resourceSlug}.manage`) {
+          return true;
+        }
+        return false;
+      });
 
       if (!hasPermission) {
         // Log the denied access attempt for audit

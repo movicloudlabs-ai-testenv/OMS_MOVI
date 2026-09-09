@@ -8,6 +8,7 @@ export const getMyProjects = async (req, res, next) => {
 
     const projects = await Project.find({
       $or: [
+        { manager: userId },
         { 'team.user': userId },
         { 'interns.user': userId }
       ],
@@ -72,13 +73,15 @@ export const getProjectById = async (req, res, next) => {
       .populate('manager', 'name avatar designation')
       .populate('department', 'name')
       .populate('team.user', 'name designation avatar employeeId')
-      .populate('interns.user', 'name avatar college email');
+      .populate('interns.user', 'name avatar college email designation employeeId');
 
     if (!project) return sendError(res, 'Project not found', 404);
 
     const teamArr = project.team || [];
     const internsArr = project.interns || [];
-    const isMember = teamArr.some((t) => t.user?._id?.toString() === userId.toString()) ||
+    const isManager = project.manager?._id?.toString() === userId.toString() || project.manager?.toString() === userId.toString();
+    const isMember = isManager ||
+                     teamArr.some((t) => t.user?._id?.toString() === userId.toString()) ||
                      internsArr.some((i) => i.user?._id?.toString() === userId.toString());
     if (!isMember) return sendError(res, 'You are not assigned to this project', 403);
 

@@ -4,7 +4,7 @@ export const RESOURCES_CONFIG = [
   { resource: 'Roles',      actions: ['create', 'read', 'update', 'delete'] },
   { resource: 'Projects',   actions: ['create', 'read', 'update', 'delete', 'manage'] },
   { resource: 'Tasks',      actions: ['create', 'read', 'update', 'delete'] },
-  { resource: 'Attendance', actions: ['read', 'update', 'export'] },
+  { resource: 'Attendance', actions: ['create', 'read', 'update', 'manage', 'export'] },
   { resource: 'Leave',      actions: ['create', 'read', 'update', 'approve'] },
   { resource: 'Reports',    actions: ['read', 'export', 'schedule'] },
   { resource: 'Audit Logs', actions: ['read', 'export'] },

@@ -9,5 +9,6 @@ router.use(protect, employeeScope);
 router.get('/today', getMyTodayEOD);
 router.get('/', getMyEODs);
 router.post('/', submitMyEOD);
+router.post('/submit', submitMyEOD);
 
 export default router;

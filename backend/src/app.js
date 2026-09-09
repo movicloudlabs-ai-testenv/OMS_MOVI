@@ -26,6 +26,7 @@ import announcementsRoutes from './routes/announcements.routes.js';
 import logsRoutes from './routes/logs.routes.js';
 import documentRoutes from './routes/documents.routes.js';
 import issuesRoutes from './routes/issues.routes.js';
+import chatRoutes from './routes/chat.routes.js';
 
 // Part 2 Route Imports
 import hrEmployeesRoutes from './routes/hr/employees.routes.js';
@@ -34,6 +35,7 @@ import hrAttendanceRoutes from './routes/hr/attendance.routes.js';
 import hrLeavesRoutes from './routes/hr/leaves.routes.js';
 import hrInternsRoutes from './routes/hr/interns.routes.js';
 import hrCandidatesRoutes from './routes/hr/candidates.routes.js';
+import hrAssessmentsRoutes from './routes/hr/assessments.routes.js';
 import hrReportsRoutes from './routes/hr/reports.routes.js';
 import hrTasksRoutes from './routes/hr/tasks.routes.js';
 import hrProjectsRoutes from './routes/hr/projects.routes.js';
@@ -89,6 +91,7 @@ app.set('trust proxy', 1);
 // ─── Security Headers ────────────────────────────────────────────────────────
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false,
 }));
 
 // ─── UA Client Hints ──────────────────────────────────────────────────────────
@@ -102,6 +105,7 @@ app.use((req, res, next) => {
 // ─── CORS ─────────────────────────────────────────────────────────────────────
 const defaultFrontendOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
+  'https://mcl-mobile.onrender.com',
   'http://localhost:5173',
   'http://localhost:5174',
   'http://localhost:5175',
@@ -166,17 +170,20 @@ const authLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 app.use('/api/auth/login', authLimiter);
 
-// ─── Static Files ─────────────────────────────────────────────────────────────
+// ─── Static Files & Flutter Web App ───────────────────────────────────────────
+app.use(express.static(path.join(__dirname, 'web')));
+app.use(express.static(path.join(__dirname, '..', 'web')));
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
-// ─── Health Check Routes ──────────────────────────────────────────────────────
+// ─── Android App Links & Digital Asset Links ──────────────────────────────────
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.sendFile(path.join(__dirname, 'web', '.well-known', 'assetlinks.json'));
+});
+
+// ─── Web App Root Route ───────────────────────────────────────────────────────
 app.get('/', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'OWMS API is running',
-    version: '2.0.1',
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-  });
+  res.sendFile(path.join(__dirname, 'web', 'index.html'));
 });
 
 app.get('/api/health', (req, res) => {
@@ -217,6 +224,7 @@ app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/payments', adminPaymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/announcements', announcementsRoutes);
+app.use('/api/chat', chatRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/issues', issuesRoutes);
@@ -228,6 +236,7 @@ app.use('/api/hr/attendance', hrAttendanceRoutes);
 app.use('/api/hr/leaves', hrLeavesRoutes);
 app.use('/api/hr/interns', hrInternsRoutes);
 app.use('/api/hr/recruitment', hrCandidatesRoutes);
+app.use('/api/hr/assessments', hrAssessmentsRoutes);
 app.use('/api/hr/reports', hrReportsRoutes);
 app.use('/api/hr/tasks', hrTasksRoutes);
 app.use('/api/hr/projects', hrProjectsRoutes);
@@ -269,6 +278,14 @@ app.use('/api/intern/projects', internProjectsRoutes);
 app.use('/api/hr/daily-tracker', hrDailyTrackerRoutes);
 app.use('/api/hr/eod', hrEodRoutes);
 app.use('/api/hr/performance-analytics', hrPerformanceRoutes);
+
+// ─── Flutter Web SPA Fallback ──────────────────────────────────────────────────
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, 'web', 'index.html'));
+});
 
 // ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {

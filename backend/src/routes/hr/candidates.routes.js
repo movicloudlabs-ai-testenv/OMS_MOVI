@@ -5,6 +5,7 @@ import {
   addCandidateNote,
   uploadCandidateDocument, deleteCandidateDocument,
   convertCandidateToUser,
+  submitCandidateScorecard, generateCandidateOffer,
 } from '../../controllers/hr/candidates.controller.js';
 import { protect } from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rbac.js';
@@ -23,6 +24,8 @@ router.get('/:id', requirePermission('Recruitment', 'read'), getCandidateById);
 router.patch('/:id', requirePermission('Recruitment', 'update'), auditLog('Update', 'Recruitment'), updateCandidate);
 router.delete('/:id', requirePermission('Recruitment', 'delete'), auditLog('Delete', 'Recruitment'), deleteCandidate);
 
+router.post('/:id/scorecard', requirePermission('Recruitment', 'update'), auditLog('Update', 'Recruitment'), submitCandidateScorecard);
+router.post('/:id/generate-offer', requirePermission('Recruitment', 'update'), auditLog('Update', 'Recruitment'), generateCandidateOffer);
 router.post('/:id/convert-to-user', requirePermission('Recruitment', 'update'), auditLog('Create', 'Users'), convertCandidateToUser);
 router.post('/:id/notes', requirePermission('Recruitment', 'update'), auditLog('Update', 'Recruitment'), addCandidateNote);
 

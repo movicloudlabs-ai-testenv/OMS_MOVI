@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Movi OWMS",
+    "slug": "movi-owms",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F0F4F9"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.movicloudlabs.owms",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Movi OWMS needs your location for geofenced office attendance.",
+        "NSFaceIDUsageDescription": "Enable FaceID for fast and secure login to Movi OWMS.",
+        "NSCameraUsageDescription": "Movi OWMS needs camera access for document uploads and receipt verification."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "package": "com.movicloudlabs.owms",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "CAMERA",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Movi OWMS needs your location for geofenced office attendance."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Enable FaceID for fast and secure login to Movi OWMS."
+        }
+      ]
+    ]
+  }
+}

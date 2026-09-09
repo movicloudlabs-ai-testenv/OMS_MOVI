@@ -79,7 +79,11 @@ export const getLeaves = async (req, res, next) => {
 
 export const reviewLeave = async (req, res, next) => {
   try {
-    const { status, reviewNote } = req.body;
+    let { status, reviewNote, comment } = req.body;
+    if (typeof status === 'string' && status.length > 0) {
+      status = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+    }
+    reviewNote = reviewNote || comment || '';
     
     if (!['Approved', 'Rejected'].includes(status)) {
       return sendError(res, 'Status must be Approved or Rejected', 400);
@@ -346,40 +350,210 @@ export const deleteMyLeave = async (req, res, next) => {
   }
 };
 
+export const getStaffLeaveBalances = async (req, res, next) => {
+  try {
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+    const { search, employmentType, department } = req.query;
+
+    const userFilter = {
+      ...req.scopeFilter,
+      deletedAt: { $exists: false },
+      status: { $ne: 'Terminated' },
+    };
+
+    if (search) {
+      userFilter.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+        { employeeId: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    if (employmentType && employmentType !== 'All') {
+      userFilter.employmentType = employmentType;
+    }
+
+    if (department && department !== 'All') {
+      userFilter.department = department;
+    }
+
+    const users = await User.find(userFilter)
+      .select('name email employeeId department role employmentType avatar status designation')
+      .populate('role', 'name color slug')
+      .populate('department', 'name code')
+      .sort({ name: 1 })
+      .lean();
+
+    const userIds = users.map((u) => u._id);
+    const balances = await LeaveBalance.find({
+      user: { $in: userIds },
+      year,
+    }).lean();
+
+    const balanceMap = new Map();
+    balances.forEach((b) => balanceMap.set(b.user.toString(), b));
+
+    const result = users.map((u) => {
+      let bal = balanceMap.get(u._id.toString());
+      if (!bal) {
+        bal = {
+          user: u._id,
+          year,
+          casual: { total: 2, used: 0 },
+          sick: { total: 2, used: 0 },
+          annual: { total: 0, used: 0 },
+          emergency: { total: 2, used: 0 },
+          compensatory: { total: 0, used: 0 },
+        };
+      }
+      return {
+        user: u,
+        leaveBalance: bal,
+      };
+    });
+
+    sendSuccess(res, result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getUserLeaveBalance = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const year = parseInt(req.query.year, 10) || new Date().getFullYear();
+
+    let balance = await LeaveBalance.findOne({ user: userId, year });
+    if (!balance) {
+      balance = await LeaveBalance.create({
+        user: userId,
+        year,
+        casual: { total: 2, used: 0 },
+        sick: { total: 2, used: 0 },
+        annual: { total: 0, used: 0 },
+        emergency: { total: 2, used: 0 },
+        compensatory: { total: 0, used: 0 },
+      });
+    }
+
+    sendSuccess(res, balance);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const allocateLeaveBalance = async (req, res, next) => {
   try {
-    const { userId, leaveType, days } = req.body;
+    const {
+      userId,
+      year: reqYear,
+      casual,
+      sick,
+      annual,
+      emergency,
+      compensatory,
+      leaveType,
+      days,
+      mode = 'set',
+      reason,
+    } = req.body;
 
-    if (!userId || !leaveType || days === undefined) {
-      return sendError(res, 'User ID, leaveType, and days are required', 400);
+    if (!userId) {
+      return sendError(res, 'User ID is required', 400);
     }
 
-    const typeKey = leaveType.toLowerCase();
-    const validTypes = ['casual', 'sick', 'annual', 'emergency', 'compensatory'];
-    if (!validTypes.includes(typeKey)) {
-      return sendError(res, `Invalid leave type. Valid types are: ${validTypes.join(', ')}`, 400);
-    }
-
-    const currentYear = new Date().getFullYear();
+    const currentYear = reqYear ? parseInt(reqYear, 10) : new Date().getFullYear();
     
     let balance = await LeaveBalance.findOne({ user: userId, year: currentYear });
     if (!balance) {
-      balance = new LeaveBalance({ user: userId, year: currentYear });
+      balance = new LeaveBalance({
+        user: userId,
+        year: currentYear,
+        casual: { total: 2, used: 0 },
+        sick: { total: 2, used: 0 },
+        annual: { total: 0, used: 0 },
+        emergency: { total: 2, used: 0 },
+        compensatory: { total: 0, used: 0 },
+      });
     }
 
-    balance[typeKey].total += Number(days);
+    const updatedTypes = [];
+
+    if (casual !== undefined) {
+      const val = Number(casual);
+      if (mode === 'adjust') {
+        balance.casual.total += val;
+      } else {
+        balance.casual.total = Math.max(0, val);
+      }
+      updatedTypes.push(`Casual: ${balance.casual.total}d`);
+    }
+
+    if (sick !== undefined) {
+      const val = Number(sick);
+      if (mode === 'adjust') {
+        balance.sick.total += val;
+      } else {
+        balance.sick.total = Math.max(0, val);
+      }
+      updatedTypes.push(`Sick: ${balance.sick.total}d`);
+    }
+
+    if (annual !== undefined) {
+      const val = Number(annual);
+      if (mode === 'adjust') {
+        balance.annual.total += val;
+      } else {
+        balance.annual.total = Math.max(0, val);
+      }
+      updatedTypes.push(`Earned/Annual: ${balance.annual.total}d`);
+    }
+
+    if (emergency !== undefined) {
+      const val = Number(emergency);
+      if (mode === 'adjust') {
+        balance.emergency.total += val;
+      } else {
+        balance.emergency.total = Math.max(0, val);
+      }
+      updatedTypes.push(`Emergency: ${balance.emergency.total}d`);
+    }
+
+    if (compensatory !== undefined) {
+      const val = Number(compensatory);
+      if (mode === 'adjust') {
+        balance.compensatory.total += val;
+      } else {
+        balance.compensatory.total = Math.max(0, val);
+      }
+      updatedTypes.push(`Compensatory: ${balance.compensatory.total}d`);
+    }
+
+    // Support legacy single leaveType allocation
+    if (leaveType && days !== undefined) {
+      const typeKey = leaveType.toLowerCase();
+      const validTypes = ['casual', 'sick', 'annual', 'emergency', 'compensatory'];
+      if (!validTypes.includes(typeKey)) {
+        return sendError(res, `Invalid leave type. Valid types are: ${validTypes.join(', ')}`, 400);
+      }
+      balance[typeKey].total += Number(days);
+      updatedTypes.push(`${leaveType}: +${days}d`);
+    }
+
     await balance.save();
 
+    // Send notification to user
+    const reasonText = reason ? ` (Reason: ${reason})` : '';
     await sendNotification({
       recipient: userId,
       type: 'system_alert',
-      title: 'Leave Balance Updated',
-      message: `${days} days have been added to your ${leaveType} leave balance.`,
+      title: 'Leave Quota Updated by HR',
+      message: `Your leave entitlement has been updated: ${updatedTypes.join(', ')}${reasonText}`,
       link: '/profile',
       sender: req.user._id,
     });
 
-    sendSuccess(res, balance, `Added ${days} days to ${leaveType} balance`);
+    sendSuccess(res, balance, `Leave quota successfully updated: ${updatedTypes.join(', ')}`);
   } catch (error) {
     next(error);
   }

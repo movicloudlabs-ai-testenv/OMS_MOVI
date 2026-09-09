@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getPendingLeaves, getLeaves, reviewLeave, allocateLeaveBalance,
   getMyLeaveBalance, getMyLeaves, applyMyLeave, deleteMyLeave,
+  getStaffLeaveBalances, getUserLeaveBalance,
 } from '../../controllers/hr/leaves.controller.js';
 import { protect } from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rbac.js';
@@ -20,8 +21,11 @@ router.delete('/my/:id', deleteMyLeave);
 router.use(hrScope);
 
 router.get('/pending', requirePermission('Leave', 'read'), getPendingLeaves);
+router.get('/balances', requirePermission('Leave', 'read'), getStaffLeaveBalances);
+router.get('/balance/:userId', requirePermission('Leave', 'read'), getUserLeaveBalance);
 router.get('/', requirePermission('Leave', 'read'), getLeaves);
 router.patch('/:id/review', requirePermission('Leave', 'approve'), auditLog('Update', 'Leave'), reviewLeave);
+router.patch('/:id/status', requirePermission('Leave', 'approve'), auditLog('Update', 'Leave'), reviewLeave);
 router.post('/balance', requirePermission('Leave', 'manage'), auditLog('Update', 'Leave'), allocateLeaveBalance);
 
 export default router;

@@ -4,19 +4,15 @@ const { Schema } = mongoose;
 
 /**
  * EODReport Model
- * A structured end-of-day update — Name, Project, Role, Module, Development &
- * Testing activities performed, Issues identified/Debugging, and an optional
- * Proposed solution — separate from the detailed Daily Tracker spreadsheet.
- * One per user per date.
- *
- * `message` is auto-generated server-side from the structured fields (a neatly
- * labelled composite string) so existing views/exports that just read
- * `.message` (HR/PMO list pages, the PDF export) keep working unchanged.
+ * Structured end-of-day report capturing activities, project, role, module,
+ * accomplishments, blockers, learnings, and tomorrow's plan. One record per user per date.
+ * `message` is maintained for backward compatibility and formatted exports.
  */
 const EODReportSchema = new Schema({
   user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   date: { type: Date, required: true },
 
+  // Project & Module Context
   name: { type: String, trim: true },
   project: { type: Schema.Types.ObjectId, ref: 'Project' },
   role: { type: String, trim: true },
@@ -25,7 +21,24 @@ const EODReportSchema = new Schema({
   issues: { type: String, trim: true },     // Issues identified / Debugging
   proposedSolution: { type: String, trim: true }, // optional — if any bug solved
 
-  message: { type: String, required: true, trim: true },
+  // Free-text / Auto-generated composite message
+  message: { type: String, trim: true },
+
+  // Structured enterprise fields
+  tasksCompleted: { type: String, trim: true },   // What was accomplished today
+  blockers: { type: String, trim: true },          // Challenges / blockers encountered
+  learnings: { type: String, trim: true },          // Key learnings from the day
+  plansTomorrow: { type: String, trim: true },     // Priority plan for tomorrow
+  mood: {
+    type: String,
+    enum: ['exhausted', 'low', 'neutral', 'good', 'energized'],
+    default: 'neutral',
+  },
+  hoursWorked: { type: Number, default: 8.0 },     // Gross hours (check-in → check-out)
+  netHoursWorked: { type: Number },                // Net hours after breaks deducted
+
+  // Reference to the chat message dispatched to the project channel
+  chatMessageId: { type: Schema.Types.ObjectId, ref: 'ChatMessage', default: null },
   submittedAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 

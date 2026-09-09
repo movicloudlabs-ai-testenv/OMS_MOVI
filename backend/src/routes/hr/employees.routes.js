@@ -3,6 +3,7 @@ import {
   getEmployees, getEmployeeById,
   getEmployeeAttendance, getEmployeeLeaves,
   addEmployeeNote, addEmployeePerformance,
+  updateEmployeePersonnel,
 } from '../../controllers/hr/employees.controller.js';
 import { protect } from '../../middleware/auth.js';
 import { requirePermission } from '../../middleware/rbac.js';
@@ -17,6 +18,7 @@ router.get('/', requirePermission('Users', 'read'), getEmployees);
 router.get('/:id', requirePermission('Users', 'read'), getEmployeeById);
 router.get('/:id/attendance', requirePermission('Attendance', 'read'), getEmployeeAttendance);
 router.get('/:id/leaves', requirePermission('Leave', 'read'), getEmployeeLeaves);
+router.patch('/:id/personnel', requirePermission('Users', 'update'), auditLog('Update', 'Users'), updateEmployeePersonnel);
 router.post('/:id/notes', requirePermission('Users', 'update'), auditLog('Update', 'Users'), addEmployeeNote);
 router.post('/:id/performance', requirePermission('Users', 'update'), addEmployeePerformance);
 

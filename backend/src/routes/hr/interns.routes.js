@@ -4,6 +4,8 @@ import {
   addPerformanceRating, assignMentor,
   uploadInternDocument, deleteInternDocument,
   exportInterns,
+  convertInternToFullTime,
+  getEligibleMentors,
 } from '../../controllers/hr/interns.controller.js';
 import {
   getInternLearning, assignLearning, deleteLearning,
@@ -18,11 +20,13 @@ const router = Router();
 router.use(protect);
 router.use(hrScope);
 
+router.get('/meta/mentors', requirePermission('Interns', 'read'), getEligibleMentors);
 router.get('/', requirePermission('Interns', 'read'), getInterns);
 router.get('/export', requirePermission('Interns', 'read'), exportInterns);
 router.get('/:id', requirePermission('Interns', 'read'), getInternById);
 router.post('/:id/performance', requirePermission('Interns', 'manage'), auditLog('Update', 'Interns'), addPerformanceRating);
 router.patch('/:id/assign-mentor', requirePermission('Interns', 'manage'), auditLog('Update', 'Interns'), assignMentor);
+router.post('/:id/convert', requirePermission('Interns', 'manage'), auditLog('Update', 'Interns'), convertInternToFullTime);
 
 // Document management (Resume, Offer Letter, NDA, ID Proof, Educational Certificate)
 router.post(

@@ -1,5 +1,8 @@
 import mongoose from 'mongoose';
 import User from '../../models/User.js';
+import Project from '../../models/Project.js';
+import Attendance from '../../models/Attendance.js';
+import LeaveRequest from '../../models/LeaveRequest.js';
 import Settings from '../../models/Settings.js';
 import Announcement from '../../models/Announcement.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
@@ -19,7 +22,10 @@ export const getDashboardStats = async (req, res) => {
     const days30 = new Date(now - 30 * 24 * 60 * 60 * 1000);
     days30.setHours(0, 0, 0, 0);
 
-    const [settings, usersOnline, activeSessions, announcements, growthRaw, dbStats] =
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [settings, usersOnline, activeSessions, announcements, growthRaw, dbStats, totalUsers, activeProjects, todayAttendance, pendingLeaves] =
       await Promise.all([
         Settings.findOne({ key: 'global' }).select('system').lean(),
         User.countDocuments({ lastLogin: { $gte: online15m }, status: 'Active' }),
@@ -35,11 +41,19 @@ export const getDashboardStats = async (req, res) => {
           } },
         ]),
         mongoose.connection.db.command({ dbStats: 1 }).catch(() => ({ dataSize: 0, storageSize: 0 })),
+        User.countDocuments({ deletedAt: { $exists: false } }),
+        Project.countDocuments({ status: { $ne: 'Completed' } }),
+        Attendance.countDocuments({ date: { $gte: todayStart } }),
+        LeaveRequest.countDocuments({ status: 'Pending' }),
       ]);
 
     const quotaBytes = (Number(process.env.STORAGE_QUOTA_GB) || 1) * 1024 * 1024 * 1024;
 
     sendSuccess(res, {
+      totalUsers: totalUsers || 0,
+      activeProjects: activeProjects || 0,
+      todayAttendance: todayAttendance || 0,
+      pendingLeaves: pendingLeaves || 0,
       health: {
         apiServer: true, // this response existing proves the API is up
         dbConnected: mongoose.connection.readyState === 1,

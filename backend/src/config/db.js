@@ -1,4 +1,12 @@
 import mongoose from 'mongoose';
+import dns from 'dns';
+
+// Ensure MongoDB Atlas SRV records resolve seamlessly across Windows local environments
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1']);
+} catch (dnsErr) {
+  console.warn('DNS resolver notice:', dnsErr.message);
+}
 
 let isConnected = false;
 
@@ -15,7 +23,7 @@ const connectDB = async () => {
   const tryConnect = async () => {
     try {
       const conn = await mongoose.connect(uri, {
-        serverSelectionTimeoutMS: 4000,
+        serverSelectionTimeoutMS: 5000,
       });
       isConnected = true;
       console.log(`✅ MongoDB Connected: ${conn.connection.host}`);

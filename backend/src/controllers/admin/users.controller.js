@@ -1,10 +1,16 @@
 import mongoose from 'mongoose';
 import User from '../../models/User.js';
 import Role from '../../models/Role.js';
+import Department from '../../models/Department.js';
 import Project from '../../models/Project.js';
 import Task from '../../models/Task.js';
+import Issue from '../../models/Issue.js';
 import ArchivedUser from '../../models/ArchivedUser.js';
 import AuditLog from '../../models/AuditLog.js';
+import Attendance from '../../models/Attendance.js';
+import LeaveBalance from '../../models/LeaveBalance.js';
+import DailyTracker from '../../models/DailyTracker.js';
+import EODReport from '../../models/EODReport.js';
 import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.js';
 import { getPagination, paginatedResponse } from '../../utils/paginate.js';
 import { sendNotification } from '../../utils/sendNotification.js';
@@ -68,6 +74,7 @@ export const getUsers = async (req, res, next) => {
       User.find(filter)
         .populate('role', 'name slug color')
         .populate('department', 'name code')
+        .populate('project', 'name code status')
         .sort(sort)
         .skip(skip)
         .limit(limit),
@@ -100,51 +107,109 @@ export const createUser = async (req, res, next) => {
       internshipStart, internshipEnd, joinDate,
     } = req.body;
 
-    let roleId = role;
-    if (!roleId) {
-      const defaultRole = await Role.findOne({ slug: 'employee' });
-      if (defaultRole) roleId = defaultRole._id;
-    }
-
     // Validate required fields
-    if (!name || !email || !roleId) {
-      return sendError(res, 'Name, email, and role are required', 400);
+    if (!name || !email) {
+      return sendError(res, 'Name and email are required', 400);
     }
 
     // Check email uniqueness — ignore soft-deleted users
-    const existing = await User.findOne({ email: email.toLowerCase(), deletedAt: { $exists: false } });
+    const existing = await User.findOne({ email: email.toLowerCase().trim(), deletedAt: { $exists: false } });
     if (existing) {
       return sendError(res, 'Email already registered', 400);
     }
 
-    // Check role exists
-    const roleDoc = await Role.findById(roleId);
+    // ── Robust Role Resolution (Accepts ObjectId, slug string, or display name) ──
+    let roleDoc = null;
+    if (role) {
+      if (mongoose.Types.ObjectId.isValid(role)) {
+        roleDoc = await Role.findById(role);
+      }
+      if (!roleDoc) {
+        const roleStr = String(role).trim();
+        roleDoc = await Role.findOne({
+          $or: [
+            { slug: roleStr.toLowerCase() },
+            { name: new RegExp(`^${roleStr}$`, 'i') },
+          ],
+        });
+      }
+    }
     if (!roleDoc) {
-      return sendError(res, 'Invalid role ID', 400);
+      roleDoc = await Role.findOne({ slug: 'employee' });
+    }
+    if (!roleDoc) {
+      roleDoc = await Role.findOne({});
+    }
+    if (!roleDoc) {
+      return sendError(res, 'Invalid role specification and no system roles found', 400);
+    }
+    const roleId = roleDoc._id;
+
+    // ── Robust Department Resolution (Accepts ObjectId, department name, or code) ──
+    let departmentId = null;
+    if (department) {
+      if (mongoose.Types.ObjectId.isValid(department)) {
+        const deptDoc = await Department.findById(department);
+        if (deptDoc) departmentId = deptDoc._id;
+      }
+      if (!departmentId) {
+        const deptStr = String(department).trim();
+        let deptDoc = await Department.findOne({
+          $or: [
+            { name: new RegExp(`^${deptStr}$`, 'i') },
+            { code: deptStr.toUpperCase() },
+          ],
+        });
+        if (deptDoc) {
+          departmentId = deptDoc._id;
+        } else {
+          // Auto-create department so valid reference is always established
+          const code = deptStr.substring(0, 4).toUpperCase();
+          deptDoc = await Department.create({
+            name: deptStr,
+            code,
+            status: 'Active',
+          }).catch(() => null);
+          if (deptDoc) departmentId = deptDoc._id;
+        }
+      }
     }
 
-    // Determine employment type from role
-    const empType = employmentType || (roleDoc.slug === 'intern' ? 'Intern' : 'Full-time');
+    // Determine employment type from role or input
+    let empType = employmentType;
+    if (!empType) {
+      empType = (roleDoc.slug === 'intern' || roleDoc.name.toLowerCase().includes('intern')) ? 'Intern' : 'Full-time';
+    } else {
+      const norm = empType.trim().toLowerCase();
+      if (norm === 'intern') empType = 'Intern';
+      else if (norm === 'part-time') empType = 'Part-time';
+      else if (norm === 'contract') empType = 'Contract';
+      else empType = 'Full-time';
+    }
 
     // Auto-generate employeeId
     const employeeId = await generateEmployeeId(
       empType === 'Intern' ? 'Intern' : 'Employee'
     );
 
-    // Always generate a system temp password — admin never sees it, user must change on first login
-    const tempPassword = `OWMS@${Math.floor(100000 + Math.random() * 900000)}`;
+    // Use provided credentials/password if given (minlength 8 for User model schema), otherwise generate
+    const tempPassword = password && password.trim().length >= 8
+      ? password.trim()
+      : (password && password.trim().length > 0
+          ? `${password.trim()}00` // Pad to ensure minlength 8
+          : `OWMS@${Math.floor(100000 + Math.random() * 900000)}`);
 
     // Auto-assign HR if not provided (run before User creation to avoid duplicate DB save and bcrypt hashing)
     // Bypassed for interns so they remain in the unassigned pool visible to all HRs
-    let hrManagerId = hrManagerInput;
+    let hrManagerId = (hrManagerInput && mongoose.Types.ObjectId.isValid(hrManagerInput)) ? hrManagerInput : null;
     let assignedHR       = null;
     let hrCapExceeded    = false;
     let autoAssigned     = false;
 
     if (!hrManagerId) {
-      if (empType !== 'Intern') {
-        const result = await autoAssignHR({ department });
-        if (result.hrUser) {
+      if (empType !== 'Intern' && departmentId) {
+        const result = await autoAssignHR({ department: departmentId });
+        if (result?.hrUser) {
           hrManagerId = result.hrUser._id;
           assignedHR    = result.hrUser;
           hrCapExceeded = result.capExceeded;
@@ -157,23 +222,23 @@ export const createUser = async (req, res, next) => {
 
     // Create user
     const user = await User.create({
-      name,
-      email: email.toLowerCase(),
+      name: name.trim(),
+      email: email.toLowerCase().trim(),
       password: tempPassword,
       role: roleId,
-      department,
-      designation,
+      department: departmentId || undefined,
+      designation: designation ? designation.trim() : (empType === 'Intern' ? 'Intern' : 'Team Member'),
       employmentType: empType,
       employeeId,
       skills: skills || [],
-      phone: phone || undefined,
-      manager: manager || undefined,
+      phone: phone ? phone.trim() : undefined,
+      manager: (manager && mongoose.Types.ObjectId.isValid(manager)) ? manager : undefined,
       joinDate: empType === 'Intern' ? undefined : (joinDate || new Date()),
       hrManager: hrManagerId || undefined,
       college: empType === 'Intern' ? (college || undefined) : undefined,
       domain: empType === 'Intern' ? (domain || undefined) : undefined,
       batch: empType === 'Intern' ? (batch || undefined) : undefined,
-      pmoLead: empType === 'Intern' ? (pmoLead || undefined) : undefined,
+      pmoLead: (pmoLead && mongoose.Types.ObjectId.isValid(pmoLead)) ? pmoLead : undefined,
       internshipStart: empType === 'Intern' ? (internshipStart || undefined) : undefined,
       internshipEnd: empType === 'Intern' ? (internshipEnd || undefined) : undefined,
       mustChangePassword: true,
@@ -273,17 +338,80 @@ export const getUserById = async (req, res, next) => {
         },
       })
       .populate('department', 'name code')
-      .populate('manager', 'name employeeId designation')
-      .populate('hrManager', 'name employeeId')
-      .populate('mentor', 'name employeeId designation')
-      .populate('pmoLead', 'name employeeId designation')
+      .populate('manager', 'name employeeId designation email phone')
+      .populate('hrManager', 'name employeeId email')
+      .populate('mentor', 'name employeeId designation email')
+      .populate('pmoLead', 'name employeeId designation email')
       .populate('project', 'name status description startDate endDate');
 
     if (!user) {
       return sendError(res, 'User not found', 404);
     }
 
-    sendSuccess(res, user);
+    // Performance, EOD & Daily Activity (Real data from MongoDB)
+    const [tasks, attendanceRecords, leaveBalance, dailyTrackers, eodReports] = await Promise.all([
+      Task.find({ assignedTo: user._id })
+        .populate('project', 'name code status')
+        .sort({ updatedAt: -1 })
+        .lean(),
+      Attendance.find({ user: user._id })
+        .sort({ date: -1 })
+        .limit(30)
+        .lean(),
+      LeaveBalance.findOne({ user: user._id, year: new Date().getFullYear() }).lean(),
+      DailyTracker.find({ user: user._id })
+        .populate('project', 'name code status')
+        .sort({ date: -1 })
+        .limit(14)
+        .lean(),
+      EODReport.find({ user: user._id })
+        .sort({ date: -1 })
+        .limit(14)
+        .lean(),
+    ]);
+
+    const totalTasks = tasks.length;
+    const completedTasks = tasks.filter(t => t.status === 'Done').length;
+    const inProgressTasks = tasks.filter(t => t.status === 'In Progress' || t.status === 'In Review').length;
+    const blockedTasks = tasks.filter(t => t.status === 'Blocked').length;
+    const todoTasks = tasks.filter(t => t.status === 'Todo').length;
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    const totalAttendance = attendanceRecords.length;
+    const presentDays = attendanceRecords.filter(a => a.status === 'Present').length;
+    const halfDays = attendanceRecords.filter(a => a.status === 'Half-Day' || a.status === 'Half Day').length;
+    const absentDays = attendanceRecords.filter(a => a.status === 'Absent').length;
+    const attendanceRate = totalAttendance > 0 ? Math.round(((presentDays + halfDays * 0.5) / totalAttendance) * 100) : 100;
+
+    const userObj = user.toObject();
+    userObj.performance = {
+      taskMetrics: {
+        total: totalTasks,
+        completed: completedTasks,
+        inProgress: inProgressTasks,
+        blocked: blockedTasks,
+        todo: todoTasks,
+        completionRate,
+      },
+      attendanceMetrics: {
+        totalDaysLogged: totalAttendance,
+        presentDays,
+        halfDays,
+        absentDays,
+        attendanceRate,
+      },
+      leaveBalance: leaveBalance || {
+        casual: { total: 0, used: 0 },
+        sick: { total: 0, used: 0 },
+        annual: { total: 0, used: 0 },
+        emergency: { total: 0, used: 0 },
+      },
+      recentTasks: tasks.slice(0, 10),
+      dailyTrackers: dailyTrackers || [],
+      eodReports: eodReports || [],
+    };
+
+    sendSuccess(res, userObj);
   } catch (error) {
     next(error);
   }
@@ -297,7 +425,7 @@ export const updateUser = async (req, res, next) => {
   try {
     const { name, designation, department, role, employmentType, status,
       manager, hrManager, skills, college, domain, batch, mentor, pmoLead,
-      internshipStart, internshipEnd } = req.body;
+      internshipStart, internshipEnd, project } = req.body;
 
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -315,6 +443,7 @@ export const updateUser = async (req, res, next) => {
     if (role) user.role = role;
     if (employmentType) user.employmentType = employmentType;
     if (status) user.status = status;
+    if (project !== undefined) user.project = project || undefined;
     if (manager !== undefined) {
       user.manager = manager || undefined;
     }
@@ -335,6 +464,13 @@ export const updateUser = async (req, res, next) => {
     if (internshipEnd) user.internshipEnd = internshipEnd;
 
     await user.save({ validateBeforeSave: false });
+
+    // If project was assigned, ensure user is registered in project team
+    if (project) {
+      await Project.findByIdAndUpdate(project, {
+        $addToSet: { team: { user: user._id, role: user.designation || 'Team Member', joinedAt: new Date() } }
+      }).catch(err => console.error('Auto-team assign failed:', err));
+    }
 
     // If role changed, notify user
     if (role && role !== oldRole) {
@@ -657,18 +793,53 @@ export const getUserProjects = async (req, res, next) => {
     })
       .populate('manager', 'name designation')
       .populate('department', 'name')
-      .select('name code status priority description startDate endDate healthStatus team interns manager department')
+      .select('name code status priority description startDate endDate healthStatus team interns manager department completionPercent currentVersion')
       .sort({ createdAt: -1 });
 
-    const enriched = projects.map(p => {
-      const uid = userId.toString();
-      const role =
-        p.manager?._id?.toString() === uid ? 'Manager' :
-        p.team.some(t => t.user?.toString() === uid)
-          ? (p.team.find(t => t.user?.toString() === uid)?.role || 'Team Member')
-          : p.interns.some(i => i.user?.toString() === uid) ? 'Intern' : 'Member';
-      return { ...p.toObject(), userRole: role };
-    });
+    const enriched = await Promise.all(
+      projects.map(async (p) => {
+        const uid = userId.toString();
+        const teamEntry = p.team.find((t) => (t.user?._id || t.user)?.toString() === uid);
+        const isManager = p.manager?._id?.toString() === uid;
+        const isIntern = p.interns.some((i) => (i.user?._id || i.user)?.toString() === uid);
+
+        const role = isManager
+          ? 'Lead Manager'
+          : teamEntry
+            ? (teamEntry.role || 'Team Member')
+            : isIntern
+              ? 'Intern'
+              : 'Member';
+
+        const allocation = teamEntry
+          ? teamEntry.allocationPercentage
+          : isManager
+            ? 100
+            : 0;
+
+        // Aggregate Sanjit's real-time contributions in this specific project
+        const [totalTasks, completedTasks, solvedBugs] = await Promise.all([
+          Task.countDocuments({ project: p._id, assignedTo: userId }),
+          Task.countDocuments({
+            project: p._id,
+            assignedTo: userId,
+            status: { $in: ['Done', 'Completed', 'Approved'] },
+          }),
+          Issue.countDocuments({ project: p._id, resolvedBy: userId }),
+        ]);
+
+        return {
+          ...p.toObject(),
+          userRole: role,
+          userAllocation: allocation,
+          userStats: {
+            totalTasks,
+            completedTasks,
+            solvedBugs,
+          },
+        };
+      })
+    );
 
     sendSuccess(res, enriched, 'Projects fetched');
   } catch (error) {

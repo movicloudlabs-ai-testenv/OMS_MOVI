@@ -4,6 +4,7 @@ import User from '../../models/User.js';
 import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.js';
 import { getPagination } from '../../utils/paginate.js';
 import { sendNotification } from '../../utils/sendNotification.js';
+import { generateTaskCode } from '../../utils/generateTaskCode.js';
 
 export const getTasks = async (req, res, next) => {
   try {
@@ -87,7 +88,10 @@ export const createTask = async (req, res, next) => {
       await proj.save();
     }
 
+    const taskCode = await generateTaskCode(proj.code || proj.name || 'PRJ');
+
     const task = await Task.create({
+      taskCode,
       title,
       description,
       project,
@@ -438,6 +442,186 @@ export const bulkReassignTasks = async (req, res, next) => {
     }
 
     sendSuccess(res, { modifiedCount: updateResult.modifiedCount }, `Successfully reassigned ${updateResult.modifiedCount} task(s)`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── Send Task to Testing ──────────────────────────────────────────────────────
+/**
+ * POST /pmo/tasks/:id/send-to-testing
+ * Leader sends a task that is "In Review" to the QA/Testing team.
+ * Initialises a testingStatus.results entry for every subtask so testers
+ * can individually mark each one Pass / Fail.
+ */
+export const sendToTesting = async (req, res, next) => {
+  try {
+    const task = await Task.findById(req.params.id).populate('project');
+    if (!task) return sendError(res, 'Task not found', 404);
+
+    // Only the project manager (or super-admin) may send to testing
+    const isSuperAdmin = req.user.role?.slug === 'super-admin';
+    const isManager = task.project?.manager?.toString() === req.user._id.toString();
+    if (!isSuperAdmin && !isManager) {
+      return sendError(res, 'Only the project leader can send tasks to testing', 403);
+    }
+
+    if (task.status !== 'In Review') {
+      return sendError(res, 'Task must be "In Review" before sending to Testing', 400);
+    }
+
+    task.status = 'Testing';
+    task.sentToTestingAt = new Date();
+    task.statusHistory.push({ status: 'Testing', changedBy: req.user._id, changedAt: new Date() });
+
+    // Initialise a result entry for every subtask (so testers see the full list)
+    task.testingStatus = {
+      overallResult: 'Pending',
+      testedBy: null,
+      completedAt: null,
+      results: task.subtasks.map((sub) => ({
+        subtaskId: sub._id,
+        subtaskTitle: sub.title,
+        result: 'Pending',
+        notes: '',
+        testedBy: null,
+        testedAt: null,
+      })),
+    };
+
+    await task.save();
+
+    // Notify the assignee that their work is now in QA
+    if (task.assignedTo) {
+      await sendNotification({
+        recipient: task.assignedTo,
+        type: 'system_alert',
+        title: 'Task Sent to Testing',
+        message: `Your task "${task.title}" has been sent to the QA team for testing.`,
+        link: `/tasks?taskId=${task._id}`,
+        sender: req.user._id,
+        metadata: { taskId: task._id, projectId: task.project?._id || task.project },
+      });
+    }
+
+    // Also notify QA / project team members who have the QA role
+    const proj = task.project;
+    const qaMembers = (proj.team || []).filter(
+      (m) => m.role?.toLowerCase().includes('qa') || m.role?.toLowerCase().includes('test')
+    );
+    for (const qaMember of qaMembers) {
+      if (qaMember.user && qaMember.user.toString() !== req.user._id.toString()) {
+        await sendNotification({
+          recipient: qaMember.user,
+          type: 'task_assigned',
+          title: 'New Task for Testing',
+          message: `Task "${task.title}" in ${proj.name} is ready for QA testing.`,
+          link: `/tasks?taskId=${task._id}`,
+          sender: req.user._id,
+          metadata: { taskId: task._id, projectId: proj._id },
+        });
+      }
+    }
+
+    sendSuccess(res, task, 'Task sent to testing successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ─── Test Subtask ─────────────────────────────────────────────────────────────
+/**
+ * PATCH /pmo/tasks/:id/test-subtask/:subtaskId
+ * QA tester marks an individual subtask as Pass or Fail (with optional notes).
+ * After all subtasks are tested, the overallResult is auto-computed:
+ *   • All Pass  → "Passed"
+ *   • Any Fail  → "Failed"
+ *   • Mixed     → "Partial"
+ */
+export const testSubtask = async (req, res, next) => {
+  try {
+    const { result, notes } = req.body;
+    const { id: taskId, subtaskId } = req.params;
+
+    if (!['Pass', 'Fail'].includes(result)) {
+      return sendError(res, 'result must be "Pass" or "Fail"', 400);
+    }
+
+    const task = await Task.findById(taskId).populate('project');
+    if (!task) return sendError(res, 'Task not found', 404);
+
+    if (task.status !== 'Testing') {
+      return sendError(res, 'Task is not in Testing status', 400);
+    }
+
+    // Ensure the tester is a project team member
+    const proj = task.project;
+    const isMember =
+      req.user.role?.slug === 'super-admin' ||
+      proj?.manager?.toString() === req.user._id.toString() ||
+      (proj?.team || []).some((m) => m.user?.toString() === req.user._id.toString());
+
+    if (!isMember) {
+      return sendError(res, 'You must be a project team member to test tasks', 403);
+    }
+
+    // Update the specific subtask result
+    let testingStatus = task.testingStatus || { overallResult: 'Pending', results: [] };
+    const existingIdx = testingStatus.results.findIndex(
+      (r) => r.subtaskId?.toString() === subtaskId
+    );
+
+    const subtask = task.subtasks.find((s) => s._id?.toString() === subtaskId);
+
+    const resultEntry = {
+      subtaskId,
+      subtaskTitle: subtask?.title || '',
+      result,
+      notes: notes || '',
+      testedBy: req.user._id,
+      testedAt: new Date(),
+    };
+
+    if (existingIdx >= 0) {
+      testingStatus.results[existingIdx] = resultEntry;
+    } else {
+      testingStatus.results.push(resultEntry);
+    }
+
+    // Auto-compute overall result
+    const allResults = testingStatus.results.map((r) => r.result);
+    const allTested = allResults.every((r) => r !== 'Pending');
+    if (allTested) {
+      const hasFail = allResults.some((r) => r === 'Fail');
+      const hasPass = allResults.some((r) => r === 'Pass');
+      if (hasFail && hasPass) {
+        testingStatus.overallResult = 'Partial';
+      } else if (hasFail) {
+        testingStatus.overallResult = 'Failed';
+      } else {
+        testingStatus.overallResult = 'Passed';
+      }
+      testingStatus.testedBy = req.user._id;
+      testingStatus.completedAt = new Date();
+    }
+
+    task.testingStatus = testingStatus;
+    await task.save();
+
+    // Notify the project manager when all subtasks are tested
+    if (allTested && proj?.manager) {
+      await sendNotification({
+        recipient: proj.manager,
+        type: 'system_alert',
+        title: `Task Testing ${testingStatus.overallResult}`,
+        message: `QA completed testing "${task.title}". Overall result: ${testingStatus.overallResult}.`,
+        link: `/tasks?taskId=${task._id}`,
+        sender: req.user._id,
+        metadata: { taskId: task._id, projectId: proj._id },
+      });
+    }
+
+    sendSuccess(res, task.testingStatus, 'Subtask test result saved');
   } catch (error) {
     next(error);
   }

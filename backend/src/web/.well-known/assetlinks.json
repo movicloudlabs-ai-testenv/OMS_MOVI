@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.movi.owms.movi_owms",
+      "sha256_cert_fingerprints": [
+        "14:C1:55:77:C0:C8:61:5B:40:F5:6A:79:5E:82:16:D4:0C:29:A9:F0:20:B4:20:45:B7:30:16:CC:17:8E:5A:73"
+      ]
+    }
+  }
+]
