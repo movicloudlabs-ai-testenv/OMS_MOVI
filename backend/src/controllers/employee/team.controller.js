@@ -2,7 +2,7 @@ import Project from '../../models/Project.js';
 import User from '../../models/User.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 
-const SAFE_FIELDS = 'name designation email avatar employeeId skills bio joinDate';
+const SAFE_FIELDS = 'name designation email avatar profileImage employeeId skills bio joinDate phone status manager hrManager address';
 
 export const getTeam = async (req, res, next) => {
   try {
@@ -80,6 +80,8 @@ export const getTeamMember = async (req, res, next) => {
       .select(SAFE_FIELDS)
       .populate('role', 'name slug')
       .populate('department', 'name')
+      .populate('manager', 'name email designation')
+      .populate('hrManager', 'name email')
       .lean();
 
     if (!member) return sendError(res, 'User not found', 404);
