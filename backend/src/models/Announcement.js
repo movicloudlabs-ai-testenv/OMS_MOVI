@@ -23,6 +23,11 @@ const AnnouncementSchema = new Schema({
     trim: true,
     maxlength: 3000,
   },
+  zoomLink: {
+    type: String,
+    trim: true,
+    maxlength: 500,
+  },
   type: {
     type: String,
     enum: ['general', 'maintenance', 'security', 'feature', 'announcement', 'alert'],
@@ -32,6 +37,10 @@ const AnnouncementSchema = new Schema({
     type: String,
     trim: true,
     lowercase: true,
+  }],
+  targetUsers: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User',
   }],
   pinned: {
     type: Boolean,
@@ -51,6 +60,7 @@ const AnnouncementSchema = new Schema({
 
 AnnouncementSchema.index({ createdAt: -1 });
 AnnouncementSchema.index({ pinned: -1, createdAt: -1 });
+AnnouncementSchema.index({ targetUsers: 1, createdAt: -1 });
 
 const Announcement = mongoose.model('Announcement', AnnouncementSchema);
 export default Announcement;

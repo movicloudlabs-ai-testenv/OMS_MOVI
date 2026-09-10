@@ -30,8 +30,6 @@ import EmployeeTeam from './pages/employee/Team';
 import EmployeeTeamDetails from './pages/employee/TeamDetails';
 import EmployeeAttendance from './pages/employee/Attendance';
 import EmployeeLeave from './pages/employee/Leave';
-import EmployeeDailyTracker from './pages/employee/DailyTracker';
-import EmployeeEODReport from './pages/employee/EODReport';
 import EmployeeProfile from './pages/employee/Profile';
 
 // HR
@@ -55,6 +53,10 @@ import HRAttendance from './pages/hr/Attendance';
 import HRDocuments from './pages/hr/Documents';
 import HRPerformance from './pages/hr/Performance';
 import HRCommunication from './pages/hr/Communication';
+import PMOCommunication from './pages/pmo/Communication';
+import InternAnnouncements from './pages/intern/Announcements';
+import EmployeeAnnouncements from './pages/employee/Announcements';
+import AdminAnnouncements from './pages/admin/Announcements';
 import HRAssignTask from './pages/hr/AssignTask';
 import HRTaskBoard from './pages/hr/TaskBoard';
 import HRProjects from './pages/hr/Projects';
@@ -146,8 +148,6 @@ export default function App() {
       <Route path="/employee/team/:id" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeTeamDetails /></ProtectedRoute>} />
       <Route path="/employee/attendance" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeAttendance /></ProtectedRoute>} />
       <Route path="/employee/leave" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeLeave /></ProtectedRoute>} />
-      <Route path="/employee/daily-tracker" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeDailyTracker /></ProtectedRoute>} />
-      <Route path="/employee/eod-report" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeEODReport /></ProtectedRoute>} />
       <Route path="/employee/profile" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeProfile /></ProtectedRoute>} />
 
 
@@ -180,6 +180,10 @@ export default function App() {
       <Route path="/hr/my-leave" element={<ProtectedRoute allowedRoles={['hr']}><HRMyLeave /></ProtectedRoute>} />
       <Route path="/hr/my-attendance" element={<ProtectedRoute allowedRoles={['hr']}><HRMyAttendance /></ProtectedRoute>} />
       <Route path="/hr/communication" element={<ProtectedRoute allowedRoles={['hr']}><HRCommunication /></ProtectedRoute>} />
+      <Route path="/pmo/communication" element={<ProtectedRoute allowedRoles={['pmo']}><PMOCommunication /></ProtectedRoute>} />
+      <Route path="/intern/announcements" element={<ProtectedRoute allowedRoles={['intern']}><InternAnnouncements /></ProtectedRoute>} />
+      <Route path="/employee/announcements" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeAnnouncements /></ProtectedRoute>} />
+      <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={['admin']}><AdminAnnouncements /></ProtectedRoute>} />
       <Route path="/hr/tasks/new" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Tasks', action: 'create' }}><HRAssignTask /></ProtectedRoute>} />
       <Route path="/hr/profile" element={<ProtectedRoute allowedRoles={['hr']}><HRProfile /></ProtectedRoute>} />
 

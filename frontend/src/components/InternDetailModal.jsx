@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
-import { usersAPI } from '../api';
+import { pmoAPI, hrAPI } from '../api';
 import toast from 'react-hot-toast';
 
 export default function InternDetailModal({ internId, isOpen, onClose }) {
@@ -10,7 +10,7 @@ export default function InternDetailModal({ internId, isOpen, onClose }) {
   useEffect(() => {
     if (isOpen && internId) {
       setLoading(true);
-      usersAPI.getById(internId)
+      (async () => { try { return await pmoAPI.getIntern(internId); } catch { return await hrAPI.getIntern(internId); } })()
         .then(res => setIntern(res.data.data))
         .catch(() => toast.error('Failed to load intern details'))
         .finally(() => setLoading(false));

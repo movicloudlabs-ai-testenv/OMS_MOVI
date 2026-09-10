@@ -10,7 +10,10 @@ export default function AnnouncementModal({ announcement, onClose }) {
   const content = announcement.message || announcement.metadata?.content || announcement.content || '';
   const senderName = announcement.sender?.name || announcement.metadata?.senderName || 'Sarah Connor';
   const senderDesignation = announcement.sender?.designation || announcement.metadata?.senderDesignation || 'HR Manager';
-  const targetRoles = announcement.metadata?.targetRoles || [];
+  const zoomLink = announcement.zoomLink || announcement.metadata?.zoomLink || '';
+  const targetRoles = announcement.metadata?.targetRoles || announcement.targetRoles || [];
+  const targetUsers = announcement.targetUsers || [];
+  const receivingLabel = targetRoles.includes('all') ? 'Everyone' : targetRoles.length ? targetRoles.join(', ') : `${targetUsers.length} selected people`;
 
   let formattedTime = '';
   let fullDate = '';
@@ -83,14 +86,13 @@ export default function AnnouncementModal({ announcement, onClose }) {
           </div>
 
           {/* Target Audience Tags */}
-          {targetRoles.length > 0 && (
-            <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-              <span className="text-[11px] text-slate-400 font-medium">Target Audience:</span>
-              {targetRoles.map(role => (
-                <span key={role} className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 border border-blue-100">
-                  {role}
-                </span>
-              ))}
+          {(targetRoles.length > 0 || targetUsers.length > 0) && (
+            <div className="mb-3 p-3 bg-blue-50/60 rounded-xl border border-blue-100">
+              <div className="text-[11px] text-slate-400 font-medium mb-1">Receiving</div>
+              <div className="text-xs font-bold text-blue-700">{receivingLabel}</div>
+              {targetUsers.length > 0 && targetUsers.length <= 8 && (
+                <div className="mt-2 flex flex-wrap gap-1">{targetUsers.map(u => <span key={u._id || u} className="text-[10px] px-2 py-0.5 rounded-md bg-white border border-blue-100 text-slate-600">{u.name || u}</span>)}</div>
+              )}
             </div>
           )}
 
@@ -101,6 +103,21 @@ export default function AnnouncementModal({ announcement, onClose }) {
               {content}
             </div>
           </div>
+
+          {zoomLink && (
+            <div className="mt-3 py-3 px-4 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between gap-3 flex-wrap">
+              <span className="text-[12px] font-semibold text-blue-700">Zoom Meeting Link</span>
+              <a
+                href={zoomLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[12px] font-bold transition-colors"
+              >
+                <span className="material-symbols-outlined text-[15px]">videocam</span>
+                Join Zoom Meeting
+              </a>
+            </div>
+          )}
 
           {/* Action Footer */}
           <div className="mt-5 pt-3 border-t border-slate-100 flex items-center justify-end">

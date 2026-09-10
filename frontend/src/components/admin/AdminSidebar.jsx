@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   Menu, LayoutDashboard, Users, Building2, Shield, Grid2X2, FileClock,
-  BarChart3, Settings as SettingsIcon, LogOut, User, CreditCard, LifeBuoy,
+  BarChart3, Settings as SettingsIcon, LogOut, User, CreditCard, LifeBuoy, MessageSquare,
 } from 'lucide-react';
 
 export const NAV_LINKS = [
@@ -14,6 +14,7 @@ export const NAV_LINKS = [
   { to: '/admin/audit',         icon: FileClock,       label: 'Audit Logs' },
   { to: '/admin/reports',       icon: BarChart3,       label: 'Reports' },
   { to: '/admin/settings',      icon: SettingsIcon,    label: 'Settings' },
+  { to: '/admin/announcements', icon: MessageSquare,   label: 'Announcement' },
   { to: '/admin/profile',       icon: User,            label: 'My Profile' },
   { to: '/support/issues',      icon: LifeBuoy,        label: 'Issue Support' },
 ];

@@ -429,9 +429,33 @@ export const paymentsAPI = {
 // ─── ANNOUNCEMENTS & COMMUNICATION API ────────────────────────────────────
 export const announcementsAPI = {
   getAll: (params) => api.get('/announcements', { params }),
+  getRecipients: (params) => api.get('/announcements/recipients', { params }),
   create: (data) => api.post('/announcements', data),
   delete: (id) => api.delete(`/announcements/${id}`),
   togglePin: (id) => api.patch(`/announcements/${id}/pin`),
+};
+
+
+// ─── DOCUMENTS API ───────────────────────────────────────────────────────────
+export const documentsAPI = {
+  getAll: (params) => api.get('/documents', { params }),
+  upload: (formData) => api.post('/documents', formData, { headers: { 'Content-Type': 'multipart/form-data' } }),
+  download: (id) => api.get(`/documents/${id}/download`, { responseType: 'blob' }),
+  delete: (id) => api.delete(`/documents/${id}`),
+};
+
+// ─── MESSAGES API ────────────────────────────────────────────────────────────
+export const messagesAPI = {
+  getContacts: (params) => api.get('/messages/contacts', { params }),
+  getAll: (userId) => api.get(`/messages/${userId}`),
+  send: (data) => api.post('/messages', data),
+  markRead: (id) => api.patch(`/messages/${id}/read`),
+};
+
+// ─── INTERN PERFORMANCE API ─────────────────────────────────────────────────
+export const performanceAPI = {
+  getMonthly: (params) => api.get('/intern/performance/monthly', { params }),
+  getAll: (params) => api.get('/intern/performance', { params }),
 };
 
 // Issue Support
