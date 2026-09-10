@@ -230,7 +230,7 @@ export default function EmployeeDashboard() {
               </div>
               <div className="space-y-3">
                 {todaysTasks.length > 0 ? todaysTasks.map(task => (
-                  <div key={task._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-[#E2E8F0] rounded-lg hover:border-blue-300 transition-colors cursor-pointer group" onClick={() => navigate('/employee/tasks')}>
+                  <div key={task._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 border border-[#E2E8F0] rounded-lg hover:border-blue-300 transition-colors cursor-pointer group" onClick={() => navigate(`/employee/tasks?taskId=${task._id}`)}>
                     <div className="flex items-center gap-3 mb-2 sm:mb-0">
                       <div className={`w-2 h-2 rounded-full ${getUrgencyColor(task.priority)}`} />
                       <span className="text-sm font-medium text-[#0F172A]">{task.title}</span>
@@ -245,7 +245,7 @@ export default function EmployeeDashboard() {
                         }`}>{task.status}</span>
                       </div>
                       <div className="w-24 flex justify-end">
-                        <button className="text-[11px] font-bold text-[#2563EB] border border-[#2563EB] hover:bg-[#EFF6FF] px-3 py-1 rounded transition-colors">Action</button>
+                        <button onClick={(e) => { e.stopPropagation(); navigate(`/employee/tasks?taskId=${task._id}`); }} className="text-[11px] font-bold text-[#2563EB] border border-[#2563EB] hover:bg-[#EFF6FF] px-3 py-1 rounded transition-colors">Action</button>
                       </div>
                     </div>
                   </div>
