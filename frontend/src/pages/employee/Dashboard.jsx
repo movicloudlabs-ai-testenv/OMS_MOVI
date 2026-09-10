@@ -90,11 +90,15 @@ export default function EmployeeDashboard() {
   const presentDays = activeDays.filter(a => a.status === 'Present').length;
   const attendancePercent = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
 
-  // Calculate remaining leaves
+  // Calculate remaining leaves across all categories (annual, casual, sick, emergency, compensatory)
   const remainingLeaves = leaveBalance 
-    ? ((leaveBalance.casual?.total || 0) + (leaveBalance.sick?.total || 0) + (leaveBalance.annual?.total || 0)) -
-      ((leaveBalance.casual?.used || 0) + (leaveBalance.sick?.used || 0) + (leaveBalance.annual?.used || 0))
-    : 19;
+    ? Object.values(leaveBalance).reduce((sum, b) => {
+        if (b && typeof b === 'object' && typeof b.total === 'number') {
+          return sum + Math.max(0, (b.total || 0) - (b.used || 0));
+        }
+        return sum;
+      }, 0)
+    : 0;
 
   // Calculate workload
   const maxWorkload = 10;
