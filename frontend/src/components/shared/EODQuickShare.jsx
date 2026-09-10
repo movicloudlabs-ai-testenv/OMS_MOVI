@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../contexts/AuthContext';
 
 const MAX_BACKDATE_DAYS = 14;
 const toDateInput = (d) => d.toISOString().slice(0, 10);
@@ -19,8 +20,24 @@ const minDateStr = () => {
  * where a date picker would just be clutter, since that view is always
  * "today".
  */
-export default function EODQuickShare({ api, allowBackdate = false }) {
+export default function EODQuickShare({ api, allowBackdate = false, showRoleInput = false, rolePlaceholder: customPlaceholder }) {
+  const { user } = useAuth();
+  const roleSlug = user?.role?.slug || (typeof user?.role === 'string' ? user.role : '');
+
+  // Dynamic contextual placeholder based on user account role
+  const getContextualRolePlaceholder = () => {
+    if (customPlaceholder) return customPlaceholder;
+    if (roleSlug === 'intern') return 'e.g. QA Intern';
+    if (roleSlug === 'employee') return 'e.g. Backend Developer';
+    if (roleSlug === 'pmo' || roleSlug === 'pmo-lead') return 'e.g. PMO Lead';
+    if (roleSlug === 'hr' || roleSlug === 'hr-manager') return 'e.g. HR Executive';
+    return 'e.g. Software Engineer';
+  };
+
+  const rolePlaceholder = getContextualRolePlaceholder();
+
   const [message, setMessage] = useState('');
+  const [roleTitle, setRoleTitle] = useState('');
   const [submittedForDate, setSubmittedForDate] = useState(null); // the saved entry, or null
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,6 +51,7 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
       const entry = res.data?.data || null;
       setSubmittedForDate(entry);
       setMessage(entry ? entry.message : '');
+      setRoleTitle(entry ? (entry.roleTitle || '') : '');
       setEditing(false);
     } catch {
       setSubmittedForDate(null);
@@ -89,6 +107,19 @@ export default function EODQuickShare({ api, allowBackdate = false }) {
             className="w-full sm:w-48 border border-[#E2E8F0] rounded-md py-1.5 px-3 text-[12.5px] focus:outline-none focus:border-[#2563EB]"
           />
           <p className="text-[11px] text-[#94A3B8] mt-1">You can fill in a missed day up to {MAX_BACKDATE_DAYS} days back.</p>
+        </div>
+      )}
+
+      {showRoleInput && (
+        <div className="mb-3">
+          <label className="block text-[12px] font-semibold text-[#64748B] mb-1">Role / Position</label>
+          <input
+            type="text"
+            value={roleTitle}
+            onChange={(e) => setRoleTitle(e.target.value)}
+            placeholder={rolePlaceholder}
+            className="w-full sm:w-64 border border-[#E2E8F0] rounded-md py-1.5 px-3 text-[12.5px] focus:outline-none focus:border-[#2563EB]"
+          />
         </div>
       )}
 

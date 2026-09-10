@@ -20,6 +20,8 @@ const NAV_CONFIG = {
   employee: [
     { to: '/employee/dashboard', icon: LayoutDashboard, label: 'Dashboard', isLucide: true },
     { to: '/employee/tasks', icon: CheckSquare, label: 'My Tasks', isLucide: true },
+    { to: '/employee/daily-tracker', icon: CalendarDays, label: 'Daily Tracker', isLucide: true },
+    { to: '/employee/eod-report', icon: MessageSquare, label: 'EOD Report', isLucide: true },
     { to: '/employee/projects', icon: Briefcase, label: 'My Projects', isLucide: true },
     { to: '/employee/team', icon: Users, label: 'My Team', isLucide: true },
     { to: '/support/issues', icon: LifeBuoy, label: 'Issue Support', isLucide: true },

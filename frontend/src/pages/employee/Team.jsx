@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import { Search, Mail, Briefcase, Users } from 'lucide-react';
 import { employeeAPI } from '../../utils/api';
@@ -69,8 +70,13 @@ export default function EmployeeTeam() {
               const initials = (member.name || '?').split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
               const color    = roleColor(member.role?.slug || member.roleSlug);
               const projects = member.sharedProjects || [];
+              const memberId = member._id || member.id;
               return (
-                <div key={member._id} className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all">
+                <Link
+                  key={memberId}
+                  to={`/employee/team/${memberId}`}
+                  className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all block"
+                >
                   <div className="flex items-center gap-4 mb-4">
                     <div className={`w-12 h-12 rounded-full ${color} text-white flex items-center justify-center text-sm font-bold shrink-0`}>
                       {initials}
@@ -108,7 +114,7 @@ export default function EmployeeTeam() {
                       ))}
                     </div>
                   )}
-                </div>
+                </Link>
               );
             })}
           </div>

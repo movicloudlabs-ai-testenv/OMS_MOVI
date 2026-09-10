@@ -24,6 +24,8 @@ import InternProfile from './pages/intern/Profile';
 
 // Employee
 import EmployeeDashboard from './pages/employee/Dashboard';
+import EmployeeDailyTracker from './pages/employee/DailyTracker';
+import EmployeeEODReport from './pages/employee/EODReport';
 import EmployeeTasks from './pages/employee/Tasks';
 import EmployeeProjects from './pages/employee/Projects';
 import EmployeeTeam from './pages/employee/Team';
@@ -138,6 +140,8 @@ export default function App() {
 
       {/* Employee */}
       <Route path="/employee/dashboard" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeDashboard /></ProtectedRoute>} />
+      <Route path="/employee/daily-tracker" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeDailyTracker /></ProtectedRoute>} />
+      <Route path="/employee/eod-report" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeEODReport /></ProtectedRoute>} />
       <Route path="/employee/tasks" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeTasks /></ProtectedRoute>} />
       <Route path="/employee/projects" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeProjects /></ProtectedRoute>} />
       <Route path="/employee/team" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeTeam /></ProtectedRoute>} />

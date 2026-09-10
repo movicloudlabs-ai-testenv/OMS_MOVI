@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import HRLayout from '../../components/hr/HRLayout';
 import PageWrapper from '../../components/PageWrapper';
+import Modal from '../../components/Modal';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { hrAPI } from '../../utils/api';
 
@@ -12,6 +14,7 @@ export default function HREmployeeDetails() {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showPayrollModal, setShowPayrollModal] = useState(false);
 
   const isEmployeeRole = currentUser?.role?.slug === 'employee' || currentUser?.role === 'employee';
   const LayoutComponent = isEmployeeRole ? PageWrapper : HRLayout;
@@ -255,7 +258,13 @@ export default function HREmployeeDetails() {
 
           {/* Column 3: Employment Details */}
           <div className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-6 space-y-6 relative">
-            <button className="absolute top-6 right-6 text-[12px] font-semibold text-[#2563EB] hover:underline flex items-center gap-1">
+            <button
+              onClick={() => {
+                setShowPayrollModal(true);
+                toast.success(`Opening payroll details for ${emp.name}`);
+              }}
+              className="absolute top-6 right-6 text-[12px] font-semibold text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer"
+            >
               <span className="material-symbols-outlined text-[14px]">request_quote</span> Payroll
             </button>
             <h2 className="text-[14px] font-bold text-[#0F172A] uppercase tracking-wider flex items-center gap-2 border-b border-[#E2E8F0] pb-3">
@@ -341,6 +350,81 @@ export default function HREmployeeDetails() {
         </div>
 
       </div>
+
+      {/* Payroll Modal */}
+      <Modal
+        isOpen={showPayrollModal}
+        onClose={() => setShowPayrollModal(false)}
+        title={`Payroll Details — ${emp.name}`}
+        size="md"
+      >
+        <div className="space-y-5 text-left font-sans">
+          <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl flex items-center justify-between">
+            <div>
+              <p className="text-[12px] text-[#64748B] font-medium">Employee ID</p>
+              <p className="text-[15px] font-bold text-[#0F172A]">{emp.id}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[12px] text-[#64748B] font-medium">Status</p>
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800">
+                Active Payroll
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div className="p-3 border border-[#E2E8F0] rounded-lg">
+              <span className="block text-[#64748B] mb-1 font-medium">Department</span>
+              <span className="font-semibold text-[#0F172A] text-[13px]">{emp.department}</span>
+            </div>
+            <div className="p-3 border border-[#E2E8F0] rounded-lg">
+              <span className="block text-[#64748B] mb-1 font-medium">Employment Type</span>
+              <span className="font-semibold text-[#0F172A] text-[13px]">{emp.type}</span>
+            </div>
+            <div className="p-3 border border-[#E2E8F0] rounded-lg">
+              <span className="block text-[#64748B] mb-1 font-medium">Designation</span>
+              <span className="font-semibold text-[#0F172A] text-[13px]">{emp.designation}</span>
+            </div>
+            <div className="p-3 border border-[#E2E8F0] rounded-lg">
+              <span className="block text-[#64748B] mb-1 font-medium">Salary Band</span>
+              <span className="font-semibold text-[#0F172A] text-[13px]">{emp.salaryBand !== '-' ? emp.salaryBand : 'Standard Grade'}</span>
+            </div>
+          </div>
+
+          <div className="border-t border-[#E2E8F0] pt-4 space-y-3">
+            <h4 className="text-[13px] font-bold text-[#0F172A] uppercase tracking-wider">Payroll Summary</h4>
+            <div className="flex justify-between items-center text-xs py-1.5 border-b border-[#F1F5F9]">
+              <span className="text-[#64748B]">Monthly Disbursement Cycle</span>
+              <span className="font-medium text-[#0F172A]">Last Day of Month</span>
+            </div>
+            <div className="flex justify-between items-center text-xs py-1.5 border-b border-[#F1F5F9]">
+              <span className="text-[#64748B]">Tax Exemption Status</span>
+              <span className="font-medium text-[#16A34A]">Verified</span>
+            </div>
+            <div className="flex justify-between items-center text-xs py-1.5">
+              <span className="text-[#64748B]">Direct Deposit Account</span>
+              <span className="font-medium text-[#0F172A]">Linked (Primary Bank)</span>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-3">
+            <button
+              onClick={() => {
+                toast.success(`Generated salary statement for ${emp.name}`);
+              }}
+              className="px-4 py-2 bg-white border border-[#E2E8F0] text-[#0F172A] rounded-lg text-xs font-semibold hover:bg-[#F8FAFC] transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">download</span> Download Slip
+            </button>
+            <button
+              onClick={() => setShowPayrollModal(false)}
+              className="px-4 py-2 bg-[#2563EB] text-white rounded-lg text-xs font-semibold hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
     </LayoutComponent>
   );
 }

@@ -27,119 +27,130 @@ const priorityBadge = (p) => ({
 }[p] || 'bg-slate-100 text-slate-600');
 
 function ProjectDrawer({ project, onClose }) {
-  if (!project) return null;
-
-  const myRole = project.myRole || 'Member';
-  const managerName = project.manager?.name || '—';
+  const myRole = project?.myRole || 'Member';
+  const managerName = project?.manager?.name || '—';
 
   return (
     <AnimatePresence>
-      <motion.div className="fixed inset-0 bg-black/30 z-50 backdrop-blur-sm"
-        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        onClick={onClose} />
-      <motion.div
-        initial={{ x: 480, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 480, opacity: 0 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-0 h-full w-full max-w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-[#E2E8F0]"
-      >
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-[#E2E8F0] bg-[#F8FAFC] shrink-0">
-          <button onClick={onClose} className="absolute top-5 right-5 text-[#64748B] hover:bg-[#E2E8F0] p-1.5 rounded-full">
-            <X size={18} />
-          </button>
-          <div className="flex items-center gap-2 mb-3">
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${statusBadge(project.status)}`}>{project.status}</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${priorityBadge(project.priority)}`}>{project.priority} Priority</span>
-          </div>
-          <h2 className="text-xl font-bold text-[#0F172A] pr-10">{project.name}</h2>
-          <span className="mt-2 inline-block text-xs font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded">
-            My Role: {myRole}
-          </span>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-6 space-y-7">
-          {/* Description */}
-          <div>
-            <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-2">Description</h4>
-            <p className="text-sm text-[#0F172A] leading-relaxed">{project.description || 'No description provided.'}</p>
-          </div>
-
-          {/* Milestones */}
-          {project.milestones?.length > 0 && (
-            <div>
-              <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-4">Milestones</h4>
-              <div className="relative border-l-2 border-[#E2E8F0] ml-2 space-y-5">
-                {project.milestones.map((ms, i) => (
-                  <div key={i} className="relative pl-5">
-                    <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
-                      ms.status === 'completed' ? 'bg-green-500' : ms.status === 'current' ? 'bg-[#2563EB] ring-2 ring-blue-100' : 'bg-[#CBD5E1]'
-                    }`} />
-                    <p className={`text-sm font-bold ${ms.status === 'upcoming' ? 'text-[#64748B]' : 'text-[#0F172A]'}`}>{ms.name}</p>
-                    <p className="text-xs text-[#64748B] mt-0.5">{fmtDate(ms.date)}</p>
-                  </div>
-                ))}
-              </div>
+      {project && (
+        <motion.div
+          key={`drawer-backdrop-${project._id || project.id || 'active'}`}
+          className="fixed inset-0 bg-black/30 z-50 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+        />
+      )}
+      {project && (
+        <motion.div
+          key={`drawer-panel-${project._id || project.id || 'active'}`}
+          initial={{ x: 480, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 480, opacity: 0 }}
+          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          className="fixed right-0 top-0 h-full w-full max-w-[480px] bg-white shadow-2xl z-50 flex flex-col border-l border-[#E2E8F0]"
+        >
+          {/* Header */}
+          <div className="px-6 py-5 border-b border-[#E2E8F0] bg-[#F8FAFC] shrink-0 relative">
+            <button onClick={onClose} className="absolute top-5 right-5 text-[#64748B] hover:bg-[#E2E8F0] p-1.5 rounded-full">
+              <X size={18} />
+            </button>
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${statusBadge(project.status)}`}>{project.status}</span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${priorityBadge(project.priority)}`}>{project.priority} Priority</span>
             </div>
-          )}
+            <h2 className="text-xl font-bold text-[#0F172A] pr-10">{project.name}</h2>
+            <span className="mt-2 inline-block text-xs font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded">
+              My Role: {myRole}
+            </span>
+          </div>
 
-          {/* My Tasks snapshot */}
-          {project.myTasks?.length > 0 && (
+          <div className="flex-1 overflow-y-auto p-6 space-y-7">
+            {/* Description */}
             <div>
-              <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3">My Tasks in this Project</h4>
-              <div className="space-y-2">
-                {project.myTasks.slice(0, 5).map((t, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-xl">
-                    <div className="flex items-center gap-3">
-                      <CheckSquare size={15} className={t.status === 'Done' ? 'text-green-500' : 'text-[#94A3B8]'} />
-                      <span className={`text-sm font-medium ${t.status === 'Done' ? 'text-[#64748B] line-through' : 'text-[#0F172A]'}`}>{t.title}</span>
+              <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-2">Description</h4>
+              <p className="text-sm text-[#0F172A] leading-relaxed">{project.description || 'No description provided.'}</p>
+            </div>
+
+            {/* Milestones */}
+            {project.milestones?.length > 0 && (
+              <div>
+                <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-4">Milestones</h4>
+                <div className="relative border-l-2 border-[#E2E8F0] ml-2 space-y-5">
+                  {project.milestones.map((ms, i) => (
+                    <div key={ms._id || ms.id || `ms-${ms.name || i}`} className="relative pl-5">
+                      <div className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center ${
+                        ms.status === 'completed' ? 'bg-green-500' : ms.status === 'current' ? 'bg-[#2563EB] ring-2 ring-blue-100' : 'bg-[#CBD5E1]'
+                      }`} />
+                      <p className={`text-sm font-bold ${ms.status === 'upcoming' ? 'text-[#64748B]' : 'text-[#0F172A]'}`}>{ms.name}</p>
+                      <p className="text-xs text-[#64748B] mt-0.5">{fmtDate(ms.date)}</p>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${t.status === 'Done' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
-                      {t.status}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Team snapshot */}
-          {project.team?.length > 0 && (
-            <div>
-              <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3">Team</h4>
-              <div className="space-y-3">
-                {project.team.map((m, i) => {
-                  const name = m.user?.name || m.name || '?';
-                  const av   = name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
-                  return (
-                    <div key={i} className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#1E293B] text-white flex items-center justify-center text-xs font-bold shrink-0">{av}</div>
-                      <div>
-                        <p className="text-sm font-semibold text-[#0F172A]">{name}</p>
-                        <p className="text-xs text-[#64748B]">{m.role || m.user?.designation || 'Member'}</p>
+            {/* My Tasks snapshot */}
+            {project.myTasks?.length > 0 && (
+              <div>
+                <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3">My Tasks in this Project</h4>
+                <div className="space-y-2">
+                  {project.myTasks.slice(0, 5).map((t, i) => (
+                    <div key={t._id || t.id || `task-${t.title || i}`} className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-xl">
+                      <div className="flex items-center gap-3">
+                        <CheckSquare size={15} className={t.status === 'Done' ? 'text-green-500' : 'text-[#94A3B8]'} />
+                        <span className={`text-sm font-medium ${t.status === 'Done' ? 'text-[#64748B] line-through' : 'text-[#0F172A]'}`}>{t.title}</span>
                       </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${t.status === 'Done' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'}`}>
+                        {t.status}
+                      </span>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Contacts */}
-          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
-            <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3">Contacts</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-[#64748B]">Project Manager</span>
-                <span className="font-semibold text-[#0F172A]">{managerName}</span>
+            {/* Team snapshot */}
+            {project.team?.length > 0 && (
+              <div>
+                <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3">Team</h4>
+                <div className="space-y-3">
+                  {project.team.map((m, i) => {
+                    const name = m.user?.name || m.name || '?';
+                    const av   = name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+                    const memberKey = m._id || m.user?._id || m.user?.id || m.id || `member-${m.user?.email || m.name || i}`;
+                    return (
+                      <div key={memberKey} className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#1E293B] text-white flex items-center justify-center text-xs font-bold shrink-0">{av}</div>
+                        <div>
+                          <p className="text-sm font-semibold text-[#0F172A]">{name}</p>
+                          <p className="text-xs text-[#64748B]">{m.role || m.user?.designation || 'Member'}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#64748B]">Due Date</span>
-                <span className="font-semibold text-[#0F172A]">{fmtDate(project.endDate)}</span>
+            )}
+
+            {/* Contacts */}
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4">
+              <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3">Contacts</h4>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[#64748B]">Project Manager</span>
+                  <span className="font-semibold text-[#0F172A]">{managerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#64748B]">Due Date</span>
+                  <span className="font-semibold text-[#0F172A]">{fmtDate(project.endDate)}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 }

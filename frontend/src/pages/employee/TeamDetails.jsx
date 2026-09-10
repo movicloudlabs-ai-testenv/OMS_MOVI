@@ -1,32 +1,87 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import { Users, ChevronRight, MessageSquare, Mail, Phone, Calendar, Network, MapPin, Briefcase } from 'lucide-react';
+import { employeeAPI } from '../../utils/api';
+import toast from 'react-hot-toast';
 
 export default function EmployeeTeamDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
+  const [member, setMember] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Mock User Data based on Team.jsx mock data
-  const user = {
-    id: id || 'tm001',
-    name: 'Sarah Connor',
-    email: 'sarah.connor@movicloudlabs.com',
-    phone: '+1 (555) 987-6543',
-    department: 'Product',
-    designation: 'Product Manager',
-    role: 'Admin',
-    status: 'Active',
-    joined: 'January 15, 2022',
-    manager: 'Michael Chen',
-    hrRepresentative: 'Amanda Reed',
-    location: 'San Francisco, CA (HQ)',
-    sharedProjects: ['OWMS Internal Platform v2', 'Data Pipeline Automation']
-  };
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      setError('No teammate ID provided');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    employeeAPI.getTeamMember(id)
+      .then(res => {
+        const data = res.data?.data;
+        if (!data) {
+          setError('Teammate profile not found');
+        } else {
+          setMember(data);
+        }
+      })
+      .catch(err => {
+        const msg = err.response?.data?.message || 'Failed to load team member details';
+        setError(msg);
+        toast.error(msg);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const user = member ? {
+    id: member._id || id,
+    name: member.name || 'Team Member',
+    email: member.email || '—',
+    phone: member.phone || '—',
+    department: member.department?.name || member.department || '—',
+    designation: member.designation || member.roleInProject || 'Team Member',
+    role: member.role?.name || 'Employee',
+    status: member.status || 'Active',
+    joined: member.joinDate ? new Date(member.joinDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '—',
+    manager: member.manager?.name || member.manager || 'Unassigned',
+    hrRepresentative: member.hrManager?.name || member.hrRepresentative || 'Unassigned',
+    location: member.address || member.location || 'Remote',
+    sharedProjects: member.sharedProjects || []
+  } : null;
 
   const getAvatarInitials = (name) => {
-    return name.split(' ').map(n => n[0]).join('').substring(0, 2);
+    return (name || '').split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || '?';
   };
+
+  if (loading) {
+    return (
+      <PageWrapper>
+        <div className="flex justify-center items-center py-24">
+          <span className="material-symbols-outlined text-[32px] text-[#2563EB] animate-spin">sync</span>
+        </div>
+      </PageWrapper>
+    );
+  }
+
+  if (error || !user) {
+    return (
+      <PageWrapper>
+        <div className="w-full max-w-[1200px] mx-auto px-6 mt-12 pb-10 text-center py-16 font-sans bg-white border border-[#E2E8F0] rounded-xl shadow-sm">
+          <p className="text-[#EF4444] font-semibold text-lg mb-4">{error || 'Teammate profile not found'}</p>
+          <button
+            onClick={() => navigate('/employee/team')}
+            className="px-5 py-2.5 bg-[#2563EB] text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm inline-flex items-center gap-2"
+          >
+            <Users size={16} /> Back to My Team
+          </button>
+        </div>
+      </PageWrapper>
+    );
+  }
 
   return (
     <PageWrapper>
@@ -94,9 +149,13 @@ export default function EmployeeTeamDetails() {
             <div className="space-y-5">
               <div>
                 <span className="block text-[12px] font-medium text-[#64748B] mb-1">Email Address</span>
-                <a href={`mailto:${user.email}`} className="text-[14px] font-medium text-[#2563EB] hover:underline flex items-center gap-1.5">
-                  {user.email}
-                </a>
+                {user.email !== '—' ? (
+                  <a href={`mailto:${user.email}`} className="text-[14px] font-medium text-[#2563EB] hover:underline flex items-center gap-1.5">
+                    {user.email}
+                  </a>
+                ) : (
+                  <span className="text-[14px] font-medium text-[#0F172A]">—</span>
+                )}
               </div>
               <div>
                 <span className="block text-[12px] font-medium text-[#64748B] mb-1">Phone Number</span>
@@ -127,14 +186,18 @@ export default function EmployeeTeamDetails() {
               <div>
                 <span className="block text-[12px] font-medium text-[#64748B] mb-1">Reporting Manager</span>
                 <div className="flex items-center gap-2 mt-1 cursor-pointer group">
-                  <div className="w-6 h-6 rounded-full bg-[#E2E8F0] text-[#475569] flex items-center justify-center text-[10px] font-bold">MC</div>
+                  <div className="w-6 h-6 rounded-full bg-[#E2E8F0] text-[#475569] flex items-center justify-center text-[10px] font-bold">
+                    {getAvatarInitials(user.manager)}
+                  </div>
                   <span className="text-[14px] font-medium text-[#2563EB] group-hover:underline">{user.manager}</span>
                 </div>
               </div>
               <div>
                 <span className="block text-[12px] font-medium text-[#64748B] mb-1">Assigned HR</span>
                 <div className="flex items-center gap-2 mt-1 cursor-pointer group">
-                  <div className="w-6 h-6 rounded-full bg-[#E2E8F0] text-[#475569] flex items-center justify-center text-[10px] font-bold">AR</div>
+                  <div className="w-6 h-6 rounded-full bg-[#E2E8F0] text-[#475569] flex items-center justify-center text-[10px] font-bold">
+                    {getAvatarInitials(user.hrRepresentative)}
+                  </div>
                   <span className="text-[14px] font-medium text-[#2563EB] group-hover:underline">{user.hrRepresentative}</span>
                 </div>
               </div>
@@ -148,19 +211,22 @@ export default function EmployeeTeamDetails() {
               Shared Projects
             </h2>
             <div className="space-y-3">
-              {user.sharedProjects.map((project, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
-                  <div className="w-8 h-8 rounded bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
-                    <Briefcase size={14} />
+              {user.sharedProjects.length > 0 ? (
+                user.sharedProjects.map((project, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg">
+                    <div className="w-8 h-8 rounded bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+                      <Briefcase size={14} />
+                    </div>
+                    <span className="text-[13px] font-medium text-[#0F172A]">{project}</span>
                   </div>
-                  <span className="text-[13px] font-medium text-[#0F172A]">{project}</span>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-[13px] text-[#64748B]">No shared projects found.</p>
+              )}
             </div>
           </div>
 
         </div>
-
       </div>
     </PageWrapper>
   );
