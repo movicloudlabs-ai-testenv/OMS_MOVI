@@ -14,18 +14,12 @@ import { ensureDefaultUsersExist } from './src/utils/autoSeed.js';
 // Validate environment variables before anything else
 validateEnv();
 
-// Connect to MongoDB then sync permissions and bootstrap initial users if connected
-const dbConnected = await connectDB();
-if (dbConnected) {
-  try {
-    await syncPermissions();
-    await scrubDeletedUserRefs(); // heal any stale references to soft-deleted users
-    await ensureDefaultUsersExist(); // ensure standard demo roles and accounts are ready
-    scheduleLeaveCleanup();
-  } catch (syncErr) {
-    console.warn('⚠️ Initial sync warning:', syncErr.message);
-  }
-}
+// Connect to MongoDB then sync permissions and bootstrap initial users if empty
+await connectDB();
+await syncPermissions();
+await scrubDeletedUserRefs(); // heal any stale references to soft-deleted users
+await ensureDefaultUsersExist(); // ensure standard demo roles and accounts are ready
+scheduleLeaveCleanup();
 
 // Start server
 const PORT = process.env.PORT || 5000;
