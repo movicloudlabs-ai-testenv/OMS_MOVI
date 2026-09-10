@@ -17,11 +17,25 @@ if errorlevel 1 (
     exit /b 1
 )
 
-rem Check if MongoDB service is available and running
-sc query MongoDB >nul 2>nul
-if not errorlevel 1 (
-    echo [INFO] Ensuring MongoDB service is running...
-    net start MongoDB >nul 2>nul
+rem Check if MongoDB is reachable on port 27017
+echo [INFO] Checking MongoDB connectivity on port 27017...
+powershell -NoProfile -Command "$c = Test-NetConnection -Port 27017 -ComputerName 127.0.0.1 -WarningAction SilentlyContinue; if ($c.TcpTestSucceeded) { exit 0 } else { exit 1 }" >nul 2>nul
+if errorlevel 1 (
+    echo [INFO] MongoDB is not running on port 27017. Attempting to start service...
+    sc query MongoDB >nul 2>nul
+    if not errorlevel 1 (
+        net start MongoDB >nul 2>nul
+    )
+    rem Recheck if service started, fallback to standalone mongod process if needed
+    powershell -NoProfile -Command "$c = Test-NetConnection -Port 27017 -ComputerName 127.0.0.1 -WarningAction SilentlyContinue; if ($c.TcpTestSucceeded) { exit 0 } else { exit 1 }" >nul 2>nul
+    if errorlevel 1 (
+        if exist "C:\Program Files\MongoDB\Server\8.3\bin\mongod.exe" (
+            echo [INFO] Starting MongoDB server process on C:\data\db...
+            if not exist "C:\data\db" mkdir "C:\data\db" >nul 2>nul
+            start "MongoDB Server" /min "C:\Program Files\MongoDB\Server\8.3\bin\mongod.exe" --dbpath "C:\data\db" --port 27017 --setParameter diagnosticDataCollectionEnabled=false
+            timeout /t 2 /nobreak >nul
+        )
+    )
 )
 
 rem Check Backend node_modules
