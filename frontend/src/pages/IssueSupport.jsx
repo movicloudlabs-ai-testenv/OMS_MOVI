@@ -36,6 +36,7 @@ export default function IssueSupport() {
   const role = user?.role?.slug || (typeof user?.role === 'string' ? user.role : '');
   const canRaise = ['intern', 'employee', 'hr-manager', 'hr', 'pmo-lead', 'pmo'].includes(role);
   const isAdmin = ['admin', 'super-admin'].includes(role);
+  const canManage = ['admin', 'super-admin', 'hr-manager', 'hr', 'pmo-lead', 'pmo'].includes(role);
   const [issues, setIssues] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -186,7 +187,7 @@ export default function IssueSupport() {
                           <span>{new Date(issue.createdAt).toLocaleString()}</span>
                         </div>
                       </div>
-                      {(isAdmin || issue.recipients?.some(r => r._id === user?._id) || issue.createdBy?._id === user?._id) && (
+                      {canManage && (isAdmin || issue.recipients?.some(r => (r._id || r) === user?._id) || (issue.createdBy?._id || issue.createdBy) === user?._id) && (
                         <div className="shrink-0 lg:w-40">
                           <label className="block text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5">Update Status</label>
                           <select disabled={statusSaving === issue._id} value={issue.status} onChange={e => handleStatus(issue, e.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700 outline-none">
