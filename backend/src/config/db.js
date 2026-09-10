@@ -65,8 +65,6 @@ const connectDB = async () => {
     isConnected = false;
     console.warn('⚠️  MongoDB disconnected. Attempting reconnection...');
   });
-
-  return initialSuccess;
 };
 
 export default connectDB;
