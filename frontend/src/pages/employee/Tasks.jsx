@@ -409,7 +409,7 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 export default function EmployeeTasks() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const urlTaskId = searchParams.get('taskId');
   const [view,          setView]          = useState('board');
   const [tasks,         setTasks]         = useState([]);
@@ -668,7 +668,15 @@ export default function EmployeeTasks() {
       {selectedTask && (
         <TaskDetailModal
           task={selectedTask}
-          onClose={() => setSelectedTask(null)}
+          onClose={() => {
+            setSelectedTask(null);
+            if (urlTaskId) {
+              const next = new URLSearchParams(searchParams);
+              next.delete('taskId');
+              next.delete('tab');
+              setSearchParams(next, { replace: true });
+            }
+          }}
           onStatusChange={handleStatusChange}
           onRefresh={fetchTasks}
         />
