@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Modal from './Modal';
-import { projectsAPI } from '../api';
+import { pmoAPI, internAPI, employeeAPI } from '../api';
 import StatusBadge from './StatusBadge';
 import toast from 'react-hot-toast';
 
@@ -11,7 +11,11 @@ export default function ProjectDetailModal({ projectId, isOpen, onClose }) {
   useEffect(() => {
     if (isOpen && projectId) {
       setLoading(true);
-      projectsAPI.getById(projectId)
+      (async () => {
+        try { return await pmoAPI.getProject(projectId); } catch {
+          try { return await internAPI.getProject(projectId); } catch { return await employeeAPI.getProject(projectId); }
+        }
+      })()
         .then(res => setProject(res.data.data))
         .catch(() => toast.error('Failed to load project details'))
         .finally(() => setLoading(false));

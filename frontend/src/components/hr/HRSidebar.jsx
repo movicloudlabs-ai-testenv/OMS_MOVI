@@ -23,7 +23,7 @@ const NAV_LINKS = [
   { to: '/hr/projects',     icon: FolderKanban,     label: 'Projects' },
   { to: '/hr/performance',  icon: TrendingUp,       label: 'Performance' },
   { to: '/hr/tasks',        icon: ClipboardList,    label: 'Task Board',  permission: { resource: 'Tasks', action: 'read' } },
-  { to: '/hr/communication', icon: MessageSquare,    label: 'Communication' },
+  { to: '/hr/communication', icon: MessageSquare,    label: 'Announcement' },
   { to: '/support/issues',  icon: LifeBuoy,        label: 'Issue Support' },
   { to: '/support/bugs',    icon: Bug,             label: 'Bug Sheet' },
   { to: '/hr/profile',      icon: User,            label: 'My Profile' },

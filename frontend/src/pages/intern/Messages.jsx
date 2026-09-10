@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { messagesAPI, usersAPI } from '../../api';
+import { messagesAPI } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 import PageWrapper from '../../components/PageWrapper';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -32,8 +32,8 @@ export default function InternMessages() {
   const loadContacts = async (query = '') => {
     try {
       setLoadingUsers(true);
-      const res = await usersAPI.getAll({ search: query, role: 'hr' });
-      const contactList = res.data?.data || [];
+      const res = await messagesAPI.getContacts({ search: query });
+      const contactList = (res.data?.data || []).filter(u => { const slug = (u.role?.slug || '').toLowerCase(); const name = (u.role?.name || '').toLowerCase(); return ['hr','pmo','admin','super-admin'].includes(slug) || name.includes('hr') || name.includes('pmo') || name.includes('admin'); });
       setUsers(contactList);
       if (contactList.length > 0 && !selectedUser) {
         // setSelectedUser(contactList[0]); // Optional: auto-select first contact

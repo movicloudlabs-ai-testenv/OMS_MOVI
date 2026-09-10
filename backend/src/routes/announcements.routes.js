@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getAnnouncements,
+  getAnnouncementRecipients,
   createAnnouncement,
   deleteAnnouncement,
   togglePin,
@@ -12,6 +13,7 @@ const router = Router();
 router.use(protect);
 
 router.get('/', getAnnouncements);
+router.get('/recipients', getAnnouncementRecipients);
 router.post('/', auditLog('Create', 'Communication'), createAnnouncement);
 router.delete('/:id', auditLog('Delete', 'Communication'), deleteAnnouncement);
 router.patch('/:id/pin', auditLog('Update', 'Communication'), togglePin);

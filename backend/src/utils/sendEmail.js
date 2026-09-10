@@ -184,8 +184,7 @@ export async function sendTestEmail({ to, identity = 'support' }) {
   }, { context: `test email -> ${to}` });
 }
 
-export const sendProjectAssignmentEmail = async ({
-  to, employeeName, projectName, projectCode, role, pmoName, hrName, loginUrl,
+export const sendProjectAssignmentEmail = async ({  to, employeeName, projectName, projectCode, role, pmoName, hrName, loginUrl,
 }) => {
   const { transporter, from, replyTo } = await mailerFor('alerts');
   await sendWithRetry(transporter, {
@@ -247,6 +246,52 @@ export const sendProjectAssignmentEmail = async ({
       </div>
     `,
   }, { context: `project assignment -> ${to}` });
+};
+
+export const sendAnnouncementEmail = async ({
+  to, name, title, content, zoomLink, senderName, senderDesignation, loginUrl,
+}) => {
+  const { transporter, from, replyTo } = await mailerFor('alerts');
+  await sendWithRetry(transporter, {
+    from,
+    replyTo,
+    to,
+    subject: `\uD83D\uDCE2 Announcement: ${title}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:auto;padding:32px;background:#fff;border:1px solid #E2E8F0;border-radius:12px">
+        <div style="background:#2563EB;border-radius:8px;padding:20px 24px;margin-bottom:28px">
+          <h1 style="color:#fff;margin:0;font-size:20px;font-weight:700;letter-spacing:-0.3px">OWMS</h1>
+          <p style="color:#93C5FD;margin:4px 0 0;font-size:13px">Office Workspace Management System</p>
+        </div>
+
+        <p style="color:#EA580C;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin:0 0 6px">Company Broadcast</p>
+        <h2 style="color:#0F172A;font-size:18px;font-weight:700;margin:0 0 8px">${title}</h2>
+        <p style="color:#64748B;font-size:13px;margin:0 0 20px">
+          Hi ${name || ''}, ${senderName || 'Your team'}${senderDesignation ? ` (${senderDesignation})` : ''} shared an update with you.
+        </p>
+
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:20px;margin-bottom:24px;white-space:pre-wrap;color:#334155;font-size:14px;line-height:1.6">${content || ''}</div>
+
+        ${zoomLink ? `
+        <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:16px;margin-bottom:24px">
+          <p style="color:#1D4ED8;font-size:13px;font-weight:600;margin:0 0 10px">Zoom Meeting Link</p>
+          <a href="${zoomLink}" style="display:inline-block;background:#2563EB;color:#fff;text-decoration:none;padding:10px 22px;border-radius:8px;font-size:14px;font-weight:600">
+            Join Zoom Meeting
+          </a>
+          <p style="color:#64748B;font-size:11px;margin:10px 0 0;word-break:break-all">${zoomLink}</p>
+        </div>` : ''}
+
+        ${loginUrl ? `
+        <a href="${loginUrl}/login" style="display:inline-block;background:#0F172A;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600">
+          View in OWMS
+        </a>` : ''}
+
+        <p style="color:#94A3B8;font-size:12px;margin:24px 0 0;text-align:center">
+          This is an automated broadcast from OWMS. Please do not reply to this email.
+        </p>
+      </div>
+    `,
+  }, { context: `announcement -> ${to}` });
 };
 
 export const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {

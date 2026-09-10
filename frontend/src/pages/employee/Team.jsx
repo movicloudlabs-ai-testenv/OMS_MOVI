@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
-import { Search, Mail, Briefcase, Users, ChevronRight } from 'lucide-react';
+import { Search, Mail, Briefcase, Users } from 'lucide-react';
 import { employeeAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -16,7 +15,6 @@ const ROLE_COLORS = {
 const roleColor = (slug) => ROLE_COLORS[slug] || 'bg-slate-500';
 
 export default function EmployeeTeam() {
-  const navigate = useNavigate();
   const [team,    setTeam]    = useState([]);
   const [search,  setSearch]  = useState('');
   const [loading, setLoading] = useState(true);
@@ -72,57 +70,44 @@ export default function EmployeeTeam() {
               const color    = roleColor(member.role?.slug || member.roleSlug);
               const projects = member.sharedProjects || [];
               return (
-                <div
-                  key={member._id}
-                  onClick={() => navigate(`/employee/team/${member._id}`)}
-                  className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#2563EB] transition-all cursor-pointer group flex flex-col justify-between"
-                >
-                  <div>
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className={`w-12 h-12 rounded-full ${color} text-white flex items-center justify-center text-sm font-bold shrink-0`}>
-                        {initials}
-                      </div>
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors truncate">{member.name}</h3>
-                        <p className="text-xs text-[#64748B] truncate">{member.designation || member.roleInProject || 'Team Member'}</p>
-                      </div>
+                <div key={member._id} className="bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-sm hover:shadow-md hover:border-[#CBD5E1] transition-all">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className={`w-12 h-12 rounded-full ${color} text-white flex items-center justify-center text-sm font-bold shrink-0`}>
+                      {initials}
                     </div>
-
-                    <div className="space-y-2 text-xs text-[#64748B]">
-                      {member.email && (
-                        <div className="flex items-center gap-2 truncate">
-                          <Mail size={12} className="shrink-0" />
-                          <span className="truncate">{member.email}</span>
-                        </div>
-                      )}
-                      {member.roleInProject && (
-                        <div className="flex items-center gap-2">
-                          <Briefcase size={12} className="shrink-0" />
-                          <span>{member.roleInProject}</span>
-                        </div>
-                      )}
-                      {member.joinDate && (
-                        <p className="text-[11px] text-[#94A3B8]">Joined {fmtDate(member.joinDate)}</p>
-                      )}
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-bold text-[#0F172A] truncate">{member.name}</h3>
+                      <p className="text-xs text-[#64748B] truncate">{member.designation || member.roleInProject || 'Team Member'}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-2">
-                    {projects.length > 0 ? (
-                      <div className="flex flex-wrap gap-1">
-                        {projects.map((p, i) => (
-                          <span key={i} className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] px-2 py-0.5 rounded truncate max-w-[130px]">
-                            {p}
-                          </span>
-                        ))}
+                  <div className="space-y-2 text-xs text-[#64748B]">
+                    {member.email && (
+                      <div className="flex items-center gap-2 truncate">
+                        <Mail size={12} className="shrink-0" />
+                        <span className="truncate">{member.email}</span>
                       </div>
-                    ) : (
-                      <span className="text-[11px] text-[#94A3B8]">No active shared projects</span>
                     )}
-                    <span className="text-xs font-semibold text-[#2563EB] group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5 shrink-0 ml-auto">
-                      View Profile <ChevronRight size={14} />
-                    </span>
+                    {member.roleInProject && (
+                      <div className="flex items-center gap-2">
+                        <Briefcase size={12} className="shrink-0" />
+                        <span>{member.roleInProject}</span>
+                      </div>
+                    )}
+                    {member.joinDate && (
+                      <p className="text-[11px] text-[#94A3B8]">Joined {fmtDate(member.joinDate)}</p>
+                    )}
                   </div>
+
+                  {projects.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-[#F1F5F9] flex flex-wrap gap-1">
+                      {projects.map((p, i) => (
+                        <span key={i} className="text-[10px] font-bold bg-[#EFF6FF] text-[#2563EB] px-2 py-0.5 rounded truncate max-w-[160px]">
+                          {p}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

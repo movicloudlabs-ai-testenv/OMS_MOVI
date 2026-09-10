@@ -13,7 +13,6 @@ import toast from 'react-hot-toast';
 const COLUMNS = [
   { id: 'Todo',        title: 'To Do',       color: 'border-t-slate-400'  },
   { id: 'In Progress', title: 'In Progress',  color: 'border-t-blue-500'   },
-  { id: 'Blocked',     title: 'Blocked',      color: 'border-t-red-500'    },
   { id: 'In Review',   title: 'In Review',    color: 'border-t-purple-500' },
   { id: 'Done',        title: 'Done',         color: 'border-t-green-500'  },
 ];
@@ -153,21 +152,6 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
                   {task.description || <span className="italic text-slate-400">No description provided.</span>}
                 </div>
               </section>
-
-              {/* Blocker Alert */}
-              {task.status === 'Blocked' && (
-                <section>
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2.5">
-                    <AlertCircle className="text-red-600 shrink-0 mt-0.5" size={16} />
-                    <div>
-                      <h4 className="text-xs font-bold text-red-800">Task Currently Blocked</h4>
-                      <p className="text-xs text-red-700 mt-0.5">
-                        {task.blockedReason || 'This task has an active blocker reported. Resolve or unblock to resume work.'}
-                      </p>
-                    </div>
-                  </div>
-                </section>
-              )}
 
               {/* Tabs */}
               <section>
@@ -368,25 +352,19 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
                       <PlayCircle size={15} /> Mark as Started
                     </button>
                   )}
-                  {task.status === 'Blocked' && (
-                    <button onClick={() => { onStatusChange(task._id, 'In Progress'); onClose(); }}
-                      className="w-full py-2 px-3 bg-white border border-blue-200 text-[#2563EB] rounded-lg text-sm font-bold hover:bg-[#EFF6FF] flex items-center gap-2 transition-colors">
-                      <PlayCircle size={15} /> Resume Work / Unblock
-                    </button>
-                  )}
-                  {task.status === 'In Progress' && (
+                  {(task.status === 'In Progress' || task.status === 'Todo') && (
                     <button onClick={() => { onStatusChange(task._id, 'In Review'); onClose(); }}
                       className="w-full py-2 px-3 bg-white border border-[#E2E8F0] text-purple-600 rounded-lg text-sm font-bold hover:bg-purple-50 flex items-center gap-2 transition-colors">
                       <Send size={15} /> Submit for Review
                     </button>
                   )}
-                  {task.status === 'In Progress' && (
+                  {task.status !== 'Blocked' && task.status !== 'Done' && (
                     <button onClick={() => { onStatusChange(task._id, 'Blocked'); onClose(); }}
                       className="w-full py-2 px-3 bg-white border border-slate-200 text-red-600 rounded-lg text-sm font-bold hover:bg-red-50 flex items-center gap-2 transition-colors">
                       <AlertCircle size={15} /> Report Blocker
                     </button>
                   )}
-                  {task.status === 'In Review' && (
+                  {task.status !== 'Done' && (
                     <button onClick={() => { onStatusChange(task._id, 'Done'); onClose(); }}
                       className="w-full py-2.5 px-3 bg-[#16A34A] text-white rounded-lg text-sm font-bold hover:bg-green-700 flex items-center justify-center gap-2 transition-colors shadow-sm">
                       <CheckCircle2 size={15} /> Mark Complete
@@ -534,23 +512,14 @@ export default function EmployeeTasks() {
                         {colTasks.map(task => {
                           const ps = PRIORITY_STYLES[task.priority] || PRIORITY_STYLES.Medium;
                           const ov = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== 'Done';
-                          const isBlocked = task.status === 'Blocked';
                           return (
                             <div key={task._id} onClick={() => setSelectedTask(task)}
-                              className={`bg-white p-4 rounded-xl border cursor-pointer hover:shadow-md hover:border-blue-300 transition-all group ${
-                                isBlocked ? 'border-red-300 bg-red-50/20 hover:border-red-400' : ov ? 'border-red-200' : 'border-[#E2E8F0]'
-                              }`}>
+                              className={`bg-white p-4 rounded-xl border cursor-pointer hover:shadow-md hover:border-blue-300 transition-all group ${ov ? 'border-red-200' : 'border-[#E2E8F0]'}`}>
                               <div className="flex items-center justify-between mb-2">
                                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${ps.badge}`}>
                                   {task.priority || 'Medium'}
                                 </span>
-                                {isBlocked ? (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 text-red-700 uppercase flex items-center gap-1">
-                                    <AlertCircle size={10} /> Blocked
-                                  </span>
-                                ) : ov ? (
-                                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                                ) : null}
+                                {ov && <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />}
                               </div>
                               <h4 className="text-sm font-bold text-[#0F172A] mb-1 leading-tight group-hover:text-[#2563EB] transition-colors">
                                 {task.title}
