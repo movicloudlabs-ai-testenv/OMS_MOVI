@@ -90,11 +90,15 @@ export default function EmployeeDashboard() {
   const presentDays = activeDays.filter(a => a.status === 'Present').length;
   const attendancePercent = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 100;
 
-  // Calculate remaining leaves
+  // Calculate remaining leaves across all categories (annual, casual, sick, emergency, compensatory)
   const remainingLeaves = leaveBalance 
-    ? ((leaveBalance.casual?.total || 0) + (leaveBalance.sick?.total || 0) + (leaveBalance.annual?.total || 0)) -
-      ((leaveBalance.casual?.used || 0) + (leaveBalance.sick?.used || 0) + (leaveBalance.annual?.used || 0))
-    : 19;
+    ? Object.values(leaveBalance).reduce((sum, b) => {
+        if (b && typeof b === 'object' && typeof b.total === 'number') {
+          return sum + Math.max(0, (b.total || 0) - (b.used || 0));
+        }
+        return sum;
+      }, 0)
+    : 0;
 
   // Calculate workload
   const maxWorkload = 10;
@@ -153,8 +157,22 @@ export default function EmployeeDashboard() {
         {/* CLOCK IN/OUT */}
         <AttendanceClock api={employeeAPI} />
 
-        {/* EOD UPDATE */}
-        <EODQuickShare api={employeeAPI} />
+        {/* EOD UPDATE + DAILY TRACKER */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2">
+            <EODQuickShare api={employeeAPI} />
+          </div>
+          <button
+            onClick={() => navigate('/employee/daily-tracker')}
+            className="self-start bg-[#2563EB] text-white rounded-xl shadow-sm p-5 flex items-center justify-between gap-3 hover:bg-[#1D4ED8] transition-colors text-left"
+          >
+            <div>
+              <p className="text-[14px] font-bold">Daily Tracker</p>
+              <p className="text-[12px] text-blue-100 mt-0.5">Fill today's detailed work log</p>
+            </div>
+            <span className="material-symbols-outlined text-[24px]">arrow_forward</span>
+          </button>
+        </div>
 
         {/* STATS BAR */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

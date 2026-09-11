@@ -30,6 +30,8 @@ import EmployeeTeam from './pages/employee/Team';
 import EmployeeTeamDetails from './pages/employee/TeamDetails';
 import EmployeeAttendance from './pages/employee/Attendance';
 import EmployeeLeave from './pages/employee/Leave';
+import EmployeeDailyTracker from './pages/employee/DailyTracker';
+import EmployeeEODReport from './pages/employee/EODReport';
 import EmployeeProfile from './pages/employee/Profile';
 
 // HR
@@ -148,6 +150,8 @@ export default function App() {
       <Route path="/employee/team/:id" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeTeamDetails /></ProtectedRoute>} />
       <Route path="/employee/attendance" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeAttendance /></ProtectedRoute>} />
       <Route path="/employee/leave" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeLeave /></ProtectedRoute>} />
+      <Route path="/employee/daily-tracker" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeDailyTracker /></ProtectedRoute>} />
+      <Route path="/employee/eod-report" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeEODReport /></ProtectedRoute>} />
       <Route path="/employee/profile" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeProfile /></ProtectedRoute>} />
 
 
