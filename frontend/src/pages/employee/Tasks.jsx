@@ -411,13 +411,47 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
 export default function EmployeeTasks() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlTaskId = searchParams.get('taskId');
+  const urlProjectId = searchParams.get('projectId');
+  const urlProject = searchParams.get('project');
   const [view,          setView]          = useState('board');
   const [tasks,         setTasks]         = useState([]);
   const [projects,      setProjects]      = useState([]);
-  const [projectFilter, setProjectFilter] = useState('All Projects');
+  const [projectFilter, setProjectFilter] = useState(() => urlProject || 'All Projects');
   const [search,        setSearch]        = useState('');
   const [selectedTask,  setSelectedTask]  = useState(null);
   const [loading,       setLoading]       = useState(true);
+
+  // Synchronize project filter when URL parameters change or projects load
+  useEffect(() => {
+    if (urlProject) {
+      setProjectFilter(urlProject);
+    } else if (urlProjectId && projects.length > 0) {
+      const match = projects.find(p => String(p._id) === String(urlProjectId) || String(p.id) === String(urlProjectId));
+      if (match) {
+        setProjectFilter(match.name);
+      }
+    } else if (!urlProject && !urlProjectId) {
+      setProjectFilter('All Projects');
+    }
+  }, [urlProject, urlProjectId, projects]);
+
+  const handleProjectFilterChange = (selectedName) => {
+    setProjectFilter(selectedName);
+    const newParams = new URLSearchParams(searchParams);
+    if (selectedName === 'All Projects') {
+      newParams.delete('projectId');
+      newParams.delete('project');
+    } else {
+      newParams.set('project', selectedName);
+      const projObj = projects.find(p => p.name === selectedName);
+      if (projObj?._id) {
+        newParams.set('projectId', projObj._id);
+      } else {
+        newParams.delete('projectId');
+      }
+    }
+    setSearchParams(newParams, { replace: true });
+  };
 
   const fetchTasks = async () => {
     setLoading(true);
@@ -465,8 +499,17 @@ export default function EmployeeTasks() {
     } catch { toast.error('Failed to update status'); }
   };
 
+  const selectedProjObj = projects.find(p => p.name === projectFilter);
+  const selectedProjId = selectedProjObj?._id || (projectFilter === urlProject ? urlProjectId : null);
+
   const filtered = tasks.filter(t => {
-    const matchProject = projectFilter === 'All Projects' || t.project?.name === projectFilter;
+    const taskProjName = t.project?.name || (typeof t.project === 'string' ? t.project : null);
+    const taskProjId = t.project?._id || t.project?.id || (typeof t.project === 'string' ? t.project : null);
+
+    const matchProject = projectFilter === 'All Projects' || 
+      taskProjName === projectFilter ||
+      (selectedProjId && String(taskProjId) === String(selectedProjId));
+
     const matchSearch  = !search || t.title.toLowerCase().includes(search.toLowerCase());
     return matchProject && matchSearch;
   });
@@ -492,9 +535,12 @@ export default function EmployeeTasks() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <select value={projectFilter} onChange={e => setProjectFilter(e.target.value)}
+            <select value={projectFilter} onChange={e => handleProjectFilterChange(e.target.value)}
               className="text-sm border border-[#E2E8F0] rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-[#2563EB] font-medium text-[#0F172A]">
               <option value="All Projects">All Projects</option>
+              {projectFilter !== 'All Projects' && !projects.some(p => p.name === projectFilter) && (
+                <option value={projectFilter}>{projectFilter}</option>
+              )}
               {projects.map(p => <option key={p._id} value={p.name}>{p.name}</option>)}
             </select>
 

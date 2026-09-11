@@ -27,6 +27,7 @@ const priorityBadge = (p) => ({
 }[p] || 'bg-slate-100 text-slate-600');
 
 function ProjectDrawer({ project, onClose }) {
+  const navigate = useNavigate();
   if (!project) return null;
 
   const myRole = project.myRole || 'Member';
@@ -88,7 +89,12 @@ function ProjectDrawer({ project, onClose }) {
               <h4 className="text-[10px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3">My Tasks in this Project</h4>
               <div className="space-y-2">
                 {project.myTasks.slice(0, 5).map((t, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-xl">
+                  <div key={i}
+                    onClick={() => {
+                      onClose();
+                      navigate(`/employee/tasks?taskId=${t._id}&projectId=${project._id}&project=${encodeURIComponent(project.name)}`);
+                    }}
+                    className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-xl cursor-pointer hover:border-[#2563EB] hover:bg-blue-50/30 transition-colors">
                     <div className="flex items-center gap-3">
                       <CheckSquare size={15} className={t.status === 'Done' ? 'text-green-500' : 'text-[#94A3B8]'} />
                       <span className={`text-sm font-medium ${t.status === 'Done' ? 'text-[#64748B] line-through' : 'text-[#0F172A]'}`}>{t.title}</span>
@@ -253,7 +259,7 @@ export default function EmployeeProjects() {
 
                   {/* Actions */}
                   <div className="flex border-t border-[#E2E8F0] bg-[#F8FAFC]">
-                    <button onClick={() => navigate('/employee/tasks')}
+                    <button onClick={() => navigate(`/employee/tasks?projectId=${proj._id}&project=${encodeURIComponent(proj.name)}`)}
                       className="flex-1 py-3 text-sm font-bold text-[#0F172A] hover:text-[#2563EB] hover:bg-white transition-colors border-r border-[#E2E8F0] flex items-center justify-center gap-2">
                       <CheckSquare size={15} /> My Tasks
                     </button>
