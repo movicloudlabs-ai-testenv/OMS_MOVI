@@ -80,6 +80,34 @@ export const submitMyEntry = async (req, res, next) => {
       return sendError(res, "Today's task is required", 400);
     }
 
+    if (ktCompletion !== undefined && ktCompletion !== null && ktCompletion !== '') {
+      const kt = Number(ktCompletion);
+      if (isNaN(kt) || kt < 0 || kt > 100) {
+        return sendError(res, 'KT Completion must be between 0 and 100%', 400);
+      }
+    }
+
+    if (productivityMetrics !== undefined && productivityMetrics !== null && productivityMetrics !== '') {
+      const prod = Number(productivityMetrics);
+      if (isNaN(prod) || prod < 0 || prod > 10) {
+        return sendError(res, 'Self Productivity must be between 0 and 10', 400);
+      }
+    }
+
+    if (hours !== undefined && hours !== null && hours !== '') {
+      const h = Number(hours);
+      if (isNaN(h) || h < 0 || h > 24) {
+        return sendError(res, 'Hours worked must be between 0 and 24', 400);
+      }
+    }
+
+    if (aiCredits !== undefined && aiCredits !== null && aiCredits !== '') {
+      const ai = Number(aiCredits);
+      if (isNaN(ai) || ai < 0) {
+        return sendError(res, 'AI Credits cannot be negative', 400);
+      }
+    }
+
     const { date, error } = resolveEntryDate(dateStr);
     if (error) return sendError(res, error, 400);
 

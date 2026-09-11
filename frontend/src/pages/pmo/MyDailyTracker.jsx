@@ -105,6 +105,31 @@ export default function PMOMyDailyTracker() {
       toast.error("Please describe today's task");
       return;
     }
+
+    if (form.ktCompletion !== '' && form.ktCompletion !== undefined && form.ktCompletion !== null) {
+      const val = Number(form.ktCompletion);
+      if (isNaN(val) || val < 0 || val > 100) {
+        toast.error('KT Completion must be between 0 and 100%');
+        return;
+      }
+    }
+
+    if (form.productivityMetrics !== '' && form.productivityMetrics !== undefined && form.productivityMetrics !== null) {
+      const val = Number(form.productivityMetrics);
+      if (isNaN(val) || val < 0 || val > 10) {
+        toast.error('Self Productivity must be between 0 and 10');
+        return;
+      }
+    }
+
+    if (form.hours !== '' && form.hours !== undefined && form.hours !== null) {
+      const val = Number(form.hours);
+      if (isNaN(val) || val < 0 || val > 24) {
+        toast.error('Hours worked must be between 0 and 24');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       await pmoAPI.submitDailyTracker({
@@ -149,7 +174,7 @@ export default function PMOMyDailyTracker() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-6 space-y-5">
+        <form noValidate onSubmit={handleSubmit} className="bg-white border border-[#E2E8F0] rounded-xl shadow-sm p-6 space-y-5">
 
           <div>
             <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Report Date</label>
@@ -211,7 +236,7 @@ export default function PMOMyDailyTracker() {
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Hours Worked</label>
-              <input type="number" step="0.5" value={form.hours} onChange={set('hours')} placeholder="8" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input type="number" min="0" max="24" step="0.5" value={form.hours} onChange={set('hours')} placeholder="8" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Attendance</label>
@@ -224,11 +249,11 @@ export default function PMOMyDailyTracker() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">KT Completion (%)</label>
-              <input type="text" value={form.ktCompletion} onChange={set('ktCompletion')} placeholder="0-100" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input type="number" min="0" max="100" value={form.ktCompletion} onChange={set('ktCompletion')} placeholder="0-100" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Self Productivity (0-10)</label>
-              <input type="text" value={form.productivityMetrics} onChange={set('productivityMetrics')} placeholder="0-10" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input type="number" min="0" max="10" step="0.5" value={form.productivityMetrics} onChange={set('productivityMetrics')} placeholder="0-10" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">AI Credits Used</label>
