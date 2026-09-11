@@ -32,7 +32,11 @@ const DailyTrackerSchema = new Schema({
   module: String,
 
   workingTime: String, // e.g. "09:30 AM - 06:30 PM"
-  hours: Number,
+  hours: {
+    type: Number,
+    min: [0, 'Hours worked cannot be negative'],
+    max: [24, 'Hours worked cannot exceed 24'],
+  },
 
   reportSubmission: {
     type: String,
@@ -45,9 +49,20 @@ const DailyTrackerSchema = new Schema({
     default: 'Present',
   },
 
-  ktCompletion: { type: Number, min: 0, max: 100 }, // % knowledge-transfer completion
-  productivityMetrics: { type: Number, min: 0, max: 10 }, // self/HR rated score out of 10
-  aiCredits: Number, // AI tool credits/tokens used that day
+  ktCompletion: { 
+    type: Number, 
+    min: [0, 'KT Completion cannot be less than 0%'], 
+    max: [100, 'KT Completion cannot exceed 100%'],
+  }, // % knowledge-transfer completion
+  productivityMetrics: { 
+    type: Number, 
+    min: [0, 'Self Productivity must be between 0 and 10'], 
+    max: [10, 'Self Productivity must be between 0 and 10'],
+  }, // self/HR rated score out of 10
+  aiCredits: {
+    type: Number,
+    min: [0, 'AI Credits cannot be negative'],
+  }, // AI tool credits/tokens used that day
   projectAssignment: String, // free-text note on current assignment
 
   submittedAt: { type: Date, default: Date.now },
