@@ -1,8 +1,9 @@
+import mongoose from 'mongoose';
 import Project from '../../models/Project.js';
 import User from '../../models/User.js';
 import { sendSuccess, sendError } from '../../utils/apiResponse.js';
 
-const SAFE_FIELDS = 'name designation email avatar employeeId skills bio joinDate';
+const SAFE_FIELDS = 'name designation email avatar employeeId skills bio joinDate phone status manager hrManager location';
 
 export const getTeam = async (req, res, next) => {
   try {
@@ -62,12 +63,25 @@ export const getTeamMember = async (req, res, next) => {
     const userId = req.user._id;
     const targetId = req.params.userId;
 
+    if (!mongoose.Types.ObjectId.isValid(targetId)) {
+      return sendError(res, 'Invalid teammate ID', 400);
+    }
+
     // Verify they share at least one project
     const sharedProject = await Project.findOne({
-      'team.user': userId,
       $or: [
-        { 'team.user': targetId },
-        { 'interns.user': targetId },
+        { 'team.user': userId },
+        { 'interns.user': userId },
+        { manager: userId },
+      ],
+      $and: [
+        {
+          $or: [
+            { 'team.user': targetId },
+            { 'interns.user': targetId },
+            { manager: targetId },
+          ],
+        },
       ],
       status: { $ne: 'Cancelled' },
     }).select('name').lean();
@@ -80,16 +94,27 @@ export const getTeamMember = async (req, res, next) => {
       .select(SAFE_FIELDS)
       .populate('role', 'name slug')
       .populate('department', 'name')
+      .populate('manager', 'name email avatar')
+      .populate('hrManager', 'name email avatar')
       .lean();
 
     if (!member) return sendError(res, 'User not found', 404);
 
     // Collect all shared projects
     const sharedProjects = await Project.find({
-      'team.user': userId,
       $or: [
-        { 'team.user': targetId },
-        { 'interns.user': targetId },
+        { 'team.user': userId },
+        { 'interns.user': userId },
+        { manager: userId },
+      ],
+      $and: [
+        {
+          $or: [
+            { 'team.user': targetId },
+            { 'interns.user': targetId },
+            { manager: targetId },
+          ],
+        },
       ],
       status: { $ne: 'Cancelled' },
     }).select('name').lean();
