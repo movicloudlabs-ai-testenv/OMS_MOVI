@@ -4,7 +4,7 @@ import PageWrapper from '../../components/PageWrapper';
 import {
   Columns, List, CalendarDays, X, CheckCircle2, Circle,
   Paperclip, Download, UploadCloud, Search, AlertCircle,
-  PlayCircle, Send, RefreshCw, Eye
+  PlayCircle, Send, RefreshCw, Eye, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { employeeAPI } from '../../utils/api';
@@ -387,10 +387,15 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
                     </button>
                   )}
                   {task.status === 'In Review' && (
-                    <button onClick={() => { onStatusChange(task._id, 'Done'); onClose(); }}
-                      className="w-full py-2.5 px-3 bg-[#16A34A] text-white rounded-lg text-sm font-bold hover:bg-green-700 flex items-center justify-center gap-2 transition-colors shadow-sm">
-                      <CheckCircle2 size={15} /> Mark Complete
-                    </button>
+                    <div className="space-y-2">
+                      <div className="w-full py-2.5 px-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold flex items-center justify-center gap-2">
+                        <Clock size={14} /> Pending PMO Approval
+                      </div>
+                      <button onClick={() => { onStatusChange(task._id, 'In Progress'); onClose(); }}
+                        className="w-full py-2 px-3 bg-white border border-[#E2E8F0] text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors">
+                        <RefreshCw size={13} /> Resume Work (Move to In Progress)
+                      </button>
+                    </div>
                   )}
                   {task.status === 'Done' && (
                     <div className="w-full py-2.5 px-3 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-bold flex items-center justify-center gap-2">

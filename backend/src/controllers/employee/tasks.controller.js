@@ -9,7 +9,7 @@ const ALLOWED_TRANSITIONS = {
   'Todo': ['In Progress'],
   'In Progress': ['In Review', 'Blocked'],
   'Blocked': ['In Progress'],
-  'In Review': ['In Progress', 'Done'],
+  'In Review': ['In Progress'],
 };
 
 export const getMyTasks = async (req, res, next) => {
@@ -96,7 +96,7 @@ export const updateTaskStatus = async (req, res, next) => {
     if (task.assignedTo.toString() !== req.user._id.toString()) {
       return sendError(res, 'This task is not assigned to you', 403);
     }
-    if (status === 'Done' && task.status !== 'In Review') {
+    if (status === 'Done') {
       return sendError(res, 'Only PMO Lead can mark a task as Done', 400);
     }
 
