@@ -176,39 +176,55 @@ export default function EmployeeDashboard() {
 
         {/* STATS BAR */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#2563EB] shrink-0">
+          <div 
+            onClick={() => navigate('/employee/tasks')}
+            className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group"
+            title="View My Tasks"
+          >
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#2563EB] shrink-0 group-hover:scale-105 transition-transform">
               <CheckSquare size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0F172A]">My Tasks</p>
+              <p className="text-sm font-bold text-[#0F172A] group-hover:text-[#2563EB] transition-colors">My Tasks</p>
               <p className="text-xs text-[#64748B]">{totalTasks} &middot; {completedTasks} done</p>
             </div>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 shrink-0">
+          <div 
+            onClick={() => navigate('/employee/projects')}
+            className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-purple-300 transition-all cursor-pointer group"
+            title="View Projects"
+          >
+            <div className="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600 shrink-0 group-hover:scale-105 transition-transform">
               <Briefcase size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0F172A]">Projects</p>
+              <p className="text-sm font-bold text-[#0F172A] group-hover:text-purple-600 transition-colors">Projects</p>
               <p className="text-xs text-[#64748B]">{projects.length} active</p>
             </div>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-[#16A34A] shrink-0">
+          <div 
+            onClick={() => navigate('/employee/attendance')}
+            className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-green-300 transition-all cursor-pointer group"
+            title="View My Attendance"
+          >
+            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-[#16A34A] shrink-0 group-hover:scale-105 transition-transform">
               <CalendarDays size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0F172A]">Attendance</p>
+              <p className="text-sm font-bold text-[#0F172A] group-hover:text-[#16A34A] transition-colors">Attendance</p>
               <p className="text-xs text-[#64748B]">{attendancePercent}% &middot; {presentDays}/{totalDays} days</p>
             </div>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-[#D97706] shrink-0">
+          <div 
+            onClick={() => navigate('/employee/leave')}
+            className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group"
+            title="View Leave Management"
+          >
+            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-[#D97706] shrink-0 group-hover:scale-105 transition-transform">
               <Clock size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0F172A]">Leave</p>
+              <p className="text-sm font-bold text-[#0F172A] group-hover:text-[#D97706] transition-colors">Leave</p>
               <p className="text-xs text-[#64748B]">{remainingLeaves} days left</p>
             </div>
           </div>
