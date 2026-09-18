@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../../components/PageWrapper';
 import {
   Mail, Briefcase, User, Calendar, Pencil, Lock, Check, X, Eye, EyeOff, Phone, Link,
@@ -64,6 +65,7 @@ function PwdInput({ value, show, onChange, onToggle, error }) {
 }
 
 export default function EmployeeProfile() {
+  const navigate = useNavigate();
   const [profile,     setProfile]     = useState(null);
   const [loading,     setLoading]     = useState(true);
   const [editingInfo, setEditingInfo] = useState(false);
@@ -166,11 +168,11 @@ export default function EmployeeProfile() {
             <p className="text-xs text-[#64748B] mt-0.5">Manage your personal information and account settings</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => window.location.href = '/employee/leave'}
+            <button onClick={() => navigate('/employee/leave')}
               className="text-sm font-bold text-white bg-[#2563EB] hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm">
               Apply Leave
             </button>
-            <button onClick={() => window.location.href = '/employee/attendance'}
+            <button onClick={() => navigate('/employee/attendance')}
               className="text-sm font-bold text-white bg-[#2563EB] hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors shadow-sm">
               My Attendance
             </button>
