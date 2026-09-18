@@ -4,7 +4,7 @@ import PageWrapper from '../../components/PageWrapper';
 import {
   Columns, List, CalendarDays, X, CheckCircle2, Circle,
   Paperclip, Download, UploadCloud, Search, AlertCircle,
-  PlayCircle, Send, RefreshCw, Eye
+  PlayCircle, Send, RefreshCw, Eye, Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { internAPI } from '../../utils/api';
@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 const COLUMNS = [
   { id: 'Todo',        title: 'To Do',       color: 'border-t-slate-400'  },
   { id: 'In Progress', title: 'In Progress',  color: 'border-t-blue-500'   },
+  { id: 'Blocked',     title: 'Blocked',      color: 'border-t-red-500'    },
   { id: 'In Review',   title: 'In Review',    color: 'border-t-purple-500' },
   { id: 'Done',        title: 'Done',         color: 'border-t-green-500'  },
 ];
@@ -352,23 +353,34 @@ function TaskDetailModal({ task: initialTask, onClose, onStatusChange, onRefresh
                       <PlayCircle size={15} /> Mark as Started
                     </button>
                   )}
-                  {(task.status === 'In Progress' || task.status === 'Todo') && (
+                  {task.status === 'Blocked' && (
+                    <button onClick={() => { onStatusChange(task._id, 'In Progress'); onClose(); }}
+                      className="w-full py-2 px-3 bg-white border border-blue-200 text-[#2563EB] rounded-lg text-sm font-bold hover:bg-[#EFF6FF] flex items-center gap-2 transition-colors">
+                      <PlayCircle size={15} /> Resume Work / Unblock
+                    </button>
+                  )}
+                  {task.status === 'In Progress' && (
                     <button onClick={() => { onStatusChange(task._id, 'In Review'); onClose(); }}
                       className="w-full py-2 px-3 bg-white border border-[#E2E8F0] text-purple-600 rounded-lg text-sm font-bold hover:bg-purple-50 flex items-center gap-2 transition-colors">
                       <Send size={15} /> Submit for Review
                     </button>
                   )}
-                  {task.status !== 'Blocked' && task.status !== 'Done' && (
+                  {task.status === 'In Progress' && (
                     <button onClick={() => { onStatusChange(task._id, 'Blocked'); onClose(); }}
                       className="w-full py-2 px-3 bg-white border border-slate-200 text-red-600 rounded-lg text-sm font-bold hover:bg-red-50 flex items-center gap-2 transition-colors">
                       <AlertCircle size={15} /> Report Blocker
                     </button>
                   )}
-                  {task.status !== 'Done' && (
-                    <button onClick={() => { onStatusChange(task._id, 'Done'); onClose(); }}
-                      className="w-full py-2.5 px-3 bg-[#16A34A] text-white rounded-lg text-sm font-bold hover:bg-green-700 flex items-center justify-center gap-2 transition-colors shadow-sm">
-                      <CheckCircle2 size={15} /> Mark Complete
-                    </button>
+                  {task.status === 'In Review' && (
+                    <div className="space-y-2">
+                      <div className="w-full py-2.5 px-3 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg text-xs font-bold flex items-center justify-center gap-2">
+                        <Clock size={14} /> Pending PMO Approval
+                      </div>
+                      <button onClick={() => { onStatusChange(task._id, 'In Progress'); onClose(); }}
+                        className="w-full py-2 px-3 bg-white border border-[#E2E8F0] text-slate-600 rounded-lg text-xs font-semibold hover:bg-slate-50 flex items-center justify-center gap-2 transition-colors">
+                        <RefreshCw size={13} /> Resume Work (Move to In Progress)
+                      </button>
+                    </div>
                   )}
                   {task.status === 'Done' && (
                     <div className="w-full py-2.5 px-3 bg-green-50 text-green-700 border border-green-200 rounded-lg text-sm font-bold flex items-center justify-center gap-2">
