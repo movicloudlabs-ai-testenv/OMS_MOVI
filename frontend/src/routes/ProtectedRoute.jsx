@@ -31,15 +31,15 @@ function resolveSlug(user) {
 /**
  * ProtectedRoute
  *
- * allowedRoles  — array of role slugs that always have access (e.g. ['admin'])
- * permission    — { resource, action } — ANY authenticated user with this permission also gets access
+ * allowedRoles  — array of role slugs that have access to this route (e.g. ['admin', 'hr'])
+ * permission    — { resource, action } — optional Access Matrix permission checked for the allowed role
  *
- * Decision table:
- *   super-admin                     → always allow
- *   role matches allowedRoles        → allow
- *   role doesn't match BUT has permission → allow
- *   role doesn't match AND no permission  → show RestrictedPage (if permission prop given)
- *                                          OR redirect to /unauthorized (if no permission prop)
+ * Decision rules:
+ *   1. super-admin                          → always allow
+ *   2. user role not in allowedRoles        → redirect to /unauthorized
+ *   3. user role in allowedRoles:
+ *        - if permission specified & denied → show RestrictedPage
+ *        - otherwise                        → allow
  */
 export function ProtectedRoute({ children, allowedRoles, permission }) {
   const { user, loading, hasPermission } = useAuth();
@@ -74,19 +74,17 @@ export function ProtectedRoute({ children, allowedRoles, permission }) {
   );
   const roleAllowed = !allowedRoles || accepted.has(userSlug);
 
-  // Check Access Matrix permission
-  const permAllowed = permission
-    ? hasPermission(permission.resource, permission.action)
-    : false;
+  // If role is explicitly not allowed, redirect to unauthorized
+  if (!roleAllowed) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
-  if (roleAllowed || permAllowed) return children;
-
-  // Access denied — show RestrictedPage if permission context available, else redirect
-  if (permission) {
+  // Check Access Matrix permission if defined for this role
+  if (permission && !hasPermission(permission.resource, permission.action)) {
     return <RestrictedPage resource={permission.resource} action={permission.action} />;
   }
 
-  return <Navigate to="/unauthorized" replace />;
+  return children;
 }
 
 export { ROLE_HOME };
