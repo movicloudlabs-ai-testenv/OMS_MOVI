@@ -173,41 +173,57 @@ export default function InternDashboard() {
 
         {/* STATS BAR */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+          <div 
+            onClick={() => navigate('/intern/tasks')}
+            className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group"
+            title="View My Tasks"
+          >
+            <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 group-hover:scale-105 transition-transform">
               <CheckSquare size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0F172A]">{totalTasks} Tasks</p>
+              <p className="text-sm font-bold text-[#0F172A] group-hover:text-blue-600 transition-colors">{totalTasks} Tasks</p>
               <p className="text-xs text-[#64748B]">{completedTasks} completed</p>
             </div>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 shrink-0">
+          <div 
+            onClick={() => navigate('/intern/tasks')}
+            className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-red-300 transition-all cursor-pointer group"
+            title="View Overdue Tasks"
+          >
+            <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600 shrink-0 group-hover:scale-105 transition-transform">
               <AlertCircle size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0F172A]">{overdueCount} Overdue</p>
+              <p className="text-sm font-bold text-[#0F172A] group-hover:text-red-600 transition-colors">{overdueCount} Overdue</p>
               <p className="text-xs text-[#64748B]">Need attention</p>
             </div>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 shrink-0">
+          <div 
+            onClick={() => navigate('/intern/attendance')}
+            className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-green-300 transition-all cursor-pointer group"
+            title="View My Attendance"
+          >
+            <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600 shrink-0 group-hover:scale-105 transition-transform">
               <CalendarDays size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0F172A]">Attendance</p>
+              <p className="text-sm font-bold text-[#0F172A] group-hover:text-green-600 transition-colors">Attendance</p>
               <p className="text-xs text-[#64748B]">
                 {attendancePct !== null ? `${attendancePct}%` : '—'} &middot; This month
               </p>
             </div>
           </div>
-          <div className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+          <div 
+            onClick={() => navigate('/intern/leave')}
+            className="bg-white border border-[#E2E8F0] rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm hover:shadow-md hover:border-amber-300 transition-all cursor-pointer group"
+            title="View Leave Management"
+          >
+            <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 shrink-0 group-hover:scale-105 transition-transform">
               <Clock size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-[#0F172A]">
+              <p className="text-sm font-bold text-[#0F172A] group-hover:text-amber-600 transition-colors">
                 {remainingLeaves !== null ? `${remainingLeaves} Leaves` : '— Leaves'}
               </p>
               <p className="text-xs text-[#64748B]">Remaining balance</p>
