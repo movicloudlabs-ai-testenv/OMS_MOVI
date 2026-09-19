@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Grid2X2, LifeBuoy, Bug, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase, MessageSquare, CreditCard, FileText } from 'lucide-react';
+import { Grid2X2, LifeBuoy, Bug, CheckSquare, Users, GraduationCap, BarChart2, LayoutDashboard, CalendarDays, Clock, BookOpen, User, Briefcase, MessageSquare, CreditCard, FileText, Activity } from 'lucide-react';
 
 // Pages that can be unlocked for any role via the Access Matrix.
 // Shown in "Granted Access" sidebar section when a non-native role has the permission.
@@ -35,6 +35,9 @@ const NAV_CONFIG = {
     { to: '/intern/tasks', icon: CheckSquare, label: 'My Tasks', isLucide: true },
     { to: '/intern/daily-tracker', icon: CalendarDays, label: 'Daily Tracker', isLucide: true },
     { to: '/intern/eod-report', icon: MessageSquare, label: 'EOD Report', isLucide: true },
+    { to: '/intern/status', icon: Activity, label: 'Status', isLucide: true },
+    { to: '/intern/messages', icon: MessageSquare, label: 'Messages', isLucide: true },
+    { to: '/intern/performance', icon: BarChart2, label: 'Performance', isLucide: true },
     { to: '/intern/announcements', icon: MessageSquare, label: 'Announcement', isLucide: true },
     { to: '/support/issues', icon: LifeBuoy, label: 'Issue Support', isLucide: true },
     { to: '/support/bugs', icon: Bug, label: 'Bug Sheet', isLucide: true },

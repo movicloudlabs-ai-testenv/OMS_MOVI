@@ -21,6 +21,9 @@ import InternLearning from './pages/intern/Learning';
 import InternDocuments from './pages/intern/Documents';
 import InternPayments from './pages/intern/Payments';
 import InternProfile from './pages/intern/Profile';
+import InternMessages from './pages/intern/Messages';
+import InternPerformance from './pages/intern/Performance';
+import InternStatus from './pages/intern/Status';
 
 // Employee
 import EmployeeDashboard from './pages/employee/Dashboard';
@@ -141,6 +144,9 @@ export default function App() {
       <Route path="/intern/documents" element={<ProtectedRoute allowedRoles={['intern']}><InternDocuments /></ProtectedRoute>} />
       <Route path="/intern/payments" element={<ProtectedRoute allowedRoles={['intern']}><InternPayments /></ProtectedRoute>} />
       <Route path="/intern/profile" element={<ProtectedRoute allowedRoles={['intern']}><InternProfile /></ProtectedRoute>} />
+      <Route path="/intern/messages" element={<ProtectedRoute allowedRoles={['intern']}><InternMessages /></ProtectedRoute>} />
+      <Route path="/intern/performance" element={<ProtectedRoute allowedRoles={['intern']}><InternPerformance /></ProtectedRoute>} />
+      <Route path="/intern/status" element={<ProtectedRoute allowedRoles={['intern']}><InternStatus /></ProtectedRoute>} />
 
       {/* Employee */}
       <Route path="/employee/dashboard" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeDashboard /></ProtectedRoute>} />
