@@ -38,6 +38,9 @@ function ApplyModal({ onClose, onSubmit, balance, submitting }) {
   const [error,    setError]    = useState('');
   const days = workingDays(fromDate, toDate);
   const bal  = balance?.[type?.toLowerCase()];
+  const remaining = bal ? bal.total - bal.used : null;
+  const exceedsBalance = bal && remaining !== null && days > remaining;
+  const isWeekendOnly = Boolean(fromDate && toDate && days === 0);
 
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 backdrop-blur-sm font-sans" onClick={onClose}>
@@ -87,12 +90,28 @@ function ApplyModal({ onClose, onSubmit, balance, submitting }) {
             </div>
           </div>
           {days > 0 && (
-            <p className="text-xs font-bold text-[#2563EB] bg-[#EFF6FF] px-3 py-1.5 rounded-lg -mt-2">
+            <p className={`text-xs font-bold px-3 py-1.5 rounded-lg -mt-2 ${exceedsBalance ? 'text-red-700 bg-red-50 border border-red-200' : 'text-[#2563EB] bg-[#EFF6FF]'}`}>
               {days} working day{days !== 1 ? 's' : ''}
-              {bal && days > (bal.total - bal.used) && (
+              {exceedsBalance && (
                 <span className="ml-2 text-red-600"> · Exceeds your balance!</span>
               )}
             </p>
+          )}
+
+          {isWeekendOnly && (
+            <div data-testid="weekend-leave-warning" className="flex items-center gap-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 font-medium -mt-2">
+              <AlertCircle size={16} className="text-amber-600 shrink-0" />
+              <span>Selected date range contains <strong>0 working days</strong> (weekends are excluded). Please choose dates that include weekdays (Monday – Friday).</span>
+            </div>
+          )}
+
+          {exceedsBalance && (
+            <div data-testid="exceeds-balance-warning" className="flex items-center gap-2.5 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 font-medium">
+              <AlertCircle size={16} className="text-red-500 shrink-0" />
+              <span>
+                Requested <strong>{days} working days</strong> exceeds your available <strong>{type}</strong> balance (<strong>{remaining} days remaining</strong>). Please adjust your dates to proceed.
+              </span>
+            </div>
           )}
 
           {/* Reason */}
@@ -107,8 +126,25 @@ function ApplyModal({ onClose, onSubmit, balance, submitting }) {
           <div className="flex justify-end gap-3 pt-2 border-t border-[#E2E8F0]">
             <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-[#64748B] hover:bg-[#F1F5F9] rounded-lg">Cancel</button>
             <button
-              disabled={submitting || !type || days === 0}
+              disabled={submitting || !type || days === 0 || exceedsBalance}
+              title={
+                days === 0
+                  ? 'Selected date range contains 0 working days (weekends are excluded)'
+                  : exceedsBalance
+                  ? `Requested days (${days}) exceeds remaining balance (${remaining})`
+                  : !type
+                  ? 'Please select a leave type'
+                  : ''
+              }
               onClick={() => {
+                if (days === 0) {
+                  toast.error('Selected date range contains 0 working days (weekends are excluded).');
+                  return;
+                }
+                if (exceedsBalance) {
+                  toast.error(`Requested ${days} days exceeds available ${type} balance (${remaining} days).`);
+                  return;
+                }
                 if (!reason || !reason.trim()) {
                   setError('Leave reason is required.');
                   toast.error('Leave reason is required.');
@@ -116,7 +152,7 @@ function ApplyModal({ onClose, onSubmit, balance, submitting }) {
                 }
                 onSubmit({ type, fromDate, toDate, reason: reason.trim() });
               }}
-              className="px-5 py-2 text-sm font-bold bg-[#2563EB] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+              className="px-5 py-2 text-sm font-bold bg-[#2563EB] text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
               {submitting ? 'Submitting…' : 'Submit Request'}
             </button>
           </div>
