@@ -106,6 +106,14 @@ export default function InternDailyTracker() {
       return;
     }
 
+    if (form.hours !== '' && form.hours !== undefined && form.hours !== null) {
+      const val = Number(form.hours);
+      if (isNaN(val) || val < 0 || val > 24) {
+        toast.error('Hours worked must be between 0 and 24');
+        return;
+      }
+    }
+
     if (form.ktCompletion !== '' && form.ktCompletion !== undefined && form.ktCompletion !== null) {
       const val = Number(form.ktCompletion);
       if (isNaN(val) || val < 0 || val > 100) {
@@ -118,14 +126,6 @@ export default function InternDailyTracker() {
       const val = Number(form.productivityMetrics);
       if (isNaN(val) || val < 0 || val > 10) {
         toast.error('Self Productivity must be between 0 and 10');
-        return;
-      }
-    }
-
-    if (form.hours !== '' && form.hours !== undefined && form.hours !== null) {
-      const val = Number(form.hours);
-      if (isNaN(val) || val < 0 || val > 24) {
-        toast.error('Hours worked must be between 0 and 24');
         return;
       }
     }
@@ -244,7 +244,23 @@ export default function InternDailyTracker() {
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Hours Worked</label>
-              <input type="number" min="0" max="24" step="0.5" value={form.hours} onChange={set('hours')} placeholder="8" className="w-full border border-[#E2E8F0] rounded-md py-2 px-3 text-[13px] focus:outline-none focus:border-[#2563EB]" />
+              <input
+                type="number"
+                min="0"
+                max="24"
+                step="0.5"
+                value={form.hours}
+                onChange={set('hours')}
+                placeholder="8"
+                className={`w-full border rounded-md py-2 px-3 text-[13px] focus:outline-none transition-colors ${
+                  form.hours !== '' && (Number(form.hours) < 0 || Number(form.hours) > 24)
+                    ? 'border-red-400 focus:border-red-500 bg-red-50/20'
+                    : 'border-[#E2E8F0] focus:border-[#2563EB]'
+                }`}
+              />
+              {form.hours !== '' && (Number(form.hours) < 0 || Number(form.hours) > 24) && (
+                <p className="text-[11px] text-red-500 mt-1 font-medium">Hours worked must be between 0 and 24</p>
+              )}
             </div>
             <div>
               <label className="block text-[13px] font-semibold text-[#0F172A] mb-1.5">Attendance</label>
@@ -285,6 +301,8 @@ export default function InternDailyTracker() {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
+              data-testid="submit-tracker-btn"
+              aria-label="Submit Daily Tracker"
               disabled={saving}
               className="bg-[#2563EB] text-white px-6 py-2.5 rounded-md text-[13px] font-semibold hover:bg-[#1D4ED8] transition-colors disabled:opacity-60"
             >
