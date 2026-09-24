@@ -231,14 +231,14 @@ export default function BugSheet() {
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2"><FileSpreadsheet className="w-5 h-5 text-emerald-600" /><h2 className="font-bold text-slate-900">Add Bug</h2></div>
               <div className="flex items-center gap-2">
-                <label className="label !mb-0">Project</label>
-                <select value={project} onChange={(e) => setProject(e.target.value)} className="input !w-auto py-2">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Project</label>
+                <select value={project} onChange={(e) => setProject(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 shadow-sm outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 cursor-pointer">
                   {PROJECTS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+            <div className="flex flex-wrap items-center gap-3 mb-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
               <Hash className="w-4 h-4 text-slate-400 shrink-0" />
               {preview.loading ? (
                 <span className="text-slate-500">Checking last test case number…</span>
@@ -263,46 +263,271 @@ export default function BugSheet() {
               </button>
             </div>
 
-            <form onSubmit={submitBug} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="label">Module / Feature Name</label><input value={form.module} onChange={e=>setForm({...form,module:e.target.value})} className="input" placeholder="e.g. Student Management" /></div>
-              <div><label className="label">Test Scenario</label><input value={form.scenario} onChange={e=>setForm({...form,scenario:e.target.value})} className="input" placeholder="e.g. Filter Function" /></div>
-
-              <div className="md:col-span-2"><label className="label">Test Case Description</label><textarea rows="2" value={form.description} onChange={e=>setForm({...form,description:e.target.value})} className="input resize-none" placeholder="What is this test case verifying?" /></div>
-
-              <div><label className="label">Precondition</label><input value={form.precondition} onChange={e=>setForm({...form,precondition:e.target.value})} className="input" placeholder="e.g. User logged in" /></div>
-              <div><label className="label">Test Data</label><input value={form.testData} onChange={e=>setForm({...form,testData:e.target.value})} className="input" placeholder="e.g. Valid credentials" /></div>
-
-              <div className="md:col-span-2"><label className="label">Test Steps</label><textarea rows="3" value={form.steps} onChange={e=>setForm({...form,steps:e.target.value})} className="input resize-none" placeholder="1. Login... 2. Open... 3. Click..." /></div>
-
-              <div><label className="label">Expected Result</label><textarea rows="3" value={form.expected} onChange={e=>setForm({...form,expected:e.target.value})} className="input resize-none" /></div>
-              <div><label className="label">Actual Result</label><textarea rows="3" value={form.actual} onChange={e=>setForm({...form,actual:e.target.value})} className="input resize-none" /></div>
-
-              <div><label className="label">Status</label><select value={form.status} onChange={e=>setForm({...form,status:e.target.value})} className="input">{STATUSES.map(x=><option key={x}>{x}</option>)}</select></div>
-              <div><label className="label">Priority</label><select value={form.priority} onChange={e=>setForm({...form,priority:e.target.value})} className="input">{PRIORITIES.map(x=><option key={x}>{x}</option>)}</select></div>
-              <div><label className="label">Severity</label><select value={form.severity} onChange={e=>setForm({...form,severity:e.target.value})} className="input">{SEVERITIES.map(x=><option key={x}>{x}</option>)}</select></div>
-              <div><label className="label">Environment / Browser / OS</label><input value={form.environment} onChange={e=>setForm({...form,environment:e.target.value})} className="input" placeholder="e.g. Chrome / Windows 11" /></div>
-
-              <div className="md:col-span-2"><label className="label">Remarks / Comments</label><textarea rows="2" value={form.remarks} onChange={e=>setForm({...form,remarks:e.target.value})} className="input resize-none" /></div>
-
-              <div><label className="label">Executed By</label><input value={form.executedBy} onChange={e=>setForm({...form,executedBy:e.target.value})} className="input" placeholder="Enter your name" /></div>
-              <div><label className="label">Execution Date</label><input value={executionDate} onChange={e=>setExecutionDate(e.target.value)} className="input" placeholder="DD-MM-YYYY" /></div>
-
+            <form onSubmit={submitBug} className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="label">Test Case ID <span className="normal-case font-medium text-slate-400">(auto)</span></label>
-                <input value={preview.loading ? 'Loading…' : (preview.testCaseId || '—')} disabled className="input opacity-70 font-semibold" />
-              </div>
-              <div>
-                <label className="label">Bug ID / Defect ID <span className="normal-case font-medium text-slate-400">(auto)</span></label>
-                <input value={preview.loading ? 'Loading…' : (preview.bugId || '—')} disabled className="input opacity-70 font-semibold" />
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Module / Feature Name <span className="text-rose-500">*</span>
+                </label>
+                <input 
+                  value={form.module} 
+                  onChange={e=>setForm({...form,module:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="e.g. Student Management, Task Board, Profile" 
+                />
               </div>
 
-              <div><label className="label">Starting Time</label><input value={form.startingTime} onChange={e=>setForm({...form,startingTime:e.target.value})} className="input" placeholder="e.g. 14:00" /></div>
-              <div><label className="label">End Time</label><input value={form.endTime} onChange={e=>setForm({...form,endTime:e.target.value})} className="input" placeholder="e.g. 14:30" /></div>
-              <div><label className="label">Solved By</label><input value={form.solvedBy} onChange={e=>setForm({...form,solvedBy:e.target.value})} className="input" placeholder="Name of whoever fixed it (leave blank if still open)" /></div>
-              <div><label className="label">Solved Date</label><input value={form.solvedDate} onChange={e=>setForm({...form,solvedDate:e.target.value})} className="input" placeholder="DD-MM-YYYY (leave blank if still open)" /></div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Test Scenario <span className="text-rose-500">*</span>
+                </label>
+                <input 
+                  value={form.scenario} 
+                  onChange={e=>setForm({...form,scenario:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="e.g. Filter Function by Status and Date" 
+                />
+              </div>
 
-              <div className="md:col-span-2 flex justify-end">
-                <button type="submit" disabled={sending} className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-bold hover:bg-red-700 disabled:opacity-60">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Test Case Description <span className="text-rose-500">*</span>
+                </label>
+                <textarea 
+                  rows="2" 
+                  value={form.description} 
+                  onChange={e=>setForm({...form,description:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none resize-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="Describe what this test case is verifying and the specific scenario requirements..." 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Precondition
+                </label>
+                <input 
+                  value={form.precondition} 
+                  onChange={e=>setForm({...form,precondition:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="e.g. User logged in with active Intern session" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Test Data
+                </label>
+                <input 
+                  value={form.testData} 
+                  onChange={e=>setForm({...form,testData:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="e.g. Email: arjun.p@owms.com, Role: Intern" 
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Test Steps <span className="text-rose-500">*</span>
+                </label>
+                <textarea 
+                  rows="3" 
+                  value={form.steps} 
+                  onChange={e=>setForm({...form,steps:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none resize-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="1. Navigate to page&#10;2. Perform action or click button&#10;3. Observe response" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Expected Result <span className="text-rose-500">*</span>
+                </label>
+                <textarea 
+                  rows="3" 
+                  value={form.expected} 
+                  onChange={e=>setForm({...form,expected:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none resize-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="Describe the expected correct behavior..." 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Actual Result <span className="text-rose-500">*</span>
+                </label>
+                <textarea 
+                  rows="3" 
+                  value={form.actual} 
+                  onChange={e=>setForm({...form,actual:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none resize-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="Describe what actually happened or went wrong..." 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Status
+                </label>
+                <select 
+                  value={form.status} 
+                  onChange={e=>setForm({...form,status:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10 cursor-pointer"
+                >
+                  {STATUSES.map(x=><option key={x}>{x}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Priority
+                </label>
+                <select 
+                  value={form.priority} 
+                  onChange={e=>setForm({...form,priority:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10 cursor-pointer"
+                >
+                  {PRIORITIES.map(x=><option key={x}>{x}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Severity
+                </label>
+                <select 
+                  value={form.severity} 
+                  onChange={e=>setForm({...form,severity:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-800 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10 cursor-pointer"
+                >
+                  {SEVERITIES.map(x=><option key={x}>{x}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Environment / Browser / OS
+                </label>
+                <input 
+                  value={form.environment} 
+                  onChange={e=>setForm({...form,environment:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="e.g. Chrome 120 / Windows 11 / Desktop" 
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Remarks / Comments
+                </label>
+                <textarea 
+                  rows="2" 
+                  value={form.remarks} 
+                  onChange={e=>setForm({...form,remarks:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none resize-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="Additional notes, screenshots reference, or edge cases..." 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Executed By
+                </label>
+                <input 
+                  value={form.executedBy} 
+                  onChange={e=>setForm({...form,executedBy:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="Enter tester's name (e.g. Arjun Patel)" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Execution Date
+                </label>
+                <input 
+                  value={executionDate} 
+                  onChange={e=>setExecutionDate(e.target.value)} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="DD-MM-YYYY" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Test Case ID <span className="normal-case text-xs font-medium text-slate-400 ml-1">(auto-generated)</span>
+                </label>
+                <input 
+                  value={preview.loading ? 'Loading…' : (preview.testCaseId || '—')} 
+                  disabled 
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-sm font-bold text-slate-700 cursor-not-allowed select-none shadow-sm" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Bug ID / Defect ID <span className="normal-case text-xs font-medium text-slate-400 ml-1">(auto-generated)</span>
+                </label>
+                <input 
+                  value={preview.loading ? 'Loading…' : (preview.bugId || '—')} 
+                  disabled 
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-2.5 text-sm font-bold text-slate-700 cursor-not-allowed select-none shadow-sm" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Starting Time
+                </label>
+                <input 
+                  value={form.startingTime} 
+                  onChange={e=>setForm({...form,startingTime:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="e.g. 14:00" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  End Time
+                </label>
+                <input 
+                  value={form.endTime} 
+                  onChange={e=>setForm({...form,endTime:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="e.g. 14:30" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Solved By
+                </label>
+                <input 
+                  value={form.solvedBy} 
+                  onChange={e=>setForm({...form,solvedBy:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="Name of fixer (leave blank if open)" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                  Solved Date
+                </label>
+                <input 
+                  value={form.solvedDate} 
+                  onChange={e=>setForm({...form,solvedDate:e.target.value})} 
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10" 
+                  placeholder="DD-MM-YYYY (leave blank if open)" 
+                />
+              </div>
+
+              <div className="md:col-span-2 flex justify-end pt-2">
+                <button 
+                  type="submit" 
+                  disabled={sending} 
+                  className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-6 py-3 text-sm font-bold shadow-lg shadow-red-600/20 hover:bg-red-700 hover:shadow-xl transition-all disabled:opacity-60 cursor-pointer"
+                >
                   <Send className="w-4 h-4" />{sending ? 'Adding...' : `Add as ${preview.testCaseId || 'next'} to ${PROJECTS.find((p) => p.value === project)?.label || project}`}
                 </button>
               </div>
@@ -310,7 +535,6 @@ export default function BugSheet() {
           </div>
         )}
       </div>
-      <style>{`.label{display:block;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:6px}.input{width:100%;border:1px solid #e2e8f0;background:#f8fafc;border-radius:12px;padding:11px 13px;font-size:14px;outline:none}.input:focus{box-shadow:0 0 0 3px rgba(59,130,246,.1);border-color:#93c5fd}`}</style>
     </PageWrapper>
   );
 }
