@@ -465,10 +465,10 @@ export default function InternTasks() {
 
   return (
     <PageWrapper>
-      <div className="w-full flex flex-col h-[calc(100vh-64px)] overflow-hidden font-sans pb-4">
+      <div className="w-full flex flex-col h-[calc(125vh-54px)] overflow-hidden font-sans pb-1">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-6 px-6 md:px-8 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2 px-6 md:px-8 shrink-0">
           <div>
             <h1 className="text-2xl font-bold text-[#0F172A] flex items-center gap-3">
               My Tasks
@@ -512,15 +512,15 @@ export default function InternTasks() {
             <span className="material-symbols-outlined text-[32px] text-[#2563EB] animate-spin">sync</span>
           </div>
         ) : (
-          <div className="flex-1 overflow-hidden mt-6 px-6 md:px-8">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden mt-4 px-6 md:px-8">
 
             {/* Board */}
             {view === 'board' && (
-              <div className="flex gap-5 h-full overflow-x-auto pb-4">
+              <div className="flex-1 min-h-0 flex gap-4 h-full overflow-x-auto pb-2">
                 {COLUMNS.map(col => {
                   const colTasks = filtered.filter(t => t.status === col.id);
                   return (
-                    <div key={col.id} className={`w-[300px] shrink-0 flex flex-col h-full bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] border-t-4 ${col.color}`}>
+                    <div key={col.id} className={`flex-1 min-w-[240px] xl:min-w-[260px] flex flex-col h-full bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0] border-t-4 ${col.color}`}>
                       <div className="px-4 py-3 flex items-center justify-between">
                         <h3 className="font-bold text-[#0F172A] text-sm">{col.title}</h3>
                         <span className="bg-white border border-[#E2E8F0] text-[#64748B] text-xs font-bold px-2 py-0.5 rounded-full">
@@ -581,7 +581,7 @@ export default function InternTasks() {
 
             {/* List */}
             {view === 'list' && (
-              <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm h-full flex flex-col">
+              <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm h-full flex flex-col flex-1 min-h-0">
                 <div className="flex-1 overflow-auto">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead className="bg-[#F8FAFC] sticky top-0 border-b border-[#E2E8F0]">
