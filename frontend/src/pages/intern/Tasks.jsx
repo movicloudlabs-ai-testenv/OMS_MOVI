@@ -482,6 +482,13 @@ export default function InternTasks() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative w-56 sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search tasks…"
+                className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-sm bg-white focus:outline-none focus:border-[#2563EB]" />
+            </div>
+
             <select value={projectFilter} onChange={e => setProjectFilter(e.target.value)}
               className="text-sm border border-[#E2E8F0] rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-[#2563EB] font-medium text-[#0F172A]">
               <option value="All Projects">All Projects</option>
@@ -575,14 +582,6 @@ export default function InternTasks() {
             {/* List */}
             {view === 'list' && (
               <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm h-full flex flex-col">
-                <div className="p-4 border-b border-[#E2E8F0]">
-                  <div className="relative max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" size={16} />
-                    <input value={search} onChange={e => setSearch(e.target.value)}
-                      placeholder="Search tasks…"
-                      className="w-full pl-9 pr-4 py-2 border border-[#E2E8F0] rounded-lg text-sm focus:outline-none focus:border-[#2563EB]" />
-                  </div>
-                </div>
                 <div className="flex-1 overflow-auto">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead className="bg-[#F8FAFC] sticky top-0 border-b border-[#E2E8F0]">
