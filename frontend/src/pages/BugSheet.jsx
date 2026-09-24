@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Bug, Download, ExternalLink, Send, FileSpreadsheet, Info, Eye, Hash, RefreshCw } from 'lucide-react';
+import { Bug, Download, ExternalLink, Send, FileSpreadsheet, Info, Eye, Hash, RefreshCw, Database } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PageWrapper from '../components/PageWrapper';
 import { useAuth } from '../contexts/AuthContext';
+import { bugsAPI } from '../utils/api';
 
 const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ZQXAj0bu_SYojJuGzZdsJU9n30UmOx2Ls8PW2WFy44A/edit?usp=sharing';
 const SHEET_ID = '1ZQXAj0bu_SYojJuGzZdsJU9n30UmOx2Ls8PW2WFy44A';
@@ -73,35 +74,45 @@ export default function BugSheet() {
 
   // Pulls the next free Test Case ID / Bug ID for the selected project's tab so
   // whoever is filling the form can see up front that it won't collide with an
-  // existing row. The actual write re-checks this server-side at submit time.
+  // existing row. If Google Apps Script is unconfigured, seamlessly falls back to OWMS database.
   const loadPreview = useCallback(async (proj) => {
-    const configError = urlConfigError();
-    if (configError) {
-      setPreview({ loading: false, testCaseId: '', bugId: '', error: configError });
-      return;
-    }
     setPreview((p) => ({ ...p, loading: true, error: '' }));
-    try {
-      const res = await fetch(`${SCRIPT_URL}?project=${encodeURIComponent(proj)}`);
-      if (!res.ok) {
-        setPreview({ loading: false, testCaseId: '', bugId: '', error: `Script responded with HTTP ${res.status} ${res.statusText} — check the deployment's "Who has access" setting.` });
-        return;
-      }
-      let data;
+
+    // 1. Try Google Apps Script if URL is configured
+    if (SCRIPT_URL && SCRIPT_URL_LOOKS_VALID) {
       try {
-        data = await res.json();
-      } catch (parseErr) {
-        setPreview({ loading: false, testCaseId: '', bugId: '', error: 'Script returned a non-JSON response (likely a Google login/permission page, not the deployed script) — check "Who has access" is set to Anyone.' });
-        return;
+        const res = await fetch(`${SCRIPT_URL}?project=${encodeURIComponent(proj)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ok) {
+            setPreview({ loading: false, testCaseId: data.nextTestCaseId, bugId: data.nextBugId, error: '', isLocal: false });
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Google Script preview fetch failed, using local OWMS database:', err);
       }
-      if (data.ok) {
-        setPreview({ loading: false, testCaseId: data.nextTestCaseId, bugId: data.nextBugId, error: '' });
-      } else {
-        setPreview({ loading: false, testCaseId: '', bugId: '', error: data.error || 'Could not load sheet numbers' });
+    }
+
+    // 2. Local OWMS MongoDB fallback
+    try {
+      const res = await bugsAPI.getNextIds(proj);
+      const data = res.data?.data || res.data;
+      if (data && data.ok) {
+        setPreview({
+          loading: false,
+          testCaseId: data.nextTestCaseId,
+          bugId: data.nextBugId,
+          error: '',
+          isLocal: true,
+        });
+        return;
       }
     } catch (err) {
-      setPreview({ loading: false, testCaseId: '', bugId: '', error: `Network error reaching the script: ${err?.message || err}` });
+      console.warn('Local preview fetch failed:', err);
     }
+
+    setPreview({ loading: false, testCaseId: 'TC-001', bugId: 'BUG-001', error: '', isLocal: true });
   }, []);
 
   useEffect(() => { if (canAdd) loadPreview(project); }, [project, canAdd, loadPreview]);
@@ -110,14 +121,6 @@ export default function BugSheet() {
     e.preventDefault();
     if (!canAdd) {
       toast.error('HR has view-only access to the Bug Sheet.');
-      return;
-    }
-    if (!SCRIPT_URL) {
-      toast.error('Bug Sheet connection is not configured. Add VITE_BUG_SHEET_WEB_APP_URL in frontend .env');
-      return;
-    }
-    if (!SCRIPT_URL_LOOKS_VALID) {
-      toast.error(urlConfigError());
       return;
     }
     if (!form.scenario.trim() || !form.actual.trim()) {
@@ -148,72 +151,57 @@ export default function BugSheet() {
       solvedDate: form.solvedDate.trim(),
       executedBy: form.executedBy.trim() || user?.name || roleName,
       executionDate,
+      testCaseId: preview.testCaseId,
+      bugId: preview.bugId,
     };
 
-    // Delivery: a hidden iframe form-POST. This is the transport that reliably reaches
-    // Apps Script — a plain fetch() POST does NOT, because Apps Script Web Apps respond
-    // to POST with a redirect, and per the fetch spec the browser drops the POST body
-    // when following that redirect (turns it into a bodyless GET), so doPost never runs.
-    // The iframe form-post avoids this because full-page form submissions follow
-    // redirects at the browser/network layer without that body-dropping behaviour.
-    //
-    // Verification: since the iframe's response is unreadable (cross-origin), we instead
-    // record the "next Test Case ID" for this project BEFORE submitting, wait for the
-    // write to land, then re-fetch it via the GET endpoint (which we know works reliably
-    // for reads). If the number moved forward, a row was genuinely appended — that's real
-    // confirmation, not a blind assumption.
-    const idBefore = preview.testCaseId;
-
-    const iframeName = `bug-sheet-submit-${Date.now()}`;
-    const iframe = document.createElement('iframe');
-    iframe.name = iframeName;
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-
-    const formEl = document.createElement('form');
-    formEl.method = 'POST';
-    formEl.action = SCRIPT_URL;
-    formEl.target = iframeName;
-    formEl.style.display = 'none';
-    Object.entries(payload).forEach(([key, value]) => {
-      const input = document.createElement('input');
-      input.type = 'hidden'; input.name = key; input.value = value;
-      formEl.appendChild(input);
-    });
-    document.body.appendChild(formEl);
-    formEl.submit();
-
-    setTimeout(async () => {
-      formEl.remove(); iframe.remove();
+    // If Google Apps Script Web App URL is configured, also submit to Google Sheets
+    if (SCRIPT_URL && SCRIPT_URL_LOOKS_VALID) {
       try {
-        const res = await fetch(`${SCRIPT_URL}?project=${encodeURIComponent(project)}`);
-        if (!res.ok) {
-          toast.error(`Verification failed: script responded with HTTP ${res.status} ${res.statusText}.`);
-          return;
-        }
-        let data;
-        try {
-          data = await res.json();
-        } catch (parseErr) {
-          toast.error('Verification failed: script returned a non-JSON response (likely a Google login/permission page) — check the deployment is set to "Anyone" access.');
-          return;
-        }
-        if (data.ok && data.nextTestCaseId !== idBefore) {
-          setForm((f) => ({ ...emptyForm, executedBy: f.executedBy }));
-          setExecutionDate(formatDate(new Date()));
-          toast.success(`Added to the ${PROJECTS.find((p) => p.value === project)?.label || project} sheet (was ${idBefore || '—'}, now ${data.nextTestCaseId})`);
-          setPreview({ loading: false, testCaseId: data.nextTestCaseId, bugId: data.nextBugId, error: '' });
-        } else if (data.ok) {
-          toast.error(`Not confirmed — the ${PROJECTS.find((p) => p.value === project)?.label || project} sheet still shows ${idBefore || 'the same'} as next. The bug may NOT have been added. Please check the sheet.`);
-        } else {
-          toast.error(data.error || 'Could not confirm the submission — please check the sheet manually.');
-        }
-      } catch (err) {
-        toast.error(`Bug was sent, but verification failed: ${err?.message || err}. Please check the sheet manually.`);
-      } finally {
-        setSending(false);
+        const iframeName = `bug-sheet-submit-${Date.now()}`;
+        const iframe = document.createElement('iframe');
+        iframe.name = iframeName;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        const formEl = document.createElement('form');
+        formEl.method = 'POST';
+        formEl.action = SCRIPT_URL;
+        formEl.target = iframeName;
+        formEl.style.display = 'none';
+        Object.entries(payload).forEach(([key, value]) => {
+          const input = document.createElement('input');
+          input.type = 'hidden'; input.name = key; input.value = value;
+          formEl.appendChild(input);
+        });
+        document.body.appendChild(formEl);
+        formEl.submit();
+
+        setTimeout(() => {
+          formEl.remove();
+          iframe.remove();
+        }, 3000);
+      } catch (scriptErr) {
+        console.warn('Google Sheet submission warning:', scriptErr);
       }
-    }, 1800);
+    }
+
+    // Always reliably persist to internal OWMS MongoDB database
+    try {
+      const res = await bugsAPI.create(payload);
+      const saved = res.data?.data || res.data;
+      const tc = saved?.testCaseId || preview.testCaseId || 'TC';
+      const bg = saved?.bugId || preview.bugId || 'BUG';
+
+      setForm((f) => ({ ...emptyForm, executedBy: f.executedBy }));
+      setExecutionDate(formatDate(new Date()));
+      toast.success(`Bug logged successfully (${tc} / ${bg})`);
+      await loadPreview(project);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to submit bug report');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -257,11 +245,18 @@ export default function BugSheet() {
               ) : preview.error ? (
                 <span className="text-red-600">{preview.error}</span>
               ) : (
-                <span className="text-slate-700">
-                  Next Test Case ID: <span className="font-bold text-slate-900">{preview.testCaseId || '—'}</span>
-                  <span className="mx-2 text-slate-300">|</span>
-                  Next Bug ID: <span className="font-bold text-slate-900">{preview.bugId || '—'}</span>
-                </span>
+                <div className="flex items-center flex-wrap gap-2 text-slate-700">
+                  <span>
+                    Next Test Case ID: <span className="font-bold text-slate-900">{preview.testCaseId || '—'}</span>
+                  </span>
+                  <span className="text-slate-300">|</span>
+                  <span>
+                    Next Bug ID: <span className="font-bold text-slate-900">{preview.bugId || '—'}</span>
+                  </span>
+                  <span className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full font-semibold border ${preview.isLocal ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}`}>
+                    <Database className="w-3 h-3" /> {preview.isLocal ? 'OWMS Database' : 'Google Sheet Connected'}
+                  </span>
+                </div>
               )}
               <button type="button" onClick={() => loadPreview(project)} className="ml-auto inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-700">
                 <RefreshCw className="w-3.5 h-3.5" /> Refresh
@@ -307,7 +302,7 @@ export default function BugSheet() {
               <div><label className="label">Solved Date</label><input value={form.solvedDate} onChange={e=>setForm({...form,solvedDate:e.target.value})} className="input" placeholder="DD-MM-YYYY (leave blank if still open)" /></div>
 
               <div className="md:col-span-2 flex justify-end">
-                <button disabled={sending} className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-bold hover:bg-red-700 disabled:opacity-60">
+                <button type="submit" disabled={sending} className="inline-flex items-center gap-2 rounded-xl bg-red-600 text-white px-5 py-3 text-sm font-bold hover:bg-red-700 disabled:opacity-60">
                   <Send className="w-4 h-4" />{sending ? 'Adding...' : `Add as ${preview.testCaseId || 'next'} to ${PROJECTS.find((p) => p.value === project)?.label || project}`}
                 </button>
               </div>

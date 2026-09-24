@@ -464,3 +464,11 @@ export const issuesAPI = {
   create: (data) => api.post('/issues', data),
   updateStatus: (id, status) => api.patch(`/issues/${id}`, { status }),
 };
+
+// Bug Sheet API (Local DB fallback & storage)
+export const bugsAPI = {
+  getNextIds: (project) => api.get('/bugs/preview', { params: { project } }),
+  getAll: (project) => api.get('/bugs', { params: { project } }),
+  create: (data) => api.post('/bugs', data),
+};
+
