@@ -114,10 +114,25 @@ import AdminProfile from './pages/admin/Profile';
 import Profile from './pages/Profile';
 
 function RoleRedirect() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-10 h-10 border-2 border-[#2563EB] border-t-transparent rounded-full animate-spin" />
+          <p className="text-[13px] text-[#64748B] font-medium">Loading…</p>
+        </div>
+      </div>
+    );
+  }
+
   if (user) {
-    const slug = user.role?.slug || user.role || '';
-    return <Navigate to={ROLE_HOME[slug] || '/login'} replace />;
+    if (user.mustChangePassword) {
+      return <Navigate to="/change-password" replace />;
+    }
+    const slug = user.role?.slug || (typeof user.role === 'string' ? user.role : '');
+    return <Navigate to={ROLE_HOME[slug] || '/unauthorized'} replace />;
   }
   return <Navigate to="/login" replace />;
 }

@@ -7,7 +7,9 @@ const ROLE_HOME = {
   'super-admin': '/admin/dashboard',
   'admin':       '/admin/dashboard',
   'hr-manager':  '/hr/dashboard',
+  'hr':          '/hr/dashboard',
   'pmo-lead':    '/pmo/dashboard',
+  'pmo':         '/pmo/dashboard',
   'employee':    '/employee/dashboard',
   'intern':      '/intern/dashboard',
 };
