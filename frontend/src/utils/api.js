@@ -157,6 +157,9 @@ export const hrAPI = {
 
   getAttendance: (params) => api.get('/hr/attendance', { params }),
   getMyAttendance: (params) => api.get('/hr/my-attendance', { params }),
+  getTodayAttendance: () => api.get('/hr/my-attendance/today'),
+  checkIn: () => api.post('/hr/my-attendance/check-in'),
+  checkOut: () => api.post('/hr/my-attendance/check-out'),
   markAttendance: (data) => api.post('/hr/attendance/mark', data),
   exportAttendance: (params) => api.get('/hr/attendance/export', { params, responseType: 'blob' }),
 
@@ -281,6 +284,9 @@ export const pmoAPI = {
   getReports: (params) => api.get('/pmo/reports', { params }),
   getDashboardStats: () => api.get('/pmo/dashboard'),
   getAttendance: (params) => api.get('/pmo/attendance', { params }),
+  getTodayAttendance: () => api.get('/pmo/attendance/today'),
+  checkIn: () => api.post('/pmo/attendance/check-in'),
+  checkOut: () => api.post('/pmo/attendance/check-out'),
   reviewApproval: (id, data) => api.put(`/pmo/approvals/${id}`, data),
 
   // Daily Tracker / EOD Reports (PMO view + edit)

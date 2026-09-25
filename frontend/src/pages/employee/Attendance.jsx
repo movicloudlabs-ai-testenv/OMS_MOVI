@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import PageWrapper from '../../components/PageWrapper';
 import { CalendarDays, ArrowLeft, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { employeeAPI } from '../../utils/api';
+import AttendanceClock from '../../components/shared/AttendanceClock';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -139,6 +140,9 @@ export default function EmployeeAttendance() {
             <p className="text-xs text-[#64748B] mt-0.5">View your attendance and leave records</p>
           </div>
         </div>
+
+        {/* Self-service Attendance Clock */}
+        <AttendanceClock api={employeeAPI} onStatusChange={() => loadAttendance(currentMonth, currentYear)} />
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import PageWrapper from '../../components/PageWrapper';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { pmoAPI } from '../../utils/api';
+import AttendanceClock from '../../components/shared/AttendanceClock';
 import toast from 'react-hot-toast';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -55,6 +56,9 @@ export default function PMOAttendance() {
           </h1>
           <p className="text-sm text-[#64748B] mt-1">Your monthly attendance record</p>
         </div>
+
+        {/* Self-service Attendance Clock */}
+        <AttendanceClock api={pmoAPI} onStatusChange={load} />
 
         {/* Summary cards */}
         {summary && (

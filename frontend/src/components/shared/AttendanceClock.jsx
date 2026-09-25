@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
  * Self-service Attendance Clock widget.
  * `api` must expose: getTodayAttendance(), checkIn(), checkOut()
  */
-export default function AttendanceClock({ api }) {
+export default function AttendanceClock({ api, onStatusChange }) {
   const [today, setToday] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -34,6 +34,7 @@ export default function AttendanceClock({ api }) {
       const res = await api.checkIn();
       setToday(res.data?.data);
       toast.success('Checked in — have a great day!');
+      onStatusChange?.(res.data?.data);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to check in');
     } finally {
@@ -47,6 +48,7 @@ export default function AttendanceClock({ api }) {
       const res = await api.checkOut();
       setToday(res.data?.data);
       toast.success('Checked out — see you tomorrow!');
+      onStatusChange?.(res.data?.data);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to check out');
     } finally {
