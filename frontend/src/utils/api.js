@@ -17,7 +17,7 @@ const api = axios.create({
 // Request interceptor to attach JWT token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('owms_token');
+    const token = sessionStorage.getItem('owms_token') || localStorage.getItem('owms_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,9 +31,14 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      sessionStorage.removeItem('owms_token');
+      sessionStorage.removeItem('owms_refresh_token');
+      sessionStorage.removeItem('owms_user');
       localStorage.removeItem('owms_token');
       localStorage.removeItem('owms_refresh_token');
       localStorage.removeItem('owms_user');
+      localStorage.removeItem('owms_remember_me');
+      localStorage.removeItem('owms_mock_user');
       // Fire event so AuthContext can clear React state (avoid stale UI)
       window.dispatchEvent(new Event('owms:unauthorized'));
       // Only redirect if not already on login page

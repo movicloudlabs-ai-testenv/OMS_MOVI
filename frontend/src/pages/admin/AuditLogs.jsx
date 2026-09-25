@@ -588,7 +588,7 @@ export default function AdminAuditLogs() {
     const qs = new URLSearchParams(params).toString();
     const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
     const baseUrl = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
-    const token = localStorage.getItem('owms_token') || '';
+    const token = sessionStorage.getItem('owms_token') || localStorage.getItem('owms_token') || '';
     // Build URL — browser download requires GET with auth header; use a temporary link
     const url = `${baseUrl}/admin/audit-logs/export${qs ? `?${qs}` : ''}`;
     // Fetch with auth token and trigger download

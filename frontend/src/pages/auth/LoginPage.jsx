@@ -43,7 +43,7 @@ export default function LoginPage() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const user = await login(identifier, password);
+      const user = await login(identifier, password, rememberMe);
       const slug = user.role?.slug || user.role || '';
       navigate(ROLE_HOME[slug] || '/unauthorized');
     } catch (err) {

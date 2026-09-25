@@ -53,12 +53,19 @@ export default function ForceChangePassword() {
       // Store the new token pair returned by the server
       const { token: newToken, refreshToken: newRefresh } = res?.data?.data || {};
       if (newToken) {
-        localStorage.setItem('owms_token', newToken);
-        if (newRefresh) localStorage.setItem('owms_refresh_token', newRefresh);
+        sessionStorage.setItem('owms_token', newToken);
+        if (newRefresh) sessionStorage.setItem('owms_refresh_token', newRefresh);
+        if (localStorage.getItem('owms_remember_me') === 'true') {
+          localStorage.setItem('owms_token', newToken);
+          if (newRefresh) localStorage.setItem('owms_refresh_token', newRefresh);
+        }
       }
       // Clear mustChangePassword in stored user so ProtectedRoute lets us through
       const freshUser = { ...user, mustChangePassword: false };
-      localStorage.setItem('owms_user', JSON.stringify(freshUser));
+      sessionStorage.setItem('owms_user', JSON.stringify(freshUser));
+      if (localStorage.getItem('owms_remember_me') === 'true') {
+        localStorage.setItem('owms_user', JSON.stringify(freshUser));
+      }
       setDone(true);
       setTimeout(() => {
         // Reload so AuthContext re-reads localStorage with the fresh token + user

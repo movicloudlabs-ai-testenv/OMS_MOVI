@@ -71,7 +71,14 @@ export default function Profile() {
       if (setUser && updatedUser) {
         setUser((prev) => {
           const merged = { ...prev, ...updatedUser };
-          try { localStorage.setItem('owms_user', JSON.stringify(merged)); } catch { /* ignore */ }
+          try {
+            if (sessionStorage.getItem('owms_token')) {
+              sessionStorage.setItem('owms_user', JSON.stringify(merged));
+            }
+            if (localStorage.getItem('owms_remember_me') === 'true') {
+              localStorage.setItem('owms_user', JSON.stringify(merged));
+            }
+          } catch { /* ignore */ }
           return merged;
         });
       }
