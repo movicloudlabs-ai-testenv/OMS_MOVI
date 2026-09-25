@@ -18,6 +18,15 @@ const COLUMNS = [
   { id: 'Done',        title: 'Done',         color: 'border-t-green-500'  },
 ];
 
+const STATUS_TABS = [
+  { id: 'All',         label: 'All' },
+  { id: 'Todo',        label: 'To Do' },
+  { id: 'In Progress', label: 'In Progress' },
+  { id: 'Blocked',     label: 'Blocked' },
+  { id: 'In Review',   label: 'In Review' },
+  { id: 'Done',        label: 'Done' },
+];
+
 const PRIORITY_STYLES = {
   Low:      { badge: 'bg-green-100 text-green-700',   dot: 'bg-green-500'  },
   Medium:   { badge: 'bg-amber-100 text-amber-700',   dot: 'bg-amber-500'  },
@@ -406,6 +415,7 @@ export default function InternTasks() {
   const [projects,      setProjects]      = useState([]);
   const [projectFilter, setProjectFilter] = useState('All Projects');
   const [search,        setSearch]        = useState('');
+  const [statusFilter,  setStatusFilter]  = useState('All');
   const [selectedTask,  setSelectedTask]  = useState(null);
   const [loading,       setLoading]       = useState(true);
 
@@ -455,10 +465,15 @@ export default function InternTasks() {
     } catch { toast.error('Failed to update status'); }
   };
 
-  const filtered = tasks.filter(t => {
+  const baseFiltered = tasks.filter(t => {
     const matchProject = projectFilter === 'All Projects' || t.project?.name === projectFilter;
     const matchSearch  = !search || t.title.toLowerCase().includes(search.toLowerCase());
     return matchProject && matchSearch;
+  });
+
+  const filtered = baseFiltered.filter(t => {
+    if (view === 'board') return true;
+    return statusFilter === 'All' || t.status === statusFilter;
   });
 
   const overdue = tasks.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'Done').length;
@@ -494,6 +509,16 @@ export default function InternTasks() {
               <option value="All Projects">All Projects</option>
               {projects.map(p => <option key={p._id} value={p.name}>{p.name}</option>)}
             </select>
+
+            {view === 'list' && (
+              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                className="text-sm border border-[#E2E8F0] rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-[#2563EB] font-medium text-[#0F172A]">
+                <option value="All">All Statuses</option>
+                {STATUS_TABS.filter(s => s.id !== 'All').map(s => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            )}
 
             <div className="flex bg-[#F1F5F9] p-1 rounded-lg border border-[#E2E8F0]">
               {[['board', 'Board', Columns], ['list', 'List', List]].map(([id, label, Icon]) => (
@@ -582,6 +607,40 @@ export default function InternTasks() {
             {/* List */}
             {view === 'list' && (
               <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm h-full flex flex-col flex-1 min-h-0">
+                {/* Status Category Tabs */}
+                <div className="flex items-center gap-2 px-5 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC] overflow-x-auto shrink-0">
+                  <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider mr-1 hidden sm:inline">Status:</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {STATUS_TABS.map(tab => {
+                      const count = tab.id === 'All'
+                        ? baseFiltered.length
+                        : baseFiltered.filter(t => t.status === tab.id).length;
+                      const active = statusFilter === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setStatusFilter(tab.id)}
+                          data-status-tab={tab.id}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                            active
+                              ? 'bg-[#2563EB] text-white shadow-sm'
+                              : 'bg-white text-[#64748B] hover:text-[#0F172A] border border-[#E2E8F0] hover:border-[#CBD5E1]'
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                              active ? 'bg-white/20 text-white' : 'bg-[#F1F5F9] text-[#64748B]'
+                            }`}
+                          >
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <div className="flex-1 overflow-auto">
                   <table className="w-full text-left border-collapse min-w-[700px]">
                     <thead className="bg-[#F8FAFC] sticky top-0 border-b border-[#E2E8F0]">
@@ -634,7 +693,13 @@ export default function InternTasks() {
                         );
                       })}
                       {filtered.length === 0 && (
-                        <tr><td colSpan={7} className="text-center py-12 text-[#64748B] text-sm">No tasks found.</td></tr>
+                        <tr>
+                          <td colSpan={7} className="text-center py-12 text-[#64748B] text-sm">
+                            {statusFilter !== 'All'
+                              ? `No "${STATUS_TABS.find(s => s.id === statusFilter)?.label || statusFilter}" tasks found.`
+                              : 'No tasks found.'}
+                          </td>
+                        </tr>
                       )}
                     </tbody>
                   </table>
