@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import PageWrapper from '../../components/PageWrapper';
 import {
   Plus, Coffee, Heart, AlertCircle, CalendarDays, ClipboardList,
-  X, ChevronDown, ChevronUp
+  X, ChevronDown, ChevronUp, CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { internAPI } from '../../utils/api';
@@ -170,6 +170,7 @@ export default function InternLeave() {
   const [submitting,  setSubmitting]  = useState(false);
   const [tab,         setTab]         = useState('Pending');
   const [expandedRow, setExpandedRow] = useState(null);
+  const [dismissedAlertId, setDismissedAlertId] = useState(null);
 
   const load = async () => {
     setLoading(true);
@@ -211,6 +212,13 @@ export default function InternLeave() {
 
   const pending = requests.filter(r => r.status === 'Pending');
   const history = requests.filter(r => r.status !== 'Pending');
+
+  // Most recently resolved leave request
+  const sortedHistory = [...history].sort(
+    (a, b) => new Date(b.updatedAt || b.reviewedAt || b.createdAt) - new Date(a.updatedAt || a.reviewedAt || a.createdAt)
+  );
+  const latestResolved = sortedHistory[0];
+  const showResolvedAlert = latestResolved && dismissedAlertId !== latestResolved._id;
 
   const BALANCE_CARDS = [
     { key: 'casual',    label: 'Casual',    icon: Coffee,      color: 'text-blue-600',   bg: 'bg-blue-50'   },
@@ -258,12 +266,139 @@ export default function InternLeave() {
           })}
         </div>
 
+        {/* Prominent Status Confirmation Alert Banner for recently resolved request (TC-102) */}
+        {showResolvedAlert && (
+          <div
+            data-testid="leave-status-alert"
+            className={`p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm ${
+              latestResolved.status === 'Approved'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                : 'bg-rose-50 border-rose-200 text-rose-900'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                  latestResolved.status === 'Approved'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-rose-100 text-rose-700'
+                }`}
+              >
+                {latestResolved.status === 'Approved' ? <CheckCircle2 size={20} /> : <AlertCircle size={20} />}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-bold">
+                    {latestResolved.status === 'Approved'
+                      ? `Your ${latestResolved.type} Leave Request was Approved!`
+                      : `Your ${latestResolved.type} Leave Request was Rejected`}
+                  </p>
+                  <span
+                    className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
+                      latestResolved.status === 'Approved'
+                        ? 'bg-emerald-200 text-emerald-800'
+                        : 'bg-rose-200 text-rose-800'
+                    }`}
+                  >
+                    {latestResolved.status}
+                  </span>
+                </div>
+                <p
+                  className={`text-xs mt-0.5 ${
+                    latestResolved.status === 'Approved' ? 'text-emerald-700' : 'text-rose-700'
+                  }`}
+                >
+                  {fmtDate(latestResolved.fromDate)} → {fmtDate(latestResolved.toDate)} ({latestResolved.days} day
+                  {latestResolved.days !== 1 ? 's' : ''})
+                  {latestResolved.reviewedBy?.name ? ` · Reviewed by ${latestResolved.reviewedBy.name}` : ''}
+                  {latestResolved.reviewNote ? ` · Note: "${latestResolved.reviewNote}"` : ''}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+              <button
+                onClick={() => {
+                  setTab('History');
+                  if (latestResolved.status === 'Rejected') setExpandedRow(latestResolved._id);
+                }}
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap bg-white shadow-xs ${
+                  latestResolved.status === 'Approved'
+                    ? 'text-emerald-700 border-emerald-300 hover:bg-emerald-100'
+                    : 'text-rose-700 border-rose-300 hover:bg-rose-100'
+                }`}
+              >
+                View in History →
+              </button>
+              <button
+                onClick={() => setDismissedAlertId(latestResolved._id)}
+                className={`p-1 rounded-md transition-colors ${
+                  latestResolved.status === 'Approved'
+                    ? 'text-emerald-600 hover:bg-emerald-100'
+                    : 'text-rose-600 hover:bg-rose-100'
+                }`}
+                title="Dismiss notification"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex gap-6 border-b border-[#E2E8F0]">
-          {[['Pending', `Pending (${pending.length})`], ['History', 'History']].map(([id, label]) => (
-            <button key={id} onClick={() => setTab(id)}
-              className={`pb-3 text-sm font-bold transition-colors relative ${tab === id ? 'text-[#2563EB]' : 'text-[#64748B] hover:text-[#0F172A]'}`}>
-              {label}
+          {[
+            {
+              id: 'Pending',
+              label: 'Pending',
+              count: pending.length,
+              badge: (
+                <span
+                  data-testid="tab-pending-badge"
+                  className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                    pending.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-[#94A3B8]'
+                  }`}
+                >
+                  {pending.length}
+                </span>
+              ),
+            },
+            {
+              id: 'History',
+              label: 'History',
+              count: history.length,
+              badge: (
+                <div className="flex items-center gap-1.5">
+                  <span
+                    data-testid="tab-history-badge"
+                    className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-[#475569]"
+                  >
+                    {history.length}
+                  </span>
+                  {latestResolved && (
+                    <span
+                      data-testid="tab-history-status-indicator"
+                      className={`text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded ${
+                        latestResolved.status === 'Approved'
+                          ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                          : 'bg-rose-100 text-rose-700 border border-rose-200'
+                      }`}
+                    >
+                      {latestResolved.status}
+                    </span>
+                  )}
+                </div>
+              ),
+            },
+          ].map(({ id, label, badge }) => (
+            <button
+              key={id}
+              onClick={() => setTab(id)}
+              className={`pb-3 text-sm font-bold transition-colors relative flex items-center gap-2 ${
+                tab === id ? 'text-[#2563EB]' : 'text-[#64748B] hover:text-[#0F172A]'
+              }`}
+            >
+              <span>{label}</span>
+              {badge}
               {tab === id && <motion.div layoutId="lvTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#2563EB]" />}
             </button>
           ))}
@@ -282,7 +417,30 @@ export default function InternLeave() {
                   <div className="bg-white border border-[#E2E8F0] rounded-xl p-10 flex flex-col items-center text-center shadow-sm">
                     <ClipboardList size={36} className="text-[#94A3B8] mb-3" />
                     <p className="text-sm font-bold text-[#0F172A]">No pending leave requests</p>
-                    <p className="text-xs text-[#64748B] mt-1">Click "Apply for Leave" to submit a new request</p>
+                    {latestResolved ? (
+                      <div className="mt-2 text-center max-w-md">
+                        <p className="text-xs text-[#64748B]">
+                          Your recent {latestResolved.type} request was{' '}
+                          <span
+                            className={`font-bold ${
+                              latestResolved.status === 'Approved' ? 'text-emerald-600' : 'text-rose-600'
+                            }`}
+                          >
+                            {latestResolved.status}
+                          </span>
+                          {latestResolved.reviewedBy?.name ? ` by ${latestResolved.reviewedBy.name}` : ''}. You have{' '}
+                          <strong>{history.length}</strong> resolved request{history.length !== 1 ? 's' : ''} in your history.
+                        </p>
+                        <button
+                          onClick={() => setTab('History')}
+                          className="mt-3 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-[#2563EB] bg-[#EFF6FF] hover:bg-blue-100 rounded-lg transition-colors"
+                        >
+                          View Leave History ({history.length}) →
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-[#64748B] mt-1">Click "Apply for Leave" to submit a new request</p>
+                    )}
                   </div>
                 ) : pending.map(req => (
                   <div key={req._id} className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-sm">
