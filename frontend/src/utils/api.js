@@ -422,9 +422,13 @@ export const meAPI = {
 // ─── NOTIFICATION API ─────────────────────────────────────────────────────
 export const notificationAPI = {
   getNotifications: () => api.get('/notifications'),
+  getAll: () => api.get('/notifications'),
   markAllAsRead: () => api.patch('/notifications/read-all'),
+  markAllRead: () => api.patch('/notifications/read-all'),
   markAsRead: (id) => api.patch(`/notifications/${id}/read`),
+  markRead: (id) => api.patch(`/notifications/${id}/read`),
   deleteNotification: (id) => api.delete(`/notifications/${id}`),
+  delete: (id) => api.delete(`/notifications/${id}`),
 };
 
 // ─── PAYMENTS API (Admin & Intern) ────────────────────────────────────────

@@ -5,6 +5,19 @@ import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.j
 import { getPagination } from '../../utils/paginate.js';
 import { sendNotification } from '../../utils/sendNotification.js';
 
+const getTaskRouteForUser = async (userId, taskId, extraParams = '') => {
+  if (!userId) return `/tasks?taskId=${taskId}`;
+  try {
+    const user = await User.findById(userId).populate('role', 'slug');
+    const roleSlug = (user?.role?.slug || '').toLowerCase();
+    const isIntern = user?.employmentType === 'Intern' || roleSlug === 'intern';
+    const base = isIntern ? '/intern/tasks' : '/employee/tasks';
+    return `${base}?taskId=${taskId}${extraParams ? `&${extraParams}` : ''}`;
+  } catch {
+    return `/tasks?taskId=${taskId}`;
+  }
+};
+
 export const getTasks = async (req, res, next) => {
   try {
     const { page, limit, skip } = getPagination(req.query);
@@ -103,12 +116,13 @@ export const createTask = async (req, res, next) => {
       statusHistory: [{ status: 'Todo', changedBy: req.user._id, changedAt: new Date() }],
     });
 
+    const taskLink = await getTaskRouteForUser(assignedTo, task._id);
     await sendNotification({
       recipient: assignedTo,
       type: 'task_assigned',
       title: 'New Task Assigned',
       message: `New task assigned: ${title}\nProject: ${proj.name} | Due: ${new Date(dueDate).toLocaleDateString()}\nPriority: ${priority}`,
-      link: `/tasks?taskId=${task._id}`,
+      link: taskLink,
       sender: req.user._id,
       metadata: { taskId: task._id, projectId: project },
     });
@@ -200,24 +214,26 @@ export const updateTask = async (req, res, next) => {
     await task.save();
 
     if (reassignedTo) {
+      const reassignedLink = await getTaskRouteForUser(reassignedTo, task._id);
       await sendNotification({
         recipient: reassignedTo,
         type: 'task_assigned',
         title: 'Task Assigned to You',
         message: `You've been assigned the task "${task.title}" on project ${task.project.name}.`,
-        link: `/tasks?taskId=${task._id}`,
+        link: reassignedLink,
         sender: req.user._id,
         metadata: { taskId: task._id, projectId: task.project._id || task.project },
       });
     }
 
     if (dueDate && oldDueDate && new Date(dueDate).getTime() !== new Date(oldDueDate).getTime() && task.assignedTo) {
+      const deadlineLink = await getTaskRouteForUser(task.assignedTo, task._id);
       await sendNotification({
         recipient: task.assignedTo,
         type: 'system_alert',
         title: 'Task Deadline Updated',
         message: `Task deadline updated: ${task.title}\nNew due date: ${new Date(dueDate).toLocaleDateString()}`,
-        link: `/tasks?taskId=${task._id}`,
+        link: deadlineLink,
         sender: req.user._id,
         metadata: { taskId: task._id },
       });
@@ -252,12 +268,15 @@ export const updateTaskStatus = async (req, res, next) => {
     if (status === 'Done') {
       task.approvedAt = new Date();
       task.approvedBy = req.user._id;
+      const approvedLink = await getTaskRouteForUser(task.assignedTo, task._id);
       await sendNotification({
         recipient: task.assignedTo,
         type: 'system_alert',
         title: 'Task Approved',
         message: `Task '${task.title}' approved and marked complete by ${req.user.name} ✓`,
+        link: approvedLink,
         sender: req.user._id,
+        metadata: { taskId: task._id },
       });
     }
 
@@ -284,12 +303,13 @@ export const addTaskComment = async (req, res, next) => {
     await task.save();
 
     if (task.assignedTo.toString() !== req.user._id.toString()) {
+      const commentLink = await getTaskRouteForUser(task.assignedTo, task._id, 'tab=comments');
       await sendNotification({
         recipient: task.assignedTo,
         type: 'task_comment',
         title: 'New Comment on Task',
         message: `${req.user.name} commented on task '${task.title}'.`,
-        link: `/tasks?taskId=${task._id}`,
+        link: commentLink,
         sender: req.user._id,
         metadata: { taskId: task._id, projectId: task.project?._id || task.project },
       });
@@ -425,12 +445,14 @@ export const bulkReassignTasks = async (req, res, next) => {
 
     // Notify assignee
     try {
+      const bulkLink = await getTaskRouteForUser(assignee._id, taskIds[0]);
       await sendNotification({
         recipient: assignee._id,
         sender: req.user._id,
         type: 'task_assigned',
         title: 'Task(s) Assigned',
         message: `${req.user.name || 'PMO Lead'} reassigned ${tasks.length} task(s) to you.`,
+        link: bulkLink,
         metadata: {
           taskId: taskIds[0],
           projectId: projectIds[0] || null,

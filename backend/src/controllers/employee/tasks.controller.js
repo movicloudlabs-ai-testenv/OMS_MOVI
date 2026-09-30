@@ -1,8 +1,23 @@
 import Task from '../../models/Task.js';
 import Project from '../../models/Project.js';
+import User from '../../models/User.js';
 import { sendSuccess, sendError, sendPaginated } from '../../utils/apiResponse.js';
 import { getPagination } from '../../utils/paginate.js';
 import { sendNotification } from '../../utils/sendNotification.js';
+
+const getTaskRouteForUser = async (userId, taskId, extraParams = '') => {
+  if (!userId) return `/tasks?taskId=${taskId}`;
+  try {
+    const user = await User.findById(userId).populate('role', 'slug');
+    const roleSlug = (user?.role?.slug || '').toLowerCase();
+    const isIntern = user?.employmentType === 'Intern' || roleSlug === 'intern';
+    const isPMO = roleSlug.includes('pmo');
+    const base = isIntern ? '/intern/tasks' : (isPMO ? '/pmo/tasks' : '/employee/tasks');
+    return `${base}?taskId=${taskId}${extraParams ? `&${extraParams}` : ''}`;
+  } catch {
+    return `/tasks?taskId=${taskId}`;
+  }
+};
 
 // Allowed status transitions for employees
 const ALLOWED_TRANSITIONS = {
@@ -185,12 +200,13 @@ export const addTaskComment = async (req, res, next) => {
 
     const notifyRecipient = isAssignee ? task.assignedBy : task.assignedTo;
     const truncated = text.length > 80 ? text.slice(0, 80) + '...' : text;
+    const commentLink = await getTaskRouteForUser(notifyRecipient, task._id, 'tab=comments');
     await sendNotification({
       recipient: notifyRecipient,
       type: 'task_comment',
       title: 'New Comment on Task',
       message: `${req.user.name} commented on "${task.title}": "${truncated}"`,
-      link: `/tasks?taskId=${task._id}`,
+      link: commentLink,
       sender: req.user._id,
       metadata: { taskId: task._id, projectId: task.project },
     });
