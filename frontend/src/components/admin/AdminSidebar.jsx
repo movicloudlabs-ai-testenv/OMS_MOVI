@@ -15,6 +15,7 @@ export const NAV_LINKS = [
   { to: '/admin/reports',       icon: BarChart3,       label: 'Reports' },
   { to: '/admin/settings',      icon: SettingsIcon,    label: 'Settings' },
   { to: '/admin/announcements', icon: MessageSquare,   label: 'Announcement' },
+  { to: '/admin/messages',      icon: MessageSquare,   label: 'Messages' },
   { to: '/admin/profile',       icon: User,            label: 'My Profile' },
   { to: '/support/issues',      icon: LifeBuoy,        label: 'Issue Support' },
 ];

@@ -88,6 +88,16 @@ export const DOMAIN_ROUTES = {
     'employee':   '/employee/dashboard',
     'intern':     '/intern/dashboard',
   },
+  message: {
+    'hr-manager': '/hr/messages',
+    'hr':         '/hr/messages',
+    'pmo-lead':   '/pmo/messages',
+    'pmo':        '/pmo/messages',
+    'employee':   '/employee/messages',
+    'intern':     '/intern/messages',
+    'admin':      '/admin/messages',
+    'super-admin':'/admin/messages',
+  },
   admin: {
     'super-admin': '/admin/dashboard',
     'admin':       '/admin/dashboard',
@@ -100,14 +110,14 @@ export const DOMAIN_ROUTES = {
 
 // 3. Allowed Path Prefixes per Role (for direct link authorization check)
 export const ROLE_PREFIXES = {
-  'super-admin': ['/admin', '/pmo', '/hr', '/employee', '/intern', '/profile'],
-  'admin':       ['/admin', '/pmo', '/hr', '/employee', '/intern', '/profile'],
-  'hr-manager':  ['/hr', '/profile'],
-  'hr':          ['/hr', '/profile'],
-  'pmo-lead':    ['/pmo', '/profile'],
-  'pmo':         ['/pmo', '/profile'],
-  'employee':    ['/employee', '/profile'],
-  'intern':      ['/intern', '/profile'],
+  'super-admin': ['/admin', '/pmo', '/hr', '/employee', '/intern', '/profile', '/messages'],
+  'admin':       ['/admin', '/pmo', '/hr', '/employee', '/intern', '/profile', '/messages'],
+  'hr-manager':  ['/hr', '/profile', '/messages'],
+  'hr':          ['/hr', '/profile', '/messages'],
+  'pmo-lead':    ['/pmo', '/profile', '/messages'],
+  'pmo':         ['/pmo', '/profile', '/messages'],
+  'employee':    ['/employee', '/profile', '/messages'],
+  'intern':      ['/intern', '/profile', '/messages'],
 };
 
 /**

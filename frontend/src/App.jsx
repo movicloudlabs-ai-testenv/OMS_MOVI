@@ -21,7 +21,7 @@ import InternLearning from './pages/intern/Learning';
 import InternDocuments from './pages/intern/Documents';
 import InternPayments from './pages/intern/Payments';
 import InternProfile from './pages/intern/Profile';
-import InternMessages from './pages/intern/Messages';
+import Messages from './pages/Messages';
 import InternPerformance from './pages/intern/Performance';
 import InternStatus from './pages/intern/Status';
 
@@ -159,7 +159,7 @@ export default function App() {
       <Route path="/intern/documents" element={<ProtectedRoute allowedRoles={['intern']}><InternDocuments /></ProtectedRoute>} />
       <Route path="/intern/payments" element={<ProtectedRoute allowedRoles={['intern']}><InternPayments /></ProtectedRoute>} />
       <Route path="/intern/profile" element={<ProtectedRoute allowedRoles={['intern']}><InternProfile /></ProtectedRoute>} />
-      <Route path="/intern/messages" element={<ProtectedRoute allowedRoles={['intern']}><InternMessages /></ProtectedRoute>} />
+      <Route path="/intern/messages" element={<ProtectedRoute allowedRoles={['intern']}><Messages /></ProtectedRoute>} />
       <Route path="/intern/performance" element={<ProtectedRoute allowedRoles={['intern']}><InternPerformance /></ProtectedRoute>} />
       <Route path="/intern/status" element={<ProtectedRoute allowedRoles={['intern']}><InternStatus /></ProtectedRoute>} />
 
@@ -174,6 +174,7 @@ export default function App() {
       <Route path="/employee/daily-tracker" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeDailyTracker /></ProtectedRoute>} />
       <Route path="/employee/eod-report" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeEODReport /></ProtectedRoute>} />
       <Route path="/employee/profile" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeProfile /></ProtectedRoute>} />
+      <Route path="/employee/messages" element={<ProtectedRoute allowedRoles={['employee']}><Messages /></ProtectedRoute>} />
 
 
       {/* Issue Support — routing is role-aware in the backend */}
@@ -211,6 +212,7 @@ export default function App() {
       <Route path="/admin/announcements" element={<ProtectedRoute allowedRoles={['admin']}><AdminAnnouncements /></ProtectedRoute>} />
       <Route path="/hr/tasks/new" element={<ProtectedRoute allowedRoles={['hr']} permission={{ resource: 'Tasks', action: 'create' }}><HRAssignTask /></ProtectedRoute>} />
       <Route path="/hr/profile" element={<ProtectedRoute allowedRoles={['hr']}><HRProfile /></ProtectedRoute>} />
+      <Route path="/hr/messages" element={<ProtectedRoute allowedRoles={['hr']}><Messages /></ProtectedRoute>} />
 
       {/* PMO */}
       <Route path="/pmo/dashboard" element={<ProtectedRoute allowedRoles={['pmo']}><PMODashboard /></ProtectedRoute>} />
@@ -228,6 +230,7 @@ export default function App() {
       <Route path="/pmo/reports" element={<ProtectedRoute allowedRoles={['pmo']} permission={{ resource: 'Reports', action: 'read' }}><PMOReports /></ProtectedRoute>} />
       <Route path="/pmo/attendance" element={<ProtectedRoute allowedRoles={['pmo']}><PMOAttendance /></ProtectedRoute>} />
       <Route path="/pmo/profile" element={<ProtectedRoute allowedRoles={['pmo']}><PMOProfile /></ProtectedRoute>} />
+      <Route path="/pmo/messages" element={<ProtectedRoute allowedRoles={['pmo']}><Messages /></ProtectedRoute>} />
 
       {/* Admin — strictly admin-only (security-sensitive) */}
       <Route path="/admin/dashboard"    element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
@@ -235,6 +238,7 @@ export default function App() {
       <Route path="/admin/access-matrix" element={<ProtectedRoute allowedRoles={['admin']}><AdminAccessMatrix /></ProtectedRoute>} />
       <Route path="/admin/settings"     element={<ProtectedRoute allowedRoles={['admin']} permission={{ resource: 'Settings', action: 'update' }}><AdminSettings /></ProtectedRoute>} />
       <Route path="/admin/profile"      element={<ProtectedRoute allowedRoles={['admin']}><AdminProfile /></ProtectedRoute>} />
+      <Route path="/admin/messages"     element={<ProtectedRoute allowedRoles={['admin']}><Messages /></ProtectedRoute>} />
 
       {/* Admin — Users: admin always, others if granted Users permission */}
       <Route path="/admin/users"        element={<ProtectedRoute allowedRoles={['admin']} permission={{ resource: 'Users', action: 'read' }}><AdminUsers /></ProtectedRoute>} />
@@ -260,8 +264,9 @@ export default function App() {
       <Route path="/admin/reports/new"  element={<ProtectedRoute allowedRoles={['admin']} permission={{ resource: 'Reports', action: 'create' }}><AdminCreateReport /></ProtectedRoute>} />
 
       
-      {/* Global Profile Route */}
+      {/* Global Profile & Messages Routes */}
       <Route path="/profile" element={<ProtectedRoute allowedRoles={['intern', 'employee', 'hr', 'pmo', 'admin']}><Profile /></ProtectedRoute>} />
+      <Route path="/messages" element={<ProtectedRoute allowedRoles={['intern', 'employee', 'hr', 'pmo', 'admin']}><Messages /></ProtectedRoute>} />
 
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
