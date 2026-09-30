@@ -73,7 +73,7 @@ export const submitMyEntry = async (req, res, next) => {
       project, role, yesterdayStatus, pendingReason, todayTask,
       expectedCompletion, blockers, module, workingTime, hours,
       reportSubmission, attendance, ktCompletion, productivityMetrics,
-      aiCredits, projectAssignment, date: dateStr,
+      aiCredits, projectAssignment, date: dateStr, isStatusUpdate,
     } = req.body;
 
     if (!todayTask || !todayTask.trim()) {
@@ -111,15 +111,45 @@ export const submitMyEntry = async (req, res, next) => {
     const { date, error } = resolveEntryDate(dateStr);
     if (error) return sendError(res, error, 400);
 
+    const existing = await DailyTracker.findOne({ user: req.user._id, date });
+
+    let finalTodayTask = todayTask ? todayTask.trim() : '';
+    let finalBlockers = blockers !== undefined ? blockers.trim() : (existing?.blockers || '');
+
+    if (isStatusUpdate && existing) {
+      if (existing.todayTask && !existing.todayTask.includes(finalTodayTask)) {
+        finalTodayTask = `${existing.todayTask}\n\n[Status Update]: ${finalTodayTask}`;
+      } else if (existing.todayTask) {
+        finalTodayTask = existing.todayTask;
+      }
+      if (blockers && blockers.trim()) {
+        finalBlockers = existing.blockers && !existing.blockers.includes(blockers.trim())
+          ? `${existing.blockers}; ${blockers.trim()}`
+          : (existing.blockers || blockers.trim());
+      } else {
+        finalBlockers = existing.blockers || '';
+      }
+    }
+
     const update = {
       user: req.user._id,
       date,
-      project: project || undefined,
-      role: role || req.user.designation,
-      yesterdayStatus, pendingReason, todayTask, blockers, module,
-      workingTime, hours, reportSubmission: reportSubmission || 'Submitted',
-      attendance, ktCompletion, productivityMetrics, aiCredits, projectAssignment,
-      expectedCompletion: expectedCompletion || undefined,
+      project: project || existing?.project || undefined,
+      role: role || existing?.role || req.user.designation,
+      yesterdayStatus: yesterdayStatus || existing?.yesterdayStatus || 'Completed',
+      pendingReason: pendingReason !== undefined ? pendingReason : (existing?.pendingReason || ''),
+      todayTask: finalTodayTask,
+      blockers: finalBlockers,
+      module: module !== undefined ? module : (existing?.module || ''),
+      workingTime: workingTime !== undefined ? workingTime : (existing?.workingTime || ''),
+      hours: hours !== undefined && hours !== '' ? Number(hours) : existing?.hours,
+      reportSubmission: reportSubmission || existing?.reportSubmission || 'Submitted',
+      attendance: attendance || existing?.attendance || 'Present',
+      ktCompletion: ktCompletion !== undefined && ktCompletion !== '' ? Number(ktCompletion) : existing?.ktCompletion,
+      productivityMetrics: productivityMetrics !== undefined && productivityMetrics !== '' ? Number(productivityMetrics) : existing?.productivityMetrics,
+      aiCredits: aiCredits !== undefined && aiCredits !== '' ? Number(aiCredits) : existing?.aiCredits,
+      projectAssignment: projectAssignment !== undefined ? projectAssignment : (existing?.projectAssignment || ''),
+      expectedCompletion: expectedCompletion || existing?.expectedCompletion || undefined,
       submittedAt: new Date(),
     };
 

@@ -20,8 +20,14 @@ export default function InternStatus() {
     if (content.trim().length < 10) return toast.error('Update must be at least 10 characters');
     setSubmitting(true);
     try {
-      await internAPI.submitDailyTracker({ todayTask: content.trim(), blockers: blockers.trim(), yesterdayStatus: 'Completed', reportSubmission: 'Submitted' });
-      toast.success('Daily tracker update submitted'); setContent(''); setBlockers(''); await load();
+      await internAPI.submitDailyTracker({
+        todayTask: content.trim(),
+        blockers: blockers.trim(),
+        yesterdayStatus: 'Completed',
+        reportSubmission: 'Submitted',
+        isStatusUpdate: true,
+      });
+      toast.success('Status update submitted'); setContent(''); setBlockers(''); await load();
     } catch (err) { toast.error(err.response?.data?.message || 'Failed to submit update'); } finally { setSubmitting(false); }
   };
 
