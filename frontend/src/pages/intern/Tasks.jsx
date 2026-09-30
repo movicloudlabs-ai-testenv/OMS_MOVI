@@ -423,7 +423,7 @@ export default function InternTasks() {
     setLoading(true);
     try {
       const [tRes, pRes] = await Promise.allSettled([
-        internAPI.getTasks(),
+        internAPI.getTasks({ limit: 100 }),
         internAPI.getProjects(),
       ]);
       if (tRes.status === 'fulfilled') {

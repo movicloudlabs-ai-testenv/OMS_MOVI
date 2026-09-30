@@ -175,13 +175,16 @@ export const assignTask = async (req, res, next) => {
     const assignee = await User.findById(assignedTo);
     if (!assignee) return sendError(res, 'Assignee not found', 404);
 
+    const priorityMap = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+    const normalizedPriority = priority ? (priorityMap[String(priority).toLowerCase()] || 'Medium') : 'Medium';
+
     const task = await Task.create({
       title,
       description,
       project: projectId,
       assignedBy: req.user._id,
       assignedTo,
-      priority: priority || 'Medium',
+      priority: normalizedPriority,
       dueDate,
       effortPoints,
     });

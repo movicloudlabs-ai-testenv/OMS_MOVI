@@ -5,10 +5,10 @@ import { hrAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const PRIORITIES = [
-  { id: 'low', label: 'Low', icon: 'keyboard_arrow_down', color: 'text-[#64748B]', bg: 'bg-[#F1F5F9]', border: 'border-[#E2E8F0]', ring: 'ring-[#CBD5E1]' },
-  { id: 'medium', label: 'Medium', icon: 'drag_handle', color: 'text-[#D97706]', bg: 'bg-[#FFFBEB]', border: 'border-[#FDE68A]', ring: 'ring-[#FCD34D]' },
-  { id: 'high', label: 'High', icon: 'keyboard_arrow_up', color: 'text-[#EA580C]', bg: 'bg-[#FFF7ED]', border: 'border-[#FFEDD5]', ring: 'ring-[#FDBA74]' },
-  { id: 'critical', label: 'Critical', icon: 'priority_high', color: 'text-[#DC2626]', bg: 'bg-[#FEF2F2]', border: 'border-[#FEE2E2]', ring: 'ring-[#FCA5A5]' },
+  { id: 'Low', label: 'Low', icon: 'keyboard_arrow_down', color: 'text-[#64748B]', bg: 'bg-[#F1F5F9]', border: 'border-[#E2E8F0]', ring: 'ring-[#CBD5E1]' },
+  { id: 'Medium', label: 'Medium', icon: 'drag_handle', color: 'text-[#D97706]', bg: 'bg-[#FFFBEB]', border: 'border-[#FDE68A]', ring: 'ring-[#FCD34D]' },
+  { id: 'High', label: 'High', icon: 'keyboard_arrow_up', color: 'text-[#EA580C]', bg: 'bg-[#FFF7ED]', border: 'border-[#FFEDD5]', ring: 'ring-[#FDBA74]' },
+  { id: 'Critical', label: 'Critical', icon: 'priority_high', color: 'text-[#DC2626]', bg: 'bg-[#FEF2F2]', border: 'border-[#FEE2E2]', ring: 'ring-[#FCA5A5]' },
 ];
 
 export default function AssignTask() {
@@ -71,7 +71,7 @@ export default function AssignTask() {
     description: '',
     project: '',
     assignees: [],
-    priority: 'medium',
+    priority: 'Medium',
     dueDate: '',
     attachments: [],
   });

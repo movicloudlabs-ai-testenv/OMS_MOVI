@@ -87,13 +87,16 @@ export const createTask = async (req, res, next) => {
       await proj.save();
     }
 
+    const priorityMap = { critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low' };
+    const normalizedPriority = priority ? (priorityMap[String(priority).toLowerCase()] || 'Medium') : 'Medium';
+
     const task = await Task.create({
       title,
       description,
       project,
       assignedTo,
       assignedBy: req.user._id,
-      priority,
+      priority: normalizedPriority,
       dueDate,
       effortPoints,
       subtasks,
